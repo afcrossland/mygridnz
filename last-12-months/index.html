@@ -103,7 +103,7 @@
 
     <div class="chart-section">
       <h2>Monthly carbon intensity</h2>
-      <p>Average carbon intensity of New Zealand electricity (gCO₂eq/kWh) for each month. Carbon intensity falls when hydro, wind and geothermal output is high and rises when gas fills a larger share of demand.</p>
+      <p>Average carbon intensity of Aotearoa New Zealand electricity (gCO₂eq/kWh) for each month. Carbon intensity falls when hydro, wind and geothermal output is high and rises when gas fills a larger share of demand.</p>
       <div style="position:relative; height:320px;">
         <canvas id="carbon-chart"></canvas>
       </div>
@@ -114,238 +114,139 @@
 
 <script>
 (async () => {
-  const GEN_ID    = '1XmfoB1pj75UMhM9d2r2KbA0P-TAjUddyY0iAuFmgCVw';
-  const CARBON_ID = '1M7mmIpZuKLk2GyRSfsRhQgTQiZoGnLI3P5HRiQWxGoc';
+  const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
+  const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
+  const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // monthly tab: Year(0), Month(1), Hydro(2), Geothermal(3), Gas(4), Wind(5), Solar(6), Wood(7), Coal(8), Diesel(9), Other(10), Total(11)
+  const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
+  const FC = { Hydro:2, Geothermal:3, Gas:4, Wind:5, Solar:6, Wood:7, Coal:8, Diesel:9, Other:10, Total:11 };
 
   const PALETTE = {
-    'Nuclear':     '#4ade80',
-    'Biomass':     '#824e1a',
-    'Wind':        '#0d9e6e',
-    'Solar':       '#f59e0b',
-    'Coal':        '#111827',
-    'Gas':         '#6b7280',
-    'Storage':     '#f96c00',
-    'Large Hydro': '#3b82f6',
-    'Imports':     '#7100e2',
+    Hydro:'#3b82f6', Geothermal:'#ef4444', Gas:'#6b7280', Wind:'#0d9e6e',
+    Solar:'#f59e0b', Wood:'#824e1a', Coal:'#111827', Diesel:'#9ca3af',
+  };
+  const CARBON_FACTORS = {
+    Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
   };
 
-  const SOURCES = [
-    { label: 'Nuclear',     col: 1 },
-    { label: 'Biomass',     col: 2 },
-    { label: 'Wind',        col: 3 },
-    { label: 'Solar',       col: 4 },
-    { label: 'Coal',        col: 5 },
-    { label: 'Gas',         col: 6 },
-    { label: 'Storage',     col: 7 },
-    { label: 'Large Hydro', col: 8 },
-    { label: 'Imports',     col: 9 },
-  ];
-
-  const FONT = "'DM Sans', 'Segoe UI', Arial, sans-serif";
-
-  async function fetchSheet(id, sheetName) {
-    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
-    const r = await fetch(url);
-    const t = await r.text();
-    return JSON.parse(t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'))).table;
+  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+  function rowLabel(r) { return MONTHS_LBL[r.c[1].v - 1] + ' ' + r.c[0].v; }
+  function rowAvgGW(r, f) { return (r.c[FC[f]]?.v ?? 0) / (daysInMonth(r.c[0].v, r.c[1].v) * 48) / 1000; }
+  function rowCarbon(r) {
+    const total = r.c[FC.Total]?.v ?? 0;
+    if (!total) return 0;
+    return [...FUELS,'Other'].reduce((s,f) => s + (r.c[FC[f]]?.v ?? 0) * (CARBON_FACTORS[f] ?? 200), 0) / total;
   }
-
-  // Fetch the full 36-month tab for both sheets once
-  const [genResult, carbonResult] = await Promise.allSettled([
-    fetchSheet(GEN_ID,    'Last 3 years'),
-    fetchSheet(CARBON_ID, 'Last 3 years'),
-  ]);
-
-  const genRows    = genResult.status    === 'fulfilled' ? genResult.value.rows    : [];
-  const carbonRows = carbonResult.status === 'fulfilled' ? carbonResult.value.rows : [];
-
-  function tail(rows, n) {
-    return rows.slice(-Math.min(n, rows.length));
-  }
+  function tail(rows, n) { return rows.slice(-Math.min(n, rows.length)); }
 
   function buildTreeItems(rows) {
-    const sums = {};
-    SOURCES.forEach(src => { sums[src.label] = 0; });
-    rows.forEach(r => SOURCES.forEach(src => {
-      sums[src.label] += r.c[src.col]?.v ?? 0;
-    }));
-    const n = rows.length || 1;
-    return Object.entries(sums)
-      .filter(([, v]) => v > 0)
-      .map(([label, total]) => ({ label, source: label, value: total / n }));
+    const sums = Object.fromEntries(FUELS.map(f => [f, 0]));
+    const totalPeriods = rows.reduce((s,r) => s + daysInMonth(r.c[0].v, r.c[1].v) * 48, 0);
+    rows.forEach(r => FUELS.forEach(f => { sums[f] += r.c[FC[f]]?.v ?? 0; }));
+    return Object.entries(sums).filter(([,v]) => v > 0)
+      .map(([label, sumMW]) => ({ label, source: label, value: sumMW / totalPeriods / 1000 }));
   }
 
-  // ── Treemap ──────────────────────────────────────────────────────
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=monthly`;
+  const t = await (await fetch(url)).text();
+  const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
+
+  // ── Treemap ───────────────────────────────────────────────────────
   const treemapChart = new Chart(document.getElementById('treemap-chart'), {
     type: 'treemap',
     data: {
       datasets: [{
-        tree: buildTreeItems(tail(genRows, 12)),
+        tree: buildTreeItems(tail(rows, 12)),
         key: 'value',
         backgroundColor(ctx) {
           if (ctx.type !== 'data') return 'transparent';
           return PALETTE[ctx.raw._data.source] ?? '#9CA3AF';
         },
-        borderWidth: 2,
-        borderColor: '#fff',
+        borderWidth: 2, borderColor: '#fff',
         labels: {
           display: 'auto',
-          formatter(ctx) {
-            const d = ctx.raw._data;
-            return [d.source, d.value.toFixed(1) + ' GW'];
-          },
-          color: '#fff',
-          font: { family: FONT, size: 13, weight: '600' },
-          padding: 6,
+          formatter(ctx) { const d = ctx.raw._data; return [d.source, d.value.toFixed(2)+' GW']; },
+          color: '#fff', font: { family: FONT, size: 13, weight: '600' }, padding: 6,
         },
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: ctx => ctx[0]?.raw?._data?.source ?? '',
-            label: ctx => ` ${ctx.raw._data.value.toFixed(2)} GW avg`,
-          }
-        }
+        tooltip: { callbacks: { title: ctx => ctx[0]?.raw?._data?.source ?? '', label: ctx => ` ${ctx.raw._data.value.toFixed(2)} GW avg` } }
       }
     }
   });
 
-  // ── Generation chart ─────────────────────────────────────────────
-  const genInit = tail(genRows, 12);
+  // ── Generation chart ──────────────────────────────────────────────
+  const initRows = tail(rows, 12);
   const genChart = new Chart(document.getElementById('gen-chart'), {
     type: 'bar',
     data: {
-      labels: genInit.map(r => r.c[0].v),
-      datasets: SOURCES.map(src => ({
-        label: src.label,
-        data: genInit.map(r => r.c[src.col]?.v ?? 0),
-        backgroundColor: PALETTE[src.label],
-        borderWidth: 0,
+      labels: initRows.map(rowLabel),
+      datasets: FUELS.map(f => ({
+        label: f,
+        data: initRows.map(r => +rowAvgGW(r,f).toFixed(3)),
+        backgroundColor: PALETTE[f], borderWidth: 0,
       })),
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'top',
-          labels: {
-            font: { family: FONT, size: 12 },
-            padding: 16,
-            usePointStyle: true,
-            pointStyle: 'circle',
-            boxWidth: 10,
-            boxHeight: 10,
-          }
-        },
-        tooltip: {
-          mode: 'index',
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW`
-          }
-        }
+        legend: { position: 'top', labels: { font: { family: FONT, size: 12 }, padding: 16, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10 } },
+        tooltip: { mode: 'index', callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW` } }
       },
       scales: {
-        x: {
-          stacked: true,
-          ticks: { font: { family: FONT, size: 11 } },
-          grid: { display: false }
-        },
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Power, GW',
-            font: { family: FONT, size: 12 },
-            color: '#555'
-          },
-          ticks: { font: { family: FONT, size: 11 } },
-          grid: { color: '#eeeeee' }
-        }
+        x: { stacked: true, ticks: { font: { family: FONT, size: 11 } }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Power, GW', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
       }
     }
   });
 
-  // ── Carbon chart ─────────────────────────────────────────────────
-  const carbonInit = tail(carbonRows, 12);
+  // ── Carbon chart ──────────────────────────────────────────────────
   const carbonChart = new Chart(document.getElementById('carbon-chart'), {
     type: 'bar',
     data: {
-      labels: carbonInit.map(r => r.c[0].v),
-      datasets: [{
-        data: carbonInit.map(r => r.c[1]?.v ?? 0),
-        backgroundColor: '#111827',
-        borderWidth: 0,
-        categoryPercentage: 0.75,
-        barPercentage: 0.85,
-      }]
+      labels: initRows.map(rowLabel),
+      datasets: [{ data: initRows.map(r => +rowCarbon(r).toFixed(1)), backgroundColor: '#1a4d7a', borderWidth: 0, categoryPercentage: 0.75, barPercentage: 0.85 }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.parsed.y.toFixed(1)} gCO₂eq/kWh`
-          }
-        }
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} gCO₂eq/kWh` } }
       },
       scales: {
-        x: {
-          ticks: { font: { family: FONT, size: 11 } },
-          grid: { display: false }
-        },
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'gCO₂eq/kWh',
-            font: { family: FONT, size: 12 },
-            color: '#555'
-          },
-          ticks: { font: { family: FONT, size: 11 } },
-          grid: { color: '#eeeeee' }
-        }
+        x: { ticks: { font: { family: FONT, size: 11 } }, grid: { display: false } },
+        y: { beginAtZero: true, title: { display: true, text: 'gCO₂eq/kWh', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
       }
     }
   });
 
-  // ── Treemap filter (3 / 6 / 12 months) ──────────────────────────
+  // ── Treemap filter ────────────────────────────────────────────────
   document.getElementById('treemap-filter').addEventListener('click', e => {
     const btn = e.target.closest('.filter-btn');
     if (!btn) return;
     document.querySelectorAll('#treemap-filter .filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const months = parseInt(btn.dataset.months, 10);
-    treemapChart.data.datasets[0].tree = buildTreeItems(tail(genRows, months));
+    treemapChart.data.datasets[0].tree = buildTreeItems(tail(rows, +btn.dataset.months));
     treemapChart.update();
   });
 
-  // ── Column charts filter (12 / 24 / 36 months) ──────────────────
+  // ── Column filter (12 / 24 / 36 months) ──────────────────────────
   document.getElementById('column-filter').addEventListener('click', e => {
     const btn = e.target.closest('.filter-btn');
     if (!btn) return;
     document.querySelectorAll('#column-filter .filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const months = parseInt(btn.dataset.months, 10);
-    const fg = tail(genRows, months);
-    const fc = tail(carbonRows, months);
-
-    genChart.data.labels = fg.map(r => r.c[0].v);
-    SOURCES.forEach((src, i) => {
-      genChart.data.datasets[i].data = fg.map(r => r.c[src.col]?.v ?? 0);
-    });
+    const fg = tail(rows, +btn.dataset.months);
+    genChart.data.labels = fg.map(rowLabel);
+    FUELS.forEach((f,i) => { genChart.data.datasets[i].data = fg.map(r => +rowAvgGW(r,f).toFixed(3)); });
     genChart.update();
-
-    carbonChart.data.labels = fc.map(r => r.c[0].v);
-    carbonChart.data.datasets[0].data = fc.map(r => r.c[1]?.v ?? 0);
+    carbonChart.data.labels = fg.map(rowLabel);
+    carbonChart.data.datasets[0].data = fg.map(r => +rowCarbon(r).toFixed(1));
     carbonChart.update();
   });
 })();

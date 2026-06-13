@@ -33,26 +33,26 @@
 <div class="page-wrap">
   <main>
     <h1 class="page-title">Generation History</h1>
-    <p class="page-intro">Historical New Zealand electricity generation data.</p>
+    <p class="page-intro">Historical Aotearoa New Zealand electricity generation data.</p>
 
     <div class="charts-grid">
       <div>
         <h2 class="chart-h2">Annual generation by fuel type (TWh)</h2>
-        <p class="chart-p">Absolute electricity generation in terawatt-hours by fuel type each year. The growth of wind and solar alongside New Zealand's dominant hydro and geothermal base is clear. The most recent year is partial.</p>
+        <p class="chart-p">Absolute electricity generation in terawatt-hours by fuel type each year. The growth of wind and solar alongside Aotearoa New Zealand's dominant hydro and geothermal base is clear. The most recent year is partial.</p>
         <div style="position:relative; height:440px;">
           <canvas id="twh-chart"></canvas>
         </div>
       </div>
       <div>
         <h2 class="chart-h2">Annual electricity mix (%)</h2>
-        <p class="chart-p">How New Zealand's electricity generation mix has changed over time. Hydro and geothermal have long provided the backbone; wind and solar are growing contributors. Each bar shows the proportional share of generation from each fuel type for that year.</p>
+        <p class="chart-p">How Aotearoa New Zealand's electricity generation mix has changed over time. Hydro and geothermal have long provided the backbone; wind and solar are growing contributors. Each bar shows the proportional share of generation from each fuel type for that year.</p>
         <div style="position:relative; height:440px;">
           <canvas id="history-chart"></canvas>
         </div>
       </div>
     </div>
     <h2 style="font-size:1.3rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:40px 0 8px;">Annual carbon emissions</h2>
-    <p style="color:var(--muted); margin-bottom:16px;">Megatons of CO₂ equivalent from New Zealand electricity generation each year. The long-term downward trend reflects the decarbonisation of the grid. The most recent bar is a partial estimate based on data available so far this year.</p>
+    <p style="color:var(--muted); margin-bottom:16px;">Megatons of CO₂ equivalent from Aotearoa New Zealand electricity generation each year. The long-term downward trend reflects the decarbonisation of the grid. The most recent bar is a partial estimate based on data available so far this year.</p>
     <div style="position:relative; height:300px;">
       <canvas id="carbon-emissions-chart"></canvas>
     </div>
@@ -61,248 +61,114 @@
 </div>
 
 <script>
-// ── Absolute TWh chart ───────────────────────────────────────────
 (async () => {
-  const SHEET_ID = '1vWKOAe4-RdCCYmmCiU0CQdYxJmJcBJjCmOPjXfS9Bek';
-  const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=0`;
-
-  const SOURCES = [
-    { label: 'Nuclear',     color: '#4ade80', col: 1 },
-    { label: 'Biomass',     color: '#824e1a', col: 2 },
-    { label: 'Wind',        color: '#0d9e6e', col: 3 },
-    { label: 'Solar',       color: '#f59e0b', col: 4 },
-    { label: 'Large Hydro', color: '#3b82f6', col: 5 },
-    { label: 'Coal',        color: '#111827', col: 6 },
-    { label: 'Gas',         color: '#6b7280', col: 7 },
-    { label: 'Imports',     color: '#7100e2', col: 8 },
-  ];
-
+  const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
 
-  try {
-    const resp = await fetch(URL);
-    const text = await resp.text();
-    const { rows } = JSON.parse(text.slice(text.indexOf('(') + 1, text.lastIndexOf(')'))).table;
+  // annual tab: Year(0), Hydro(1), Geothermal(2), Gas(3), Wind(4), Solar(5), Wood(6), Coal(7), Diesel(8), Other(9), Total(10)
+  const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
+  const FUEL_COL = { Hydro:1, Geothermal:2, Gas:3, Wind:4, Solar:5, Wood:6, Coal:7, Diesel:8, Other:9, Total:10 };
 
-    const maxYear = Math.max(...rows.map(r => r.c[0]?.v ?? 0));
-    const labels = rows.map(r => String(Math.round(r.c[0]?.v ?? 0)));
+  const PALETTE = {
+    Hydro:'#3b82f6', Geothermal:'#ef4444', Gas:'#6b7280', Wind:'#0d9e6e',
+    Solar:'#f59e0b', Wood:'#824e1a', Coal:'#111827', Diesel:'#9ca3af',
+  };
+  const CARBON_FACTORS = {
+    Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
+  };
 
-    const datasets = SOURCES.map(src => ({
-      label: src.label,
-      data: rows.map(r => {
-        const v = r.c[src.col]?.v ?? 0;
-        return +v.toFixed(1);
-      }),
-      backgroundColor: labels.map((y, i) =>
-        rows[i].c[0]?.v === maxYear ? src.color + 'aa' : src.color
-      ),
-      borderColor: '#fff',
-      borderWidth: 1,
-    }));
-
-    new Chart(document.getElementById('twh-chart'), {
-      type: 'bar',
-      data: { labels, datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              font: { family: FONT, size: 12 },
-              padding: 16,
-              usePointStyle: true,
-              pointStyle: 'circle',
-              boxWidth: 10,
-              boxHeight: 10,
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} TWh`
-            }
-          }
-        },
-        scales: {
-          x: {
-            stacked: true,
-            ticks: { font: { family: FONT, size: 11 } },
-            grid: { display: false }
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'TWh',
-              font: { family: FONT, size: 12 },
-              color: '#555'
-            },
-            ticks: { font: { family: FONT, size: 11 } },
-            grid: { color: '#eeeeee' }
-          }
-        }
-      }
-    });
-  } catch (err) {
-    console.error('TWh chart error:', err);
+  async function fetchTable(sheet) {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}`;
+    const t = await (await fetch(url)).text();
+    return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
   }
-})();
 
-// ── Mix % chart ──────────────────────────────────────────────────
-(async () => {
-  const SHEET_ID = '1_dUFSVKiTItbbuyQNc2XuhQ1tmkQBBbgvQwqmekdfvU';
-  const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=0`;
+  const { rows } = await fetchTable('annual');
+  const labels  = rows.map(r => String(Math.round(r.c[0].v)));
+  const maxYear = Math.max(...rows.map(r => r.c[0].v));
 
-  const SOURCES = [
-    { label: 'Nuclear',     color: '#4ade80', col: 1 },
-    { label: 'Biomass',     color: '#824e1a', col: 2 },
-    { label: 'Wind',        color: '#0d9e6e', col: 3 },
-    { label: 'Solar',       color: '#f59e0b', col: 4 },
-    { label: 'Large Hydro', color: '#3b82f6', col: 5 },
-    { label: 'Coal',        color: '#111827', col: 6 },
-    { label: 'Gas',         color: '#6b7280', col: 7 },
-    { label: 'Imports',     color: '#7100e2', col: 8 },
-  ];
-
-  try {
-    const resp = await fetch(URL);
-    const text = await resp.text();
-    const start = text.indexOf('('), end = text.lastIndexOf(')');
-    const { rows } = JSON.parse(text.slice(start + 1, end)).table;
-
-    const labels = rows.map(r => r.c[0]?.v ?? '');
-
-    const datasets = SOURCES.map(src => ({
-      label: src.label,
-      data: rows.map(r => r.c[src.col]?.v ?? 0),
-      backgroundColor: src.color,
-      borderColor: '#fff',
-      borderWidth: 1,
-    }));
-
-    new Chart(document.getElementById('history-chart'), {
-      type: 'bar',
-      data: { labels, datasets },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 12 },
-              padding: 16,
-              usePointStyle: true,
-              pointStyle: 'circle',
-              boxWidth: 10,
-              boxHeight: 10,
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.x * 100).toFixed(1)}%`
-            }
-          }
-        },
-        scales: {
-          x: {
-            stacked: true,
-            min: 0,
-            max: 1,
-            title: {
-              display: true,
-              text: 'Electricity mix',
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 12 },
-              color: '#555'
-            },
-            ticks: {
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 11 },
-              callback: v => Math.round(v * 100) + '%'
-            },
-            grid: { color: '#eeeeee' }
-          },
-          y: {
-            stacked: true,
-            ticks: {
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 11 },
-              crossAlign: 'far',
-            },
-            grid: { display: false }
-          }
-        }
-      }
-    });
-  } catch (err) {
-    console.error('History chart error:', err);
-  }
-})();
-
-(async () => {
-  const SHEET_ID = '1wg4sY1wskCJtosHtozDqxyudXBDR53LHgQP0Q5Hu_8g';
-  const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=0`;
-
-  try {
-    const resp = await fetch(URL);
-    const text = await resp.text();
-    const start = text.indexOf('('), end = text.lastIndexOf(')');
-    const { rows } = JSON.parse(text.slice(start + 1, end)).table;
-
-    const labels  = rows.map(r => String(r.c[1]?.v ?? '').match(/(\d{4})/)?.[1] ?? '');
-    const values  = rows.map(r => parseFloat(r.c[0]?.v ?? 0));
-    const partial = rows.map(r => String(r.c[1]?.v ?? '').includes('so far'));
-    const colors  = rows.map((_, i) => partial[i] ? '#9E9E9E' : '#111827');
-
-    new Chart(document.getElementById('carbon-emissions-chart'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{
-          data: values,
-          backgroundColor: colors,
-          borderWidth: 0,
-          categoryPercentage: 0.7,
-          barPercentage: 0.9,
-        }]
+  // ── TWh chart ─────────────────────────────────────────────────────
+  new Chart(document.getElementById('twh-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: FUELS.map(f => ({
+        label: f,
+        data: rows.map(r => +((r.c[FUEL_COL[f]]?.v ?? 0) / 2e6).toFixed(2)),
+        backgroundColor: rows.map(r => r.c[0].v === maxYear ? PALETTE[f]+'aa' : PALETTE[f]),
+        borderColor: '#fff', borderWidth: 1,
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: FONT, size: 12 }, padding: 16, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10 } },
+        tooltip: { mode: 'index', callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} TWh` } }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              title: ctx => ctx[0].label,
-              label: ctx => ` ${ctx.parsed.y.toFixed(1)} MT CO₂`
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: { font: { family: "'Segoe UI', Arial, sans-serif", size: 11 } },
-            grid: { display: false }
-          },
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'MT CO₂',
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 12 },
-              color: '#555'
-            },
-            ticks: { font: { family: "'Segoe UI', Arial, sans-serif", size: 11 } },
-            grid: { color: '#eeeeee' }
-          }
-        }
+      scales: {
+        x: { stacked: true, ticks: { font: { family: FONT, size: 11 } }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'TWh', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
       }
-    });
-  } catch (err) {
-    console.error('Emissions chart error:', err);
-  }
-})();
+    }
+  });
+
+  // ── Mix % chart ───────────────────────────────────────────────────
+  new Chart(document.getElementById('history-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: FUELS.map(f => ({
+        label: f,
+        data: rows.map(r => {
+          const total = r.c[FUEL_COL.Total]?.v ?? 1;
+          return total > 0 ? (r.c[FUEL_COL[f]]?.v ?? 0) / total : 0;
+        }),
+        backgroundColor: PALETTE[f], borderColor: '#fff', borderWidth: 1,
+      })),
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: FONT, size: 12 }, padding: 16, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.x * 100).toFixed(1)}%` } }
+      },
+      scales: {
+        x: { stacked: true, min: 0, max: 1, ticks: { font: { family: FONT, size: 11 }, callback: v => Math.round(v*100)+'%' }, grid: { color: '#eeeeee' } },
+        y: { stacked: true, ticks: { font: { family: FONT, size: 11 }, crossAlign: 'far' }, grid: { display: false } }
+      }
+    }
+  });
+
+  // ── Annual carbon emissions MT CO₂ ────────────────────────────────
+  const carbonData = rows.map(r => {
+    const weighted = [...FUELS, 'Other'].reduce((s, f) =>
+      s + (r.c[FUEL_COL[f]]?.v ?? 0) * (CARBON_FACTORS[f] ?? 200), 0);
+    return +(weighted / 2e9).toFixed(2);
+  });
+
+  new Chart(document.getElementById('carbon-emissions-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: carbonData,
+        backgroundColor: rows.map(r => r.c[0].v === maxYear ? '#9E9E9E' : '#111827'),
+        borderWidth: 0, categoryPercentage: 0.7, barPercentage: 0.9,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { title: ctx => ctx[0].label, label: ctx => ` ${ctx.parsed.y.toFixed(2)} MT CO₂eq` } }
+      },
+      scales: {
+        x: { ticks: { font: { family: FONT, size: 11 } }, grid: { display: false } },
+        y: { beginAtZero: true, title: { display: true, text: 'MT CO₂eq', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
+      }
+    }
+  });
+
 </script>
 
 </body>

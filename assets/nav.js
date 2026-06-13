@@ -12,7 +12,7 @@ const NAV_HTML = `
         <li>
           <a href="/last-28-days/index.html">Electricity Data ▾</a>
           <ul>
-            <li><a href="/last-28-days/index.html">Last 28 Days</a></li>
+            <li><a href="/last-28-days/index.html">Last Month</a></li>
             <li><a href="/last-12-months/index.html">Last 12 Months</a></li>
             <li><a href="/historicaldata/index.html">Generation History</a></li>
             <li><a href="/carbon-tracker/index.html">Carbon Tracker</a></li>
@@ -54,7 +54,7 @@ const SIDEBAR_HTML = `
   </div>
   <div class="bottom-card">
     <div class="bottom-card-label">Connect</div>
-    <p style="margin-bottom:12px">Follow for the latest New Zealand electricity data and analysis, or connect on LinkedIn.</p>
+    <p style="margin-bottom:12px">Follow for the latest Aotearoa New Zealand electricity data and analysis, or connect on LinkedIn.</p>
     <a href="https://twitter.com/intent/follow?screen_name=mygridnz" target="_blank" class="follow-btn">Follow @mygridnz on X</a>
     <a href="https://bsky.app/profile/mygridnz.bsky.social" target="_blank" class="follow-btn" style="background:#0085ff">Follow on Bluesky</a>
     <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2">Connect on LinkedIn</a>

@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Last 28 Days — MyGridNZ</title>
-  <meta name="description" content="New Zealand electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
+  <title>Last Month — MyGridNZ</title>
+  <meta name="description" content="Aotearoa New Zealand electricity generation last month — half-hourly data, generation mix and carbon intensity.">
   <!-- Open Graph -->
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://www.mygrid.nz/last-28-days/">
-  <meta property="og:title"       content="Last 28 Days — MyGridNZ">
-  <meta property="og:description" content="New Zealand electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
+  <meta property="og:title"       content="Last Month — MyGridNZ">
+  <meta property="og:description" content="Aotearoa New Zealand electricity generation last month — half-hourly data, generation mix and carbon intensity.">
   <meta property="og:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary">
   <meta name="twitter:site"        content="@mygridnz">
-  <meta name="twitter:title"       content="Last 28 Days — MyGridNZ">
-  <meta name="twitter:description" content="New Zealand electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
+  <meta name="twitter:title"       content="Last Month — MyGridNZ">
+  <meta name="twitter:description" content="Aotearoa New Zealand electricity generation last month — half-hourly data, generation mix and carbon intensity.">
   <meta name="twitter:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/nav.js" defer></script>
@@ -26,24 +26,24 @@
 <body>
 <div class="page-wrap">
   <main>
-    <h1 class="page-title">Last 28 Days</h1>
-    <p class="page-intro">New Zealand electricity generation over the last 28 days. Data sources: MyGridNZ, Electricity Market Information (EMI), Transpower.</p>
+    <h1 class="page-title">Last Month</h1>
+    <p class="page-intro">Aotearoa New Zealand electricity generation for the most recently published month. Data sources: MyGridNZ, Electricity Market Information (EMI), Transpower.</p>
 
     <!-- Treemap -->
     <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:24px 0 8px;">Generation mix share</h2>
-    <p style="color:var(--muted); margin-bottom:16px;">Each tile shows the average contribution of a fuel type to New Zealand electricity over the last 28 days, sized by its share of the mix. In windy and wet periods, renewables dominate; gas fills the gaps when weather-dependent generation is low.</p>
+    <p style="color:var(--muted); margin-bottom:16px;">Each tile shows the average contribution of a fuel type to Aotearoa New Zealand electricity last month, sized by its share of the mix. In windy and wet periods, renewables dominate; gas fills the gaps when weather-dependent generation is low.</p>
     <div style="position:relative; height:420px;">
       <canvas id="treemap-chart"></canvas>
     </div>
 
     <!-- Stacked area -->
     <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:32px 0 12px;">Hourly electricity generation</h2>
-    <p style="color:var(--muted); margin-bottom:20px;">Hourly generation across the last 28 days, showing how the electricity mix shifts through the day and across weather patterns. Solar peaks sharply around midday in bright weather. Wind can supply the majority of demand for sustained periods, then drop to near zero as weather fronts pass — these fluctuations drive the need for flexible backup from gas and storage.</p>
+    <p style="color:var(--muted); margin-bottom:20px;">Half-hourly generation last month, showing how the electricity mix shifts through the day and across weather patterns. Solar peaks sharply around midday in bright weather. Wind can supply the majority of demand for sustained periods, then drop to near zero as weather fronts pass — these fluctuations drive the need for flexible backup from gas and hydro.</p>
     <div class="filter-bar" id="gen-filter">
       <span class="filter-bar-label">Show:</span>
-      <button class="filter-btn active" data-hours="0">All data</button>
-      <button class="filter-btn" data-hours="168">Last 7 days</button>
-      <button class="filter-btn" data-hours="48">Last 48 hrs</button>
+      <button class="filter-btn active" data-periods="0">All data</button>
+      <button class="filter-btn" data-periods="336">Last 7 days</button>
+      <button class="filter-btn" data-periods="96">Last 48 hrs</button>
     </div>
     <div style="position:relative; height:400px;">
       <canvas id="gen-chart"></canvas>
@@ -51,7 +51,7 @@
 
     <!-- Carbon intensity -->
     <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:40px 0 12px;">Carbon intensity</h2>
-    <p style="color:var(--muted); margin-bottom:20px;">Hourly carbon intensity of New Zealand electricity over the last 28 days (gCO₂eq/kWh). The red line marks the 2030 clean power target. Intensity falls when renewables are generating strongly and rises when gas fills a larger share of demand.</p>
+    <p style="color:var(--muted); margin-bottom:20px;">Half-hourly carbon intensity of Aotearoa New Zealand electricity last month (gCO₂eq/kWh). The red line marks the 2030 clean power target. Intensity falls when renewables are generating strongly and rises when gas fills a larger share of demand.</p>
     <div style="position:relative; height:320px;">
       <canvas id="carbon-intensity-chart"></canvas>
     </div>
@@ -61,278 +61,172 @@
 
 <script>
 (async () => {
-  const SHEET = id => `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=0`;
+  const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
 
-  const TREEMAP_ID  = '1nh3oCqRrDg0pyhByZt9Ssga11mV4ptTybTzBIjmTmZw';
-  const STACK_ID    = '136P7ali5jDYLpBgAxLEE0jVrf3A4FljDZF528ftaxeQ';
-  const CARBON_ID   = '1Xx0Crp8hZRWoFOb_NQ6kptP69EplFBjUQnLUekbYJag';
+  const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
+  const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // data tab:    DateTime(0), Date(1), TP(2), Hydro(3), Geo(4), Gas(5), Wind(6), Solar(7), Wood(8), Coal(9), Diesel(10), Other(11), Total(12)
+  // monthly tab: Year(0), Month(1), Hydro(2), Geo(3), Gas(4), Wind(5), Solar(6), Wood(7), Coal(8), Diesel(9), Other(10), Total(11)
+  const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
+  const DC = { Hydro:3, Geothermal:4, Gas:5, Wind:6, Solar:7, Wood:8, Coal:9, Diesel:10, Other:11, Total:12 };
+  const MC = { Hydro:2, Geothermal:3, Gas:4, Wind:5, Solar:6, Wood:7, Coal:8, Diesel:9, Other:10, Total:11 };
 
   const PALETTE = {
-    'Nuclear':       '#4ade80',
-    'Biomass':       '#824e1a',
-    'Large Hydro':   '#3b82f6',
-    'Hydro':         '#3b82f6',
-    'Onshore Wind':  '#0d9e6e',
-    'Offshore Wind': '#0b7a56',
-    'Solar':         '#f59e0b',
-    'Imports':       '#7100e2',
-    'Coal':          '#111827',
-    'Gas':           '#6b7280',
-    'Storage':       '#f96c00',
+    Hydro:'#3b82f6', Geothermal:'#ef4444', Gas:'#6b7280', Wind:'#0d9e6e',
+    Solar:'#f59e0b', Wood:'#824e1a', Coal:'#111827', Diesel:'#9ca3af',
+  };
+  const CARBON_FACTORS = {
+    Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
   };
 
-
-  const STACK_SOURCES = [
-    'Nuclear', 'Biomass', 'Large Hydro', 'Onshore Wind',
-    'Offshore Wind', 'Solar', 'Imports', 'Coal', 'Gas', 'Storage',
-  ];
-
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  async function fetchTable(sheet, tq) {
+    let url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}`;
+    if (tq) url += '&tq=' + encodeURIComponent(tq);
+    const t = await (await fetch(url)).text();
+    return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
+  }
 
   function parseGDate(s) {
     const m = String(s).match(/Date\((\d+),(\d+),(\d+)\)/);
     return m ? new Date(+m[1], +m[2], +m[3]) : null;
   }
 
-  function fmtDate(d) {
-    return d.getDate() + ' ' + MONTHS[d.getMonth()];
-  }
+  // 1. Get latest month from monthly tab
+  const monthly = await fetchTable('monthly');
+  const lastRow = monthly.rows[monthly.rows.length - 1];
+  const latestYear  = lastRow.c[0].v;
+  const latestMonth = lastRow.c[1].v; // 1-indexed from Sheets QUERY
 
-  async function fetchTable(id) {
-    const r = await fetch(SHEET(id));
-    const t = await r.text();
-    return JSON.parse(t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'))).table;
-  }
+  // 2. Fetch half-hourly data for that month via date range
+  const dateFrom = `${latestYear}-${String(latestMonth).padStart(2,'0')}-01`;
+  const [nextY, nextM] = latestMonth === 12 ? [latestYear+1, 1] : [latestYear, latestMonth+1];
+  const dateTo = `${nextY}-${String(nextM).padStart(2,'0')}-01`;
+  const dataTable = await fetchTable('data', `SELECT * WHERE B >= date '${dateFrom}' AND B < date '${dateTo}' ORDER BY A`);
+  const allRows = (dataTable.rows || []).filter(r => r.c[DC.Total]?.v != null);
 
-  const [tmResult, stackResult, carbonResult] = await Promise.allSettled([
-    fetchTable(TREEMAP_ID),
-    fetchTable(STACK_ID),
-    fetchTable(CARBON_ID),
-  ]);
+  // ── Treemap from monthly averages ─────────────────────────────────
+  const days = new Date(latestYear, latestMonth, 0).getDate();
+  const periods = days * 48;
+  const treeItems = FUELS.map(f => ({
+    label: f, source: f,
+    value: (lastRow.c[MC[f]]?.v ?? 0) / periods / 1000,
+  })).filter(x => x.value > 0.001);
 
-  // ── Treemap ─────────────────────────────────────────────────
-  if (tmResult.status === 'fulfilled') {
-    const rows = tmResult.value.rows;
-
-    const treeItems = rows
-      .filter(r => r.c[1]?.v > 0)
-      .map(r => {
-        const label  = r.c[0].v;                     // "Gas, 23.0%"
-        const source = label.split(',')[0].trim();    // "Gas"
-        return { label, source, value: r.c[1].v };
-      });
-
-    new Chart(document.getElementById('treemap-chart'), {
-      type: 'treemap',
-      data: {
-        datasets: [{
-          tree: treeItems,
-          key: 'value',
-          backgroundColor(ctx) {
-            if (ctx.type !== 'data') return 'transparent';
-            return PALETTE[ctx.raw._data.source] ?? '#9CA3AF';
-          },
-          borderWidth: 2,
-          borderColor: '#fff',
-          labels: {
-            display: 'auto',
-            formatter(ctx) {
-              const parts = ctx.raw._data.label.split(',');
-              return parts.length > 1 ? [parts[0].trim(), parts[1].trim()] : [ctx.raw._data.label];
-            },
-            color: '#fff',
-            font: {
-              family: "'Segoe UI', Arial, sans-serif",
-              size: 13,
-              weight: '600',
-            },
-            padding: 6,
-          },
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              title: ctx => ctx[0]?.raw?._data?.label ?? '',
-              label: ctx => ` ${ctx.raw._data.value.toFixed(2)} GW avg`,
-            }
-          }
-        }
-      }
-    });
-  }
-
-  // ── Stacked area ─────────────────────────────────────────────
-  if (stackResult.status === 'fulfilled') {
-    const allValid = stackResult.value.rows.filter(r => r.c.slice(1).some(c => c && c.v != null));
-
-    function genLabels(rows) {
-      return rows.map(r => { const d = parseGDate(r.c[0].v); return d ? fmtDate(d) : ''; });
-    }
-    function genDatasets(rows) {
-      return STACK_SOURCES.map((name, i) => ({
-        label: name,
-        data: rows.map(r => r.c[i + 1]?.v ?? null),
-        backgroundColor: PALETTE[name],
-        borderColor: PALETTE[name],
-        borderWidth: 0.5,
-        fill: true,
-        pointRadius: 0,
-        tension: 0.2,
-      }));
-    }
-    function genTickCallback(lbls) {
-      return (_, idx) => lbls[idx] !== lbls[idx - 1] ? lbls[idx] : '';
-    }
-
-    const initLabels = genLabels(allValid);
-    const genChart = new Chart(document.getElementById('gen-chart'), {
-      type: 'line',
-      data: { labels: initLabels, datasets: genDatasets(allValid) },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 12 },
-              padding: 16,
-              usePointStyle: true,
-              pointStyle: 'circle',
-              boxWidth: 10,
-              boxHeight: 10,
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' GW' : '—'}`
-            }
-          }
+  new Chart(document.getElementById('treemap-chart'), {
+    type: 'treemap',
+    data: {
+      datasets: [{
+        tree: treeItems, key: 'value',
+        backgroundColor(ctx) {
+          if (ctx.type !== 'data') return 'transparent';
+          return PALETTE[ctx.raw._data.source] ?? '#9CA3AF';
         },
-        scales: {
-          x: {
-            stacked: true,
-            ticks: {
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 10 },
-              maxRotation: 90,
-              minRotation: 90,
-              autoSkip: false,
-              callback: genTickCallback(initLabels),
-            },
-            grid: { display: false }
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            min: 0,
-            title: {
-              display: true,
-              text: 'Power, GW',
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 12 },
-              color: '#555'
-            },
-            ticks: {
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 11 },
-              stepSize: 5
-            },
-            grid: { color: '#eeeeee' }
-          }
-        }
-      }
-    });
-
-    document.getElementById('gen-filter').addEventListener('click', e => {
-      const btn = e.target.closest('.filter-btn');
-      if (!btn) return;
-      document.querySelectorAll('#gen-filter .filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const hours = parseInt(btn.dataset.hours, 10);
-      const rows  = hours > 0 ? allValid.slice(-hours) : allValid;
-      const lbls  = genLabels(rows);
-      genChart.data.labels = lbls;
-      genDatasets(rows).forEach((ds, i) => { genChart.data.datasets[i].data = ds.data; });
-      genChart.options.scales.x.ticks.callback = genTickCallback(lbls);
-      genChart.update('none');
-    });
-  }
-  // ── Carbon intensity line chart ──────────────────────────────────
-  if (carbonResult.status === 'fulfilled') {
-    const rows = carbonResult.value.rows.filter(r => r.c[2]?.v != null);
-    const ciLabels = rows.map(r => {
-      const d = parseGDate(r.c[0].v);
-      return d ? fmtDate(d) : '';
-    });
-    const ciData = rows.map(r => r.c[2].v);
-
-    // Show one label per day only
-    const ciShowAt = new Set();
-    let ciLastDay = '';
-    ciLabels.forEach((lbl, idx) => { if (lbl !== ciLastDay) { ciLastDay = lbl; ciShowAt.add(idx); } });
-
-    new Chart(document.getElementById('carbon-intensity-chart'), {
-      type: 'line',
-      data: {
-        labels: ciLabels,
-        datasets: [{
-          label: 'Carbon intensity',
-          data: ciData,
-          borderColor: '#1a4d7a',
-          backgroundColor: 'rgba(26,77,122,0.08)',
-          borderWidth: 1.5,
-          fill: true,
-          pointRadius: 0,
-          tension: 0.2,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => ` ${Math.round(ctx.parsed.y)} gCO₂eq/kWh` } },
-          annotation: {
-            annotations: {
-              target: {
-                type: 'line', yMin: 100, yMax: 100,
-                borderColor: '#ef4444', borderWidth: 2,
-                label: {
-                  display: true, content: '2030 Target', position: 'end',
-                  yAdjust: -14, backgroundColor: 'transparent', color: '#ef4444',
-                  font: { family: "'DM Sans', sans-serif", size: 13, weight: '600' }, padding: 0
-                }
-              }
-            }
-          }
+        borderWidth: 2, borderColor: '#fff',
+        labels: {
+          display: 'auto',
+          formatter(ctx) { const d = ctx.raw._data; return [d.source, d.value.toFixed(2)+' GW']; },
+          color: '#fff', font: { family: FONT, size: 13, weight: '600' }, padding: 6,
         },
-        scales: {
-          x: {
-            ticks: {
-              font: { family: "'Segoe UI', Arial, sans-serif", size: 10 },
-              maxRotation: 45, minRotation: 0, autoSkip: false,
-              callback: (_, idx) => ciShowAt.has(idx) ? ciLabels[idx] : ''
-            },
-            grid: { display: false }
-          },
-          y: {
-            beginAtZero: true,
-            title: { display: true, text: 'gCO₂eq/kWh', font: { family: "'Segoe UI', Arial, sans-serif", size: 12 }, color: '#555' },
-            ticks: { font: { family: "'Segoe UI', Arial, sans-serif", size: 11 } },
-            grid: { color: '#eeeeee' }
-          }
-        }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { title: ctx => ctx[0]?.raw?._data?.source ?? '', label: ctx => ` ${ctx.raw._data.value.toFixed(2)} GW avg` } }
       }
-    });
+    }
+  });
+
+  // ── Stacked area (half-hourly MW) ─────────────────────────────────
+  function rowLabel(r) {
+    const d = parseGDate(r.c[1].v);
+    const tp = r.c[2].v;
+    if (!d) return '';
+    const mins = (tp - 1) * 30;
+    return d.getDate() + ' ' + MONTHS_LBL[d.getMonth()] + ' ' + String(Math.floor(mins/60)).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0');
   }
 
+  function genLabels(rows) { return rows.map(rowLabel); }
+  function genDatasets(rows) {
+    return FUELS.map(f => ({
+      label: f,
+      data: rows.map(r => +(r.c[DC[f]]?.v ?? 0).toFixed(0)),
+      backgroundColor: PALETTE[f], borderColor: PALETTE[f],
+      borderWidth: 0.5, fill: true, pointRadius: 0, tension: 0.2,
+    }));
+  }
+  function tickCb(lbls) { return (_, idx) => lbls[idx] !== lbls[idx-1] ? lbls[idx] : ''; }
+
+  const initLabels = genLabels(allRows);
+  const genChart = new Chart(document.getElementById('gen-chart'), {
+    type: 'line',
+    data: { labels: initLabels, datasets: genDatasets(allRows) },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: FONT, size: 12 }, padding: 16, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(0)+' MW' : '—'}` } }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font: { family: FONT, size: 10 }, maxRotation: 90, minRotation: 90, autoSkip: false, callback: tickCb(initLabels) }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, min: 0, title: { display: true, text: 'Power, MW', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
+      }
+    }
+  });
+
+  document.getElementById('gen-filter').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('#gen-filter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const n = parseInt(btn.dataset.periods, 10);
+    const rows = n > 0 ? allRows.slice(-n) : allRows;
+    const lbls = genLabels(rows);
+    genChart.data.labels = lbls;
+    genDatasets(rows).forEach((ds, i) => { genChart.data.datasets[i].data = ds.data; });
+    genChart.options.scales.x.ticks.callback = tickCb(lbls);
+    genChart.update('none');
+  });
+
+  // ── Carbon intensity line ─────────────────────────────────────────
+  const ciData = allRows.map(r => {
+    const total = r.c[DC.Total]?.v ?? 0;
+    if (!total) return null;
+    return +([...FUELS,'Other'].reduce((s,f) => s + (r.c[DC[f]]?.v ?? 0) * (CARBON_FACTORS[f] ?? 200), 0) / total).toFixed(1);
+  });
+  const ciLabels = genLabels(allRows);
+  const ciShowAt = new Set();
+  let ciLast = '';
+  ciLabels.forEach((lbl, i) => { const day = lbl.slice(0, lbl.lastIndexOf(' ')); if (day !== ciLast) { ciLast = day; ciShowAt.add(i); } });
+
+  new Chart(document.getElementById('carbon-intensity-chart'), {
+    type: 'line',
+    data: {
+      labels: ciLabels,
+      datasets: [{ label: 'Carbon intensity', data: ciData, borderColor: '#1a4d7a', backgroundColor: 'rgba(26,77,122,0.08)', borderWidth: 1.5, fill: true, pointRadius: 0, tension: 0.2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${Math.round(ctx.parsed.y)} gCO₂eq/kWh` } },
+        annotation: {
+          annotations: {
+            target: { type: 'line', yMin: 100, yMax: 100, borderColor: '#ef4444', borderWidth: 2,
+              label: { display: true, content: '2030 Target', position: 'end', yAdjust: -14, backgroundColor: 'transparent', color: '#ef4444', font: { family: FONT, size: 13, weight: '600' }, padding: 0 } }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { family: FONT, size: 10 }, maxRotation: 45, minRotation: 0, autoSkip: false, callback: (_, i) => ciShowAt.has(i) ? ciLabels[i] : '' }, grid: { display: false } },
+        y: { beginAtZero: true, title: { display: true, text: 'gCO₂eq/kWh', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
+      }
+    }
+  });
 })();
 </script>
 
