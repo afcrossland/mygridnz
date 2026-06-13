@@ -270,7 +270,7 @@
     <!-- Comparison stat strip (populated by JS) -->
     <div class="compare-strip" id="compare-strip"></div>
     <!-- Cost cards: LCOE + Wholesale Price side by side -->
-    <div class="cost-cards" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+    <div class="cost-cards" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
       <div id="lcoe-card"></div>
       <div id="marginal-card"></div>
     </div>
@@ -611,13 +611,8 @@
             <div class="compare-val compare-val--lcoe-mid">NZD ${manifestoLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Blueprint</div>
           </div>
-          <span class="compare-arrow-sym">→</span>
-          <div class="lcoe-stage">
-            <div class="compare-val compare-val--manifesto">NZD ${manifestoUsefulLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
-            <div class="lcoe-stage-label">Blueprint + surplus used for EVs &amp; heating</div>
-          </div>
         </div>
-        <div class="compare-unit" style="margin-top:10px">This is the <strong>Levelised Cost of Energy (LCOE)</strong> — the lifetime build-and-run cost per MWh for each power station, averaged across the whole mix. It answers the question: what price would each generator need to charge to cover all its costs? The third figure assumes 50% of surplus renewable electricity displaces fossil fuels for transport and heating, which effectively lowers the cost per unit of useful energy.</div>`;
+        <div class="compare-unit" style="margin-top:10px">This is the <strong>Levelised Cost of Energy (LCOE)</strong> — the lifetime build-and-run cost per MWh for each power station, averaged across the whole mix. It answers the question: what price would each generator need to charge to cover all its costs?</div>`;
     }
 
     // Marginal price card
