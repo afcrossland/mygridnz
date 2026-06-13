@@ -399,19 +399,18 @@
   const WINDOW_HOURS    = 28 * 24;
   const GAS_LCOE_CAP    = 400;   // NZD/MWh cap for very low load-factor operation
 
-  function gasLcoeFromRow(row) {
-    const src = MIX_SOURCES.find(s => s.label === 'Gas');
-    const gwh = src ? (row.c[src.col]?.v ?? 0) : 0;
+  function gasLcoeFromRow(fd) {
+    const gwh = fd['Gas'] ?? 0;
     if (gwh <= 0) return 180;  // fallback: ~30% LF
     const lf  = Math.max(0.01, gwh / (GAS_CAPACITY_GW * WINDOW_HOURS));
     return Math.min(GAS_LCOE_CAP, Math.round(20 / lf + 130));
   }
 
   // curtailUsefulFrac: fraction of curtailed energy treated as useful output (e.g. 0.5 = 50% used for EVs)
-  function calcSystemLCOE(row, curtailRows, isBlueprint, curtailUsefulFrac = 0) {
+  function calcSystemLCOE(fd, curtailRows, isBlueprint, curtailUsefulFrac = 0) {
     let totalCost = 0, totalGWh = 0;
     const breakdown = [];
-    const gasRate = gasLcoeFromRow(row);
+    const gasRate = gasLcoeFromRow(fd);
     const rates   = { ...LCOE_RATES, Gas: gasRate };
 
     // Build curtailment lookup: label → { directFrac, storageFrac, curtailFrac }
@@ -430,7 +429,7 @@
     }
 
     MIX_SOURCES.forEach(src => {
-      const directGwh = row.c[src.col]?.v ?? 0;
+      const directGwh = fd[src.label] ?? 0;
       if (directGwh <= 0) return;
       const rate = rates[src.label] ?? 100;
 
@@ -481,17 +480,23 @@
 
   // ── Mix comparison ────────────────────────────────────────────────
   if (mixResult.status === 'fulfilled') {
-    const rows = mixResult.value.rows;
-    const actualRow    = rows[0];
-    const manifestoRow = rows[1];
+    // Sheet is transposed: col 0 = fuel name, col 1 = actual GWh, col 2 = blueprint GWh
+    const fuelActual = {}, fuelBlueprint = {};
+    mixResult.value.rows.forEach(r => {
+      const name = r.c[0]?.v;
+      if (name) {
+        fuelActual[name]    = r.c[1]?.v ?? 0;
+        fuelBlueprint[name] = r.c[2]?.v ?? 0;
+      }
+    });
 
     const THERM_EFF = { Gas: 0.57, Geothermal: 0.15, Wood: 0.39, Coal: 0.35, Diesel: 0.35 };
 
-    function calcStats(row) {
+    function calcStats(fd) {
       let total = 0, lowCarbon = 0, renewable = 0, gasGWh = 0, carbonWeighted = 0;
       let thermalInput = 0, thermalLoss = 0;
       MIX_SOURCES.forEach(src => {
-        const v = row.c[src.col]?.v ?? 0;
+        const v = fd[src.label] ?? 0;
         total          += v;
         carbonWeighted += v * src.carbon;
         if (src.lowCarbon)  lowCarbon += v;
@@ -502,28 +507,25 @@
           thermalLoss  += v / THERM_EFF[src.label] - v;
         }
       });
-      const directGW = total - Object.keys(THERM_EFF).reduce((s, k) => {
-        const src = MIX_SOURCES.find(m => m.label === k);
-        return s + (src ? (row.c[src.col]?.v ?? 0) : 0);
-      }, 0);
+      const directGW = total - Object.keys(THERM_EFF).reduce((s, k) => s + (fd[k] ?? 0), 0);
       const totalInput = thermalInput + directGW;
       return {
         total,
-        ci:           total > 0 ? Math.round(carbonWeighted / total) : 0,
-        lcPct:        total > 0 ? Math.round(lowCarbon / total * 100) : 0,
-        renPct:       total > 0 ? Math.round(renewable / total * 100) : 0,
-        gasPct:       total > 0 ? Math.round(gasGWh / total * 100) : 0,
+        ci:             total > 0 ? Math.round(carbonWeighted / total) : 0,
+        lcPct:          total > 0 ? Math.round(lowCarbon / total * 100) : 0,
+        renPct:         total > 0 ? Math.round(renewable / total * 100) : 0,
+        gasPct:         total > 0 ? Math.round(gasGWh / total * 100) : 0,
         thermalLossPct: totalInput > 0 ? Math.round(thermalLoss / totalInput * 100) : 0,
       };
     }
 
-    const actual    = calcStats(actualRow);
-    const manifesto = calcStats(manifestoRow);
+    const actual    = calcStats(fuelActual);
+    const manifesto = calcStats(fuelBlueprint);
 
-    const curtailRows        = (curtailResult.status === 'fulfilled') ? curtailResult.value.rows : [];
-    const actualLcoe         = calcSystemLCOE(actualRow,    curtailRows, false);
-    const manifestoLcoe      = calcSystemLCOE(manifestoRow, curtailRows, true, 0);
-    const manifestoUsefulLcoe = calcSystemLCOE(manifestoRow, curtailRows, true, 0.5);
+    const curtailRows         = (curtailResult.status === 'fulfilled') ? curtailResult.value.rows : [];
+    const actualLcoe          = calcSystemLCOE(fuelActual,    curtailRows, false);
+    const manifestoLcoe       = calcSystemLCOE(fuelBlueprint, curtailRows, true, 0);
+    const manifestoUsefulLcoe = calcSystemLCOE(fuelBlueprint, curtailRows, true, 0.5);
 
     // Comparison strip
     const stripEl = document.getElementById('compare-strip');
@@ -577,18 +579,18 @@
         <div class="compare-unit">NZD/MWh delivered — decarbonisation slightly raises cost, but using curtailed renewables to displace petrol &amp; fossil gas brings it below today's level</div>`;
     }
 
-    // Helper: build sorted fuel list + pie data from a row
-    function buildMixData(row) {
+    // Helper: build sorted fuel list + pie data from a fuel data object
+    function buildMixData(fd) {
       const entries = MIX_SOURCES
-        .map(src => ({ label: src.label, color: src.color, value: row.c[src.col]?.v ?? 0 }))
+        .map(src => ({ label: src.label, color: src.color, value: fd[src.label] ?? 0 }))
         .filter(e => e.value > 0)
         .sort((a, b) => b.value - a.value);
       const total = entries.reduce((s, e) => s + e.value, 0);
       return { entries, total };
     }
 
-    function buildPie(canvasId, listId, row) {
-      const { entries, total } = buildMixData(row);
+    function buildPie(canvasId, listId, fd) {
+      const { entries, total } = buildMixData(fd);
 
       new Chart(document.getElementById(canvasId), {
         type: 'pie',
@@ -628,8 +630,8 @@
       });
     }
 
-    buildPie('pie-actual',    'fuel-actual',    actualRow);
-    buildPie('pie-manifesto', 'fuel-manifesto', manifestoRow);
+    buildPie('pie-actual',    'fuel-actual',    fuelActual);
+    buildPie('pie-manifesto', 'fuel-manifesto', fuelBlueprint);
   }
 
   // ── Timeseries ────────────────────────────────────────────────────
