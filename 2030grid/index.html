@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The 2030 Blueprint — MyGridNZ</title>
   <meta name="description" content="A simulation of Aotearoa New Zealand's electricity in 2030 — modelled against actual generation data.">
@@ -739,7 +741,10 @@
       return ds;
     }
 
-    const initHours = 672;
+    const initHours = window.innerWidth < 768 ? 168 : 672;
+    document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.hours) === initHours);
+    });
     const initRows  = allRows.slice(-initHours);
     // col 0 is a date; col 1 is hour (0-23). Try Google Date format first, fall back to string.
     function rowDateLabel(r) {
