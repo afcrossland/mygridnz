@@ -36,19 +36,36 @@ const FOOTER_HTML = `
   <p style="margin-top:8px">© MyGridNZ · <a href="https://twitter.com/mygridnz" target="_blank">@mygridnz on X</a> · <a href="https://bsky.app/profile/mygridnz.bsky.social" target="_blank">Bluesky</a></p>
 </footer>`;
 
-const SIDEBAR_HTML = `
+document.addEventListener('DOMContentLoaded', () => {
+  // On GitHub Pages the site lives under /<repo>/ rather than /.
+  // On a custom domain (or localhost) it lives at /, so BASE is empty.
+  // For file:// protocol, derive base from the current file path.
+  let BASE = '';
+  if (window.location.hostname.endsWith('github.io')) {
+    BASE = '/' + window.location.pathname.split('/')[1];
+  } else if (window.location.protocol === 'file:') {
+    // Walk up from the current file to find the repo root (contains index.html)
+    const parts = window.location.pathname.split('/');
+    // Find the directory containing index.html at the root level
+    BASE = parts.slice(0, parts.indexOf('mygridnz') + 2).join('/').replace(/\/$/, '');
+    if (!BASE.endsWith('mygridnz')) BASE = '';
+  }
+
+  const IMG = (path) => BASE ? BASE + path : path;
+
+  const SIDEBAR_HTML = `
 <div class="bottom-cards">
   <div class="bottom-card">
     <div class="bottom-card-label">Supported by</div>
     <a href="https://www.dur.ac.uk/dei/" target="_blank" style="display:block; text-align:center;">
-      <img src="/images/dei.webp" alt="Durham Energy Institute">
+      <img src="${IMG('/images/dei.webp')}" alt="Durham Energy Institute" style="max-width:100%;border-radius:6px;">
     </a>
     <p>MyGridNZ is kindly supported by the Durham Energy Institute.</p>
   </div>
   <div class="bottom-card">
     <div class="bottom-card-label">Book</div>
-    <a href="https://www.amazon.co.uk/Decarbonising-Electricity-Routledge-Explorations-Studies/dp/0367203324" target="_blank">
-      <img src="/images/9780367203320.jpg" alt="Decarbonising Electricity Made Simple" style="max-height:160px;width:auto">
+    <a href="https://www.amazon.co.uk/Decarbonising-Electricity-Routledge-Explorations-Studies/dp/0367203324" target="_blank" style="display:block;text-align:center;">
+      <img src="${IMG('/images/9780367203320.jpg')}" alt="Decarbonising Electricity Made Simple" style="max-height:160px;width:auto;border-radius:6px;">
     </a>
     <p>Decarbonising Electricity Made Simple — <a href="https://www.amazon.co.uk/Decarbonising-Electricity-Routledge-Explorations-Studies/dp/0367203324" target="_blank">buy on Amazon</a></p>
   </div>
@@ -60,13 +77,6 @@ const SIDEBAR_HTML = `
     <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2">Connect on LinkedIn</a>
   </div>
 </div>`;
-
-document.addEventListener('DOMContentLoaded', () => {
-  // On GitHub Pages the site lives under /<repo>/ rather than /.
-  // On a custom domain (or localhost) it lives at /, so BASE is empty.
-  const BASE = window.location.hostname.endsWith('github.io')
-    ? '/' + window.location.pathname.split('/')[1]
-    : '';
 
   // Inject header
   document.body.insertAdjacentHTML('afterbegin', NAV_HTML);
