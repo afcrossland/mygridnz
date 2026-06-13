@@ -33,7 +33,7 @@ const NAV_HTML = `
 const FOOTER_HTML = `
 <footer id="site-footer">
   <p>MyGridNZ is kindly supported by the <a href="https://www.dur.ac.uk/dei/" target="_blank">Durham Energy Institute</a>.</p>
-  <p style="margin-top:8px">© MyGridNZ · <a href="https://twitter.com/mygridnz" target="_blank">@mygridnz on X</a> · <a href="https://bsky.app/profile/mygridnz.bsky.social" target="_blank">Bluesky</a></p>
+  <p style="margin-top:8px">© MyGridNZ</p>
 </footer>`;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -71,9 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div class="bottom-card">
     <div class="bottom-card-label">Connect</div>
-    <p style="margin-bottom:12px">Follow for the latest Aotearoa New Zealand electricity data and analysis, or connect on LinkedIn.</p>
-    <a href="https://twitter.com/intent/follow?screen_name=mygridnz" target="_blank" class="follow-btn">Follow @mygridnz on X</a>
-    <a href="https://bsky.app/profile/mygridnz.bsky.social" target="_blank" class="follow-btn" style="background:#0085ff">Follow on Bluesky</a>
+    <p style="margin-bottom:12px">Connect on LinkedIn for the latest Aotearoa New Zealand electricity data and analysis.</p>
     <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2">Connect on LinkedIn</a>
   </div>
 </div>`;
