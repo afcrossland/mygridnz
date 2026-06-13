@@ -130,9 +130,8 @@
     Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
   };
 
-  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
-  function rowLabel(r) { return MONTHS_LBL[r.c[1].v - 1] + ' ' + r.c[0].v; }
-  function rowAvgGW(r, f) { return (r.c[FC[f]]?.v ?? 0) / (daysInMonth(r.c[0].v, r.c[1].v) * 48) / 1000; }
+  function rowLabel(r) { return MONTHS_LBL[r.c[1].v] + ' ' + r.c[0].v; } // month is 0-indexed
+  function rowGWh(r, f) { return (r.c[FC[f]]?.v ?? 0) / 2000; } // sumMW × 0.5h / 1000
   function rowCarbon(r) {
     const total = r.c[FC.Total]?.v ?? 0;
     if (!total) return 0;
@@ -142,10 +141,9 @@
 
   function buildTreeItems(rows) {
     const sums = Object.fromEntries(FUELS.map(f => [f, 0]));
-    const totalPeriods = rows.reduce((s,r) => s + daysInMonth(r.c[0].v, r.c[1].v) * 48, 0);
     rows.forEach(r => FUELS.forEach(f => { sums[f] += r.c[FC[f]]?.v ?? 0; }));
     return Object.entries(sums).filter(([,v]) => v > 0)
-      .map(([label, sumMW]) => ({ label, source: label, value: sumMW / totalPeriods / 1000 }));
+      .map(([label, sumMW]) => ({ label, source: label, value: Math.round(sumMW / 2000) }));
   }
 
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=monthly`;
@@ -166,7 +164,7 @@
         borderWidth: 2, borderColor: '#fff',
         labels: {
           display: 'auto',
-          formatter(ctx) { const d = ctx.raw._data; return [d.source, d.value.toFixed(2)+' GW']; },
+          formatter(ctx) { const d = ctx.raw._data; return [d.source, d.value.toLocaleString()+' GWh']; },
           color: '#fff', font: { family: FONT, size: 13, weight: '600' }, padding: 6,
         },
       }]
@@ -175,7 +173,7 @@
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { title: ctx => ctx[0]?.raw?._data?.source ?? '', label: ctx => ` ${ctx.raw._data.value.toFixed(2)} GW avg` } }
+        tooltip: { callbacks: { title: ctx => ctx[0]?.raw?._data?.source ?? '', label: ctx => ` ${ctx.raw._data.value.toLocaleString()} GWh` } }
       }
     }
   });
@@ -188,7 +186,7 @@
       labels: initRows.map(rowLabel),
       datasets: FUELS.map(f => ({
         label: f,
-        data: initRows.map(r => +rowAvgGW(r,f).toFixed(3)),
+        data: initRows.map(r => Math.round(rowGWh(r,f))),
         backgroundColor: PALETTE[f], borderWidth: 0,
       })),
     },
@@ -196,11 +194,11 @@
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top', labels: { font: { family: FONT, size: 12 }, padding: 16, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10 } },
-        tooltip: { mode: 'index', callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW` } }
+        tooltip: { mode: 'index', callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} GWh` } }
       },
       scales: {
         x: { stacked: true, ticks: { font: { family: FONT, size: 11 } }, grid: { display: false } },
-        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Power, GW', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'GWh', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
       }
     }
   });
@@ -243,7 +241,7 @@
     btn.classList.add('active');
     const fg = tail(rows, +btn.dataset.months);
     genChart.data.labels = fg.map(rowLabel);
-    FUELS.forEach((f,i) => { genChart.data.datasets[i].data = fg.map(r => +rowAvgGW(r,f).toFixed(3)); });
+    FUELS.forEach((f,i) => { genChart.data.datasets[i].data = fg.map(r => Math.round(rowGWh(r,f))); });
     genChart.update();
     carbonChart.data.labels = fg.map(rowLabel);
     carbonChart.data.datasets[0].data = fg.map(r => +rowCarbon(r).toFixed(1));

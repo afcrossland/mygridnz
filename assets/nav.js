@@ -15,7 +15,6 @@ const NAV_HTML = `
             <li><a href="/last-28-days/index.html">Last Month</a></li>
             <li><a href="/last-12-months/index.html">Last 12 Months</a></li>
             <li><a href="/historicaldata/index.html">Generation History</a></li>
-            <li><a href="/carbon-tracker/index.html">Carbon Tracker</a></li>
           </ul>
         </li>
         <li>

@@ -488,8 +488,8 @@
   if (monthlyResult.status === 'fulfilled') {
     const rows = monthlyResult.value.rows;
     const lastRow = rows[rows.length - 1];
-    const year = lastRow.c[0].v, month = lastRow.c[1].v;
-    const daysInMonth = new Date(year, month, 0).getDate();
+    const year = lastRow.c[0].v, month = lastRow.c[1].v; // month is 0-indexed from QUERY
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const monthPeriods = daysInMonth * 48;
 
     const gwBySource = {};
@@ -748,8 +748,8 @@
     Solar:'#f59e0b', Wood:'#824e1a', Coal:'#111827', Diesel:'#9ca3af',
   };
 
-  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
-  function rowLabel(r) { return MONTHS_LBL[r.c[1].v - 1] + ' ' + r.c[0].v; }
+  function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); } // m is 0-indexed
+  function rowLabel(r) { return MONTHS_LBL[r.c[1].v] + ' ' + r.c[0].v; }
   function rowAvgGW(r, f) { return (r.c[MC[f]]?.v ?? 0) / (daysInMonth(r.c[0].v, r.c[1].v) * 48) / 1000; }
   function tail(rows, n) { return rows.slice(-Math.min(n, rows.length)); }
 

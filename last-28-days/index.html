@@ -96,17 +96,17 @@
   const monthly = await fetchTable('monthly');
   const lastRow = monthly.rows[monthly.rows.length - 1];
   const latestYear  = lastRow.c[0].v;
-  const latestMonth = lastRow.c[1].v; // 1-indexed from Sheets QUERY
+  const latestMonth = lastRow.c[1].v; // 0-indexed from QUERY month()
 
   // 2. Fetch half-hourly data for that month via date range
-  const dateFrom = `${latestYear}-${String(latestMonth).padStart(2,'0')}-01`;
-  const [nextY, nextM] = latestMonth === 12 ? [latestYear+1, 1] : [latestYear, latestMonth+1];
+  const dateFrom = `${latestYear}-${String(latestMonth + 1).padStart(2,'0')}-01`;
+  const [nextY, nextM] = latestMonth === 11 ? [latestYear+1, 1] : [latestYear, latestMonth + 2];
   const dateTo = `${nextY}-${String(nextM).padStart(2,'0')}-01`;
   const dataTable = await fetchTable('data', `SELECT * WHERE B >= date '${dateFrom}' AND B < date '${dateTo}' ORDER BY A`);
   const allRows = (dataTable.rows || []).filter(r => r.c[DC.Total]?.v != null);
 
   // ── Treemap from monthly averages ─────────────────────────────────
-  const days = new Date(latestYear, latestMonth, 0).getDate();
+  const days = new Date(latestYear, latestMonth + 1, 0).getDate();
   const periods = days * 48;
   const treeItems = FUELS.map(f => ({
     label: f, source: f,
@@ -157,8 +157,25 @@
       borderWidth: 0.5, fill: true, pointRadius: 0, tension: 0.2,
     }));
   }
-  function tickCb(lbls) { return (_, idx) => lbls[idx] !== lbls[idx-1] ? lbls[idx] : ''; }
 
+  // Returns a tick callback showing DD-MM at day boundaries, every everyNDays days.
+  function makeDayTickCb(rows, everyNDays) {
+    let dayCount = 0, lastKey = '';
+    const ticks = rows.map(r => {
+      const d = parseGDate(r.c[1].v);
+      if (!d) return '';
+      const key = d.toDateString();
+      if (key !== lastKey) {
+        lastKey = key; dayCount++;
+        if ((dayCount - 1) % everyNDays === 0)
+          return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      }
+      return '';
+    });
+    return (_, idx) => ticks[idx] ?? '';
+  }
+
+  const nDays = window.innerWidth < 768 ? 3 : 1;
   const initLabels = genLabels(allRows);
   const genChart = new Chart(document.getElementById('gen-chart'), {
     type: 'line',
@@ -171,7 +188,7 @@
         tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(0)+' MW' : '—'}` } }
       },
       scales: {
-        x: { stacked: true, ticks: { font: { family: FONT, size: 10 }, maxRotation: 90, minRotation: 90, autoSkip: false, callback: tickCb(initLabels) }, grid: { display: false } },
+        x: { stacked: true, ticks: { font: { family: FONT, size: 10 }, maxRotation: 45, minRotation: 0, autoSkip: false, callback: makeDayTickCb(allRows, nDays) }, grid: { display: false } },
         y: { stacked: true, beginAtZero: true, min: 0, title: { display: true, text: 'Power, MW', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
       }
     }

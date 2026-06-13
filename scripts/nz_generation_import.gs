@@ -115,6 +115,85 @@ function resumeBackfill() {
 }
 
 /**
+ * Delete all rows for a specific year+month range, then re-import them cleanly.
+ * Use this to fix duplicated months. Edit the four constants before running.
+ */
+function fixDuplicateMonths() {
+  const fromYear = 2017, fromMonth = 1;
+  const toYear   = 2017, toMonth   = 5;
+
+  const sheet   = _getOrCreateSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) { Logger.log('Sheet is empty.'); return; }
+
+  // Build a set of "YYYY-M" strings to match (month() on a Date is 0-indexed in JS)
+  const targets = new Set();
+  let y = fromYear, m = fromMonth;
+  while (y < toYear || (y === toYear && m <= toMonth)) {
+    targets.add(`${y}-${m}`);
+    m++; if (m > 12) { m = 1; y++; }
+  }
+
+  // Read the Date column (B = col 2) — Sheets stores as Date objects
+  const dateVals = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+
+  // Collect row indices to delete (must delete bottom-up to keep indices valid)
+  const toDelete = [];
+  for (let i = 0; i < dateVals.length; i++) {
+    const d = dateVals[i][0];
+    if (!(d instanceof Date)) continue;
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    if (targets.has(key)) toDelete.push(i + 2); // +2: 1-indexed + header row
+  }
+
+  Logger.log(`Deleting ${toDelete.length} rows for ${fromYear}-${String(fromMonth).padStart(2,'0')} → ${toYear}-${String(toMonth).padStart(2,'0')}...`);
+
+  // Delete bottom-up so row numbers stay valid
+  for (let i = toDelete.length - 1; i >= 0; i--) {
+    sheet.deleteRow(toDelete[i]);
+    if (i % 500 === 0) Logger.log(`  ${i} rows remaining...`);
+  }
+
+  Logger.log('Deletion complete. Re-importing...');
+
+  // Now re-import those months cleanly
+  const months = [];
+  y = fromYear; m = fromMonth;
+  while (y < toYear || (y === toYear && m <= toMonth)) {
+    months.push({ year: y, month: m, label: _yyyymm(y, m) });
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty(PROP_PROGRESS, JSON.stringify(months));
+  _processMonthQueue(sheet, false);
+}
+
+/**
+ * Import a specific range of months — useful for filling gaps the main backfill missed.
+ * Edit fromYear/fromMonth/toYear/toMonth, then run this function once (resumeBackfill()
+ * if it times out). Skips months that are already in the sheet.
+ */
+function importMonthRange() {
+  const fromYear = 2021, fromMonth = 1;
+  const toYear   = 2021, toMonth   = 5;
+
+  const months = [];
+  let y = fromYear, m = fromMonth;
+  while (y < toYear || (y === toYear && m <= toMonth)) {
+    months.push({ year: y, month: m, label: _yyyymm(y, m) });
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty(PROP_PROGRESS, JSON.stringify(months));
+
+  const sheet = _getOrCreateSheet();
+  Logger.log(`Importing ${months.length} months: ${months[0].label} → ${months[months.length-1].label}`);
+  _processMonthQueue(sheet, true); // deduplicate=true skips months already present
+}
+
+/**
  * Append last month's data. Safe to run if data already exists — it checks the
  * last date in the sheet and only adds rows newer than that.
  * Wire this up to a monthly time-based trigger.
@@ -323,10 +402,11 @@ function _batchWrite(sheet, rows) {
 function _monthAlreadyLoaded(sheet, year, month) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return false;
-  const prefix  = `${year}-${String(month).padStart(2, '0')}`;
-  // Read the Date column (col B = index 2)
-  const dates   = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
-  return dates.some(([d]) => String(d).startsWith(prefix));
+  const dates = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+  return dates.some(([d]) => {
+    if (d instanceof Date) return d.getFullYear() === year && d.getMonth() + 1 === month;
+    return String(d).startsWith(`${year}-${String(month).padStart(2, '0')}`);
+  });
 }
 
 // =============================================================================
