@@ -77,13 +77,15 @@
     Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
   };
 
-  async function fetchTable(sheet) {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}`;
+  const ANNUAL_ID = '1EN4wI5rzmdJgzSrynqSkoduw-uATYeVkkhuY_HvFVHs';
+
+  async function fetchTable(id) {
+    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json`;
     const t = await (await fetch(url)).text();
     return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
   }
 
-  const { rows } = await fetchTable('annual');
+  const { rows } = await fetchTable(ANNUAL_ID);
   const labels  = rows.map(r => String(Math.round(r.c[0].v)));
   const maxYear = Math.max(...rows.map(r => r.c[0].v));
 

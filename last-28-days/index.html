@@ -61,7 +61,8 @@
 
 <script>
 (async () => {
-  const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
+  const DATA_SHEET_ID    = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE'; // raw half-hourly data tab
+  const MONTHLY_SHEET_ID = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps'; // dedicated monthly sheet
 
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
   const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -80,8 +81,14 @@
     Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
   };
 
-  async function fetchTable(sheet, tq) {
-    let url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}`;
+  async function fetchMonthly() {
+    const url = `https://docs.google.com/spreadsheets/d/${MONTHLY_SHEET_ID}/gviz/tq?tqx=out:json`;
+    const t = await (await fetch(url)).text();
+    return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
+  }
+
+  async function fetchData(tq) {
+    let url = `https://docs.google.com/spreadsheets/d/${DATA_SHEET_ID}/gviz/tq?tqx=out:json&sheet=data`;
     if (tq) url += '&tq=' + encodeURIComponent(tq);
     const t = await (await fetch(url)).text();
     return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
@@ -92,8 +99,8 @@
     return m ? new Date(+m[1], +m[2], +m[3]) : null;
   }
 
-  // 1. Get latest month from monthly tab
-  const monthly = await fetchTable('monthly');
+  // 1. Get latest month from monthly sheet
+  const monthly = await fetchMonthly();
   const lastRow = monthly.rows[monthly.rows.length - 1];
   const latestYear  = lastRow.c[0].v;
   const latestMonth = lastRow.c[1].v; // 0-indexed from QUERY month()
@@ -102,7 +109,7 @@
   const dateFrom = `${latestYear}-${String(latestMonth + 1).padStart(2,'0')}-01`;
   const [nextY, nextM] = latestMonth === 11 ? [latestYear+1, 1] : [latestYear, latestMonth + 2];
   const dateTo = `${nextY}-${String(nextM).padStart(2,'0')}-01`;
-  const dataTable = await fetchTable('data', `SELECT * WHERE B >= date '${dateFrom}' AND B < date '${dateTo}' ORDER BY A`);
+  const dataTable = await fetchData(`SELECT * WHERE B >= date '${dateFrom}' AND B < date '${dateTo}' ORDER BY A`);
   const allRows = (dataTable.rows || []).filter(r => r.c[DC.Total]?.v != null);
 
   // ── Treemap from monthly averages ─────────────────────────────────
@@ -202,9 +209,9 @@
     const n = parseInt(btn.dataset.periods, 10);
     const rows = n > 0 ? allRows.slice(-n) : allRows;
     const lbls = genLabels(rows);
-    genChart.data.labels = lbls;
+    genChart.data.labels = genLabels(rows);
     genDatasets(rows).forEach((ds, i) => { genChart.data.datasets[i].data = ds.data; });
-    genChart.options.scales.x.ticks.callback = tickCb(lbls);
+    genChart.options.scales.x.ticks.callback = makeDayTickCb(rows, window.innerWidth < 768 ? 3 : 1);
     genChart.update('none');
   });
 
@@ -214,15 +221,10 @@
     if (!total) return null;
     return +([...FUELS,'Other'].reduce((s,f) => s + (r.c[DC[f]]?.v ?? 0) * (CARBON_FACTORS[f] ?? 200), 0) / total).toFixed(1);
   });
-  const ciLabels = genLabels(allRows);
-  const ciShowAt = new Set();
-  let ciLast = '';
-  ciLabels.forEach((lbl, i) => { const day = lbl.slice(0, lbl.lastIndexOf(' ')); if (day !== ciLast) { ciLast = day; ciShowAt.add(i); } });
-
   new Chart(document.getElementById('carbon-intensity-chart'), {
     type: 'line',
     data: {
-      labels: ciLabels,
+      labels: genLabels(allRows),
       datasets: [{ label: 'Carbon intensity', data: ciData, borderColor: '#1a4d7a', backgroundColor: 'rgba(26,77,122,0.08)', borderWidth: 1.5, fill: true, pointRadius: 0, tension: 0.2 }]
     },
     options: {
@@ -239,7 +241,7 @@
         }
       },
       scales: {
-        x: { ticks: { font: { family: FONT, size: 10 }, maxRotation: 45, minRotation: 0, autoSkip: false, callback: (_, i) => ciShowAt.has(i) ? ciLabels[i] : '' }, grid: { display: false } },
+        x: { ticks: { font: { family: FONT, size: 10 }, maxRotation: 45, minRotation: 0, autoSkip: false, callback: makeDayTickCb(allRows, window.innerWidth < 768 ? 3 : 1) }, grid: { display: false } },
         y: { beginAtZero: true, title: { display: true, text: 'gCO₂eq/kWh', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
       }
     }
