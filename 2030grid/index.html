@@ -332,37 +332,36 @@
 
 <script>
 (async () => {
-  const MIX_ID        = '1u35y6W2NqBTa5knVrqsYybjIGTPCwjBrIqg0rIZKLes';
-  const TIMESERIES_ID = '1ctbznBuW040HtFabgrTu4qDo2TfbsqPZvDiU8rglNRc';
-  const CURTAIL_ID    = '12Rw_OnA3qKUvMuzcMhfvW0UyAYXxx8HrcHxxk9VidYA';
+  const MIX_ID        = '1-_pQ39Qd7lN0r9rQWHT8_ZLOiFbvGbttYnrbowVBtS0';
+  const TIMESERIES_ID = '1ODNW-bT018Adl-PRhPkpVjVFTp9qo_0sLOSHuqGxipk';
+  const CURTAIL_ID    = '1bRqBHmH6lJQzhtewnFxauYWcLZ5hohSKDhELVC6mo2E';
 
   const FONT = "'DM Sans', 'Segoe UI', Arial, sans-serif";
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Sources as they appear in Sheet A (mix comparison)
+  // Sheet 1 (mix) columns: Label(0), Hydro(1), Geothermal(2), Wind(3), Solar(4), Wood(5), Gas(6), Storage(7), Coal(8), Diesel(9)
   const MIX_SOURCES = [
-    { label: 'Nuclear',     col: 1, color: '#4ade80', carbon: 12,  lowCarbon: true,  renewable: false },
-    { label: 'Biomass',     col: 2, color: '#824e1a', carbon: 230, lowCarbon: true,  renewable: false },
-    { label: 'Wind',        col: 3, color: '#0d9e6e', carbon: 12,  lowCarbon: true,  renewable: true  },
-    { label: 'Solar',       col: 4, color: '#f59e0b', carbon: 44,  lowCarbon: true,  renewable: true  },
-    { label: 'Gas',         col: 5, color: '#6b7280', carbon: 490, lowCarbon: false, renewable: false },
-    { label: 'Storage',     col: 6, color: '#f96c00', carbon: 24,  lowCarbon: true,  renewable: false },
-    { label: 'Large Hydro', col: 7, color: '#3b82f6', carbon: 24,  lowCarbon: true,  renewable: true  },
-    { label: 'Imports',     col: 8, color: '#7100e2', carbon: 300, lowCarbon: false, renewable: false },
-    { label: 'Coal',        col: 9, color: '#111827', carbon: 820, lowCarbon: false, renewable: false },
+    { label: 'Hydro',      col: 1, color: '#3b82f6', carbon: 24,  lowCarbon: true,  renewable: true  },
+    { label: 'Geothermal', col: 2, color: '#ef4444', carbon: 38,  lowCarbon: true,  renewable: false },
+    { label: 'Wind',       col: 3, color: '#0d9e6e', carbon: 12,  lowCarbon: true,  renewable: true  },
+    { label: 'Solar',      col: 4, color: '#f59e0b', carbon: 41,  lowCarbon: true,  renewable: true  },
+    { label: 'Wood',       col: 5, color: '#824e1a', carbon: 230, lowCarbon: true,  renewable: false },
+    { label: 'Gas',        col: 6, color: '#6b7280', carbon: 490, lowCarbon: false, renewable: false },
+    { label: 'Storage',    col: 7, color: '#f96c00', carbon: 0,   lowCarbon: true,  renewable: false },
+    { label: 'Coal',       col: 8, color: '#111827', carbon: 820, lowCarbon: false, renewable: false },
+    { label: 'Diesel',     col: 9, color: '#9ca3af', carbon: 650, lowCarbon: false, renewable: false },
   ];
 
-  // Sources as they appear in Sheet C (timeseries)
+  // Sheet 2 (timeseries) columns: DateTime(0), Hydro(1), Geothermal(2), Wind(3), Solar(4), Wood(5), Storage(6), Gas(7), Curtailment(8)
   const TIME_SOURCES = [
-    { label: 'Nuclear',     col: 1, color: '#4ade80' },
-    { label: 'Large Hydro', col: 2, color: '#3b82f6' },
-    { label: 'Solar',       col: 3, color: '#f59e0b' },
-    { label: 'Wind',        col: 4, color: '#0d9e6e' },
-    { label: 'Biomass',     col: 5, color: '#824e1a' },
-    { label: 'Storage',     col: 6, color: '#f96c00' },
-    { label: 'Imports',     col: 7, color: '#7100e2' },
-    { label: 'Gas',         col: 8, color: '#6b7280' },
+    { label: 'Hydro',      col: 1, color: '#3b82f6' },
+    { label: 'Geothermal', col: 2, color: '#ef4444' },
+    { label: 'Wind',       col: 3, color: '#0d9e6e' },
+    { label: 'Solar',      col: 4, color: '#f59e0b' },
+    { label: 'Wood',       col: 5, color: '#824e1a' },
+    { label: 'Storage',    col: 6, color: '#f96c00' },
+    { label: 'Gas',        col: 7, color: '#6b7280' },
   ];
 
   async function fetchTable(id, gid) {
@@ -381,34 +380,31 @@
     return d.getDate() + ' ' + MONTHS[d.getMonth()];
   }
 
-  // ── LCOE per source (£/MWh, 2024 prices, DESNZ Electricity Generation Costs 2025) ──
+  // ── LCOE per source (NZD/MWh, approximate 2024 NZ prices) ──
   const LCOE_RATES = {
-    // Nuclear excluded from system LCOE: comparing amortised existing fleet with new-build HPC cost is misleading
-    Wind:           80,  // Blend of onshore £58 + offshore £103; DESNZ 2025, 2030 commissioning
-    Solar:          60,  // DESNZ 2025, 2030 commissioning
-    Biomass:       120,  // Approximate; based on CfD strike prices; not in DESNZ 2025
-    'Large Hydro':  60,  // Existing fleet estimate
-    Storage:        90,  // Approximate BESS capital + O&M
-    Imports:       100,  // Approximate average import cost
-    Coal:          220,  // Historical + high ETS carbon costs
+    Hydro:         40,   // Existing fleet (fully amortised large hydro)
+    Geothermal:    85,   // Operating cost + well maintenance
+    Wind:          95,   // Blend of onshore NZ projects
+    Solar:         75,   // Residential + utility scale blend
+    Wood:         150,   // Biomass thermal including fuel cost
+    Storage:      130,   // Grid-scale BESS capital + O&M
+    Coal:         260,   // High carbon cost + fuel
+    Diesel:       350,   // Peaking diesel, high fuel cost
   };
 
-  // Gas LCOE is load-factor dependent — derived from DESNZ 2025 Annex A (2030 commissioning):
-  //   5% LF → £424/MWh, 30% LF → £147/MWh, 93% LF → £111/MWh
-  // Structure: fixed_capital/LF + variable (fuel+carbon) where variable ≈ £104/MWh
-  // Variable updated to reflect NZ gas pricing benchmarks (2020-2024):
-  //   fuel ~£58/MWh + carbon £41 + O&M £5 = £104 (vs DESNZ central £91 based on 75p/therm)
-  // Formula: LCOE = 16.74 / LF + 104  (fits DESNZ shape; variable scaled to 5-yr avg gas price)
-  const GAS_CAPACITY_GW = 35;  // approximate GB gas fleet (CCGT + OCGT)
+  // Gas LCOE is load-factor dependent:
+  //   low LF (peaking) → very high cost; high LF (baseload) → closer to NZD 140/MWh
+  // Formula: LCOE = 20 / LF + 130  (fixed capital / load factor + variable fuel+carbon+O&M)
+  const GAS_CAPACITY_GW = 2.5;   // approximate NZ gas fleet (CCGT + OCGT)
   const WINDOW_HOURS    = 28 * 24;
-  const GAS_LCOE_CAP    = 250;  // £/MWh — reflects capacity markets, batteries, biofuel flexibility by 2030
+  const GAS_LCOE_CAP    = 400;   // NZD/MWh cap for very low load-factor operation
 
   function gasLcoeFromRow(row) {
     const src = MIX_SOURCES.find(s => s.label === 'Gas');
     const gwh = src ? (row.c[src.col]?.v ?? 0) : 0;
-    if (gwh <= 0) return 160;  // fallback: ~30% LF with updated formula
+    if (gwh <= 0) return 180;  // fallback: ~30% LF
     const lf  = Math.max(0.01, gwh / (GAS_CAPACITY_GW * WINDOW_HOURS));
-    return Math.min(GAS_LCOE_CAP, Math.round(16.74 / lf + 104));
+    return Math.min(GAS_LCOE_CAP, Math.round(20 / lf + 130));
   }
 
   // curtailUsefulFrac: fraction of curtailed energy treated as useful output (e.g. 0.5 = 50% used for EVs)
@@ -434,7 +430,6 @@
     }
 
     MIX_SOURCES.forEach(src => {
-      if (src.label === 'Nuclear') return;  // excluded: unfair to compare amortised fleet with new-build cost
       const directGwh = row.c[src.col]?.v ?? 0;
       if (directGwh <= 0) return;
       const rate = rates[src.label] ?? 100;
@@ -467,14 +462,14 @@
       if (b.hasCurtail) {
         const totalGen   = b.totalGwh;
         const contrib    = totalGWh > 0 ? Math.round(totalGen * b.rate / totalGWh) : 0;
-        lines.push(`  ${b.label}: ${sharePct}% delivered + ${Math.round(b.storageFrac*100)}% storage + ${Math.round(b.curtailFrac*100)}% curtailed × £${b.rate} = £${contrib}/MWh`);
+        lines.push(`  ${b.label}: ${sharePct}% delivered + ${Math.round(b.storageFrac*100)}% storage + ${Math.round(b.curtailFrac*100)}% curtailed × NZD ${b.rate} = NZD ${contrib}/MWh`);
       } else {
         const contrib = totalGWh > 0 ? Math.round(b.gwh * b.rate / totalGWh) : 0;
-        lines.push(`  ${b.label}: ${sharePct}% × £${b.rate} = £${contrib}/MWh`);
+        lines.push(`  ${b.label}: ${sharePct}% × NZD ${b.rate} = NZD ${contrib}/MWh`);
       }
     });
     lines.push(`  ──────────────────────`);
-    lines.push(`  Total: £${lcoe}/MWh delivered`);
+    lines.push(`  Total: NZD ${lcoe}/MWh delivered`);
     return lines.join('\n');
   }
 
@@ -490,7 +485,7 @@
     const actualRow    = rows[0];
     const manifestoRow = rows[1];
 
-    const THERM_EFF = { Gas: 0.57, Nuclear: 0.35, Biomass: 0.39, Coal: 0.35 };
+    const THERM_EFF = { Gas: 0.57, Geothermal: 0.15, Wood: 0.39, Coal: 0.35, Diesel: 0.35 };
 
     function calcStats(row) {
       let total = 0, lowCarbon = 0, renewable = 0, gasGWh = 0, carbonWeighted = 0;
@@ -565,21 +560,21 @@
         <div class="compare-card-label">System LCOE <a href="/about/index.html#lcoe-methodology" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--brand);margin-left:6px;">methodology ↗</a></div>
         <div class="lcoe-stages">
           <div class="lcoe-stage">
-            <div class="compare-val compare-val--now">£${actualLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="compare-val compare-val--now">NZD ${actualLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Today</div>
           </div>
           <span class="compare-arrow-sym">→</span>
           <div class="lcoe-stage">
-            <div class="compare-val compare-val--lcoe-mid">£${manifestoLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="compare-val compare-val--lcoe-mid">NZD ${manifestoLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Blueprint</div>
           </div>
           <span class="compare-arrow-sym">→</span>
           <div class="lcoe-stage">
-            <div class="compare-val compare-val--manifesto">£${manifestoUsefulLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="compare-val compare-val--manifesto">NZD ${manifestoUsefulLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Blueprint + useful curtailment</div>
           </div>
         </div>
-        <div class="compare-unit">£/MWh delivered (excl. nuclear) — decarbonisation slightly raises cost, but using curtailed renewables to displace petrol &amp; fossil gas brings it below today's level</div>`;
+        <div class="compare-unit">NZD/MWh delivered — decarbonisation slightly raises cost, but using curtailed renewables to displace petrol &amp; fossil gas brings it below today's level</div>`;
     }
 
     // Helper: build sorted fuel list + pie data from a row
@@ -610,7 +605,7 @@
                 label: ctx => {
                   const pct  = Math.round(ctx.parsed / total * 100);
                   const lcoe = LCOE_RATES[ctx.label];
-                  const lcoeStr = lcoe != null ? ` | £${lcoe}/MWh` : '';
+                  const lcoeStr = lcoe != null ? ` | NZD ${lcoe}/MWh` : '';
                   return ` ${ctx.label}: ${pct}%${lcoeStr}`;
                 }
               }
@@ -640,7 +635,7 @@
   // ── Timeseries ────────────────────────────────────────────────────
   if (tsResult.status === 'fulfilled') {
     const allRows = tsResult.value.rows.filter(r => r.c.slice(1).some(c => c && c.v != null));
-    const hasCurtail = allRows.some(r => r.c[9]?.v > 0);
+    const hasCurtail = allRows.some(r => r.c[8]?.v > 0);
 
     function buildShowLabelAt(filteredLabels, hours) {
       const set = new Set();
@@ -673,7 +668,7 @@
       if (hasCurtail) {
         ds.push({
           label: 'Curtailment',
-          data: rows.map(r => r.c[9]?.v ?? null),
+          data: rows.map(r => r.c[8]?.v ?? null),
           borderColor: '#dc2626',
           backgroundColor: 'transparent',
           borderWidth: 1.5,
