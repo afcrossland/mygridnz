@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MyGridGB — Decarbonisation of British Electricity</title>
-  <meta name="description" content="The independent resource charting in real time the decarbonisation of British electricity.">
+  <title>MyGridNZ — Decarbonisation of New Zealand Electricity</title>
+  <meta name="description" content="The independent resource charting in real time the decarbonisation of New Zealand electricity.">
   <!-- Open Graph -->
   <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://www.mygridgb.co.uk/">
-  <meta property="og:title"       content="MyGridGB — Decarbonisation of British Electricity">
-  <meta property="og:description" content="The independent resource charting in real time the decarbonisation of British electricity.">
-  <meta property="og:image"       content="https://www.mygridgb.co.uk/images/mygridgb-logo.png">
+  <meta property="og:url"         content="https://www.mygrid.nz/">
+  <meta property="og:title"       content="MyGridNZ — Decarbonisation of New Zealand Electricity">
+  <meta property="og:description" content="The independent resource charting in real time the decarbonisation of New Zealand electricity.">
+  <meta property="og:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary">
-  <meta name="twitter:site"        content="@mygridgb">
-  <meta name="twitter:title"       content="MyGridGB — Decarbonisation of British Electricity">
-  <meta name="twitter:description" content="The independent resource charting in real time the decarbonisation of British electricity.">
-  <meta name="twitter:image"       content="https://www.mygridgb.co.uk/images/mygridgb-logo.png">
+  <meta name="twitter:site"        content="@mygridnz">
+  <meta name="twitter:title"       content="MyGridNZ — Decarbonisation of New Zealand Electricity">
+  <meta name="twitter:description" content="The independent resource charting in real time the decarbonisation of New Zealand electricity.">
+  <meta name="twitter:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
   <link rel="stylesheet" href="assets/style.css">
   <script src="assets/nav.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -288,25 +288,26 @@
 <div class="page-wrap">
   <main>
     <div class="home-hero">
-      <h1>Welcome to MyGridGB</h1>
-      <p><em>The independent resource charting in real time the decarbonisation of British electricity.</em></p>
+      <h1>Welcome to MyGridNZ</h1>
+      <p><em>The independent resource charting in real time the decarbonisation of New Zealand electricity.</em></p>
     </div>
 
     <p class="page-intro">
-      Britain is transitioning to low carbon electricity. Coal power stations are being decommissioned and new
-      low carbon power stations are taking their place. But how much can wind turbines, solar farms, biomass and
-      nuclear power plants reduce carbon emissions? Can Britain keep the lights on? How can Britain provide
-      low carbon energy for electric vehicles?
+      Aotearoa New Zealand already generates most of its electricity from renewable sources — hydro, geothermal,
+      and wind — but gas still plays a balancing role and the transition to 100% clean power is not yet complete.
+      How much can expanded wind, solar and battery storage displace the remaining fossil generation? Can New Zealand
+      keep the lights on through dry years and low-wind periods? How can New Zealand use its clean electricity
+      advantage to decarbonise transport and industry?
     </p>
     <p class="page-intro">
-      MyGridGB charts all of this change. It tells you how much electricity is produced, where that electricity
+      MyGridNZ charts all of this change. It tells you how much electricity is produced, where that electricity
       comes from and how much carbon is being emitted — all in real time so you can come back again and again
-      to see how Britain is tracking against carbon targets.
-      <a href="about/index.html">Read more about MyGridGB.</a>
+      to see how New Zealand is tracking against clean power targets.
+      <a href="about/index.html">Read more about MyGridNZ.</a>
     </p>
 
     <section>
-      <h2 class="mix-title">Britain's Present Electricity Mix</h2>
+      <h2 class="mix-title">New Zealand's Present Electricity Mix</h2>
       <p class="mix-subtitle" style="margin-bottom:4px;">How is your electricity being generated right now?</p>
 
       <!-- Five stat cards -->
@@ -367,7 +368,7 @@
 
     <section style="margin:32px 0;">
       <h2 style="font-size:1.6rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin-bottom:6px;">Recent electricity generation</h2>
-      <p style="color:var(--muted); font-size:14px; margin-bottom:16px;">Hourly electricity generation. Watch renewables rise and fall with the weather while gas fills the gaps.</p>
+      <p style="color:var(--muted); font-size:14px; margin-bottom:16px;">Hourly electricity generation. Watch renewables rise and fall with the weather and hydro reservoir levels while gas fills the gaps.</p>
       <div class="filter-bar" id="week-filter">
         <span class="filter-bar-label">Show:</span>
         <button class="filter-btn active" data-hours="168">Last 7 days</button>
@@ -380,13 +381,13 @@
 
     <section style="margin:32px 0;">
       <h2 style="font-size:1.6rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin-bottom:8px;">Conversion &amp; grid losses</h2>
-      <p style="font-size:1rem; color:var(--muted); margin-bottom:20px; line-height:1.5;">Not all energy becomes electricity. Gas turbines convert around 57% of fuel into power; nuclear reactors around 35%; biomass stations around 39%. The rest escapes as waste heat. A further 6% is lost in transmission once electricity reaches the grid. The diagram traces every unit of energy from source to delivered electricity, in real time.</p>
+      <p style="font-size:1rem; color:var(--muted); margin-bottom:20px; line-height:1.5;">Not all energy becomes electricity. Gas turbines convert around 57% of fuel into power; geothermal stations around 15%; biomass stations around 39%. The rest escapes as waste heat. A further 6% is lost in transmission once electricity reaches the grid. The diagram traces every unit of energy from source to delivered electricity, in real time.</p>
       <div id="sankey-chart" style="height:500px; width:100%;"></div>
     </section>
 
     <section style="margin:32px 0; text-align:center;">
-      <h2 style="font-size:1.6rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin-bottom:8px;">Decarbonising British Electricity</h2>
-      <p style="font-size:1rem; color:var(--muted); margin-bottom:20px; line-height:1.5;">The carbon intensity of British electricity has fallen dramatically since 1998, driven by the closure of coal plants and growth in wind, solar and nuclear. The chart tracks this progress — and how far there is still to go to meet the 2030 clean power target of 50–100 gCO₂eq/kWh.</p>
+      <h2 style="font-size:1.6rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin-bottom:8px;">Decarbonising New Zealand Electricity</h2>
+      <p style="font-size:1rem; color:var(--muted); margin-bottom:20px; line-height:1.5;">The carbon intensity of New Zealand electricity has fallen over recent years, driven by growth in wind and solar alongside geothermal and hydro. The chart tracks this progress — and how far there is still to go to meet the 2030 clean power target.</p>
       <div style="position:relative; height:400px;">
         <canvas id="carbon-chart"></canvas>
       </div>
@@ -396,7 +397,7 @@
     <section class="countdown-section">
       <p class="countdown-eyebrow">The clock is ticking</p>
       <h2 class="countdown-title">Countdown to 2030 carbon target</h2>
-      <p class="countdown-sub">The UK government has committed to decarbonising the electricity system by the end of 2030. How long do we have?</p>
+      <p class="countdown-sub">New Zealand has set a goal of 100% renewable electricity by 2030. How long do we have?</p>
       <div class="countdown-strip">
         <div class="countdown-unit">
           <div class="countdown-num" id="cd-years">—</div>
@@ -443,8 +444,8 @@
     </div>
 
     <div style="margin-top:32px; padding:16px; background:var(--brand-bg); border-radius:6px; font-size:14px;">
-      MyGridGB ran a petition for solar on all new homes in the UK. The petition didn't work, but that's democracy.
-      <a href="about/index.html#solar-petition">Read the justification here.</a>
+      New Zealand has a unique opportunity to lead the world in clean electricity. With the right policy settings, 100% renewable electricity by 2030 is within reach.
+      <a href="about/index.html">Read more about MyGridNZ.</a>
     </div>
   </main>
 

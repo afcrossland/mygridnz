@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Last 28 Days — MyGridGB</title>
-  <meta name="description" content="British electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
+  <title>Last 28 Days — MyGridNZ</title>
+  <meta name="description" content="New Zealand electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
   <!-- Open Graph -->
   <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://www.mygridgb.co.uk/last-28-days/">
-  <meta property="og:title"       content="Last 28 Days — MyGridGB">
-  <meta property="og:description" content="British electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
-  <meta property="og:image"       content="https://www.mygridgb.co.uk/images/mygridgb-logo.png">
+  <meta property="og:url"         content="https://www.mygrid.nz/last-28-days/">
+  <meta property="og:title"       content="Last 28 Days — MyGridNZ">
+  <meta property="og:description" content="New Zealand electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
+  <meta property="og:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary">
-  <meta name="twitter:site"        content="@mygridgb">
-  <meta name="twitter:title"       content="Last 28 Days — MyGridGB">
-  <meta name="twitter:description" content="British electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
-  <meta name="twitter:image"       content="https://www.mygridgb.co.uk/images/mygridgb-logo.png">
+  <meta name="twitter:site"        content="@mygridnz">
+  <meta name="twitter:title"       content="Last 28 Days — MyGridNZ">
+  <meta name="twitter:description" content="New Zealand electricity generation over the last 28 days — hourly data, generation mix and carbon intensity.">
+  <meta name="twitter:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/nav.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -27,11 +27,11 @@
 <div class="page-wrap">
   <main>
     <h1 class="page-title">Last 28 Days</h1>
-    <p class="page-intro">British electricity generation over the last 28 days. Data sources: MyGridGB, Elexon Portal, Sheffield University.</p>
+    <p class="page-intro">New Zealand electricity generation over the last 28 days. Data sources: MyGridNZ, Electricity Market Information (EMI), Transpower.</p>
 
     <!-- Treemap -->
     <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:24px 0 8px;">Generation mix share</h2>
-    <p style="color:var(--muted); margin-bottom:16px;">Each tile shows the average contribution of a fuel type to British electricity over the last 28 days, sized by its share of the mix. In windy periods, renewables dominate; gas and nuclear fill the gaps when weather-dependent generation is low.</p>
+    <p style="color:var(--muted); margin-bottom:16px;">Each tile shows the average contribution of a fuel type to New Zealand electricity over the last 28 days, sized by its share of the mix. In windy and wet periods, renewables dominate; gas fills the gaps when weather-dependent generation is low.</p>
     <div style="position:relative; height:420px;">
       <canvas id="treemap-chart"></canvas>
     </div>
@@ -51,7 +51,7 @@
 
     <!-- Carbon intensity -->
     <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:40px 0 12px;">Carbon intensity</h2>
-    <p style="color:var(--muted); margin-bottom:20px;">Hourly carbon intensity of British electricity over the last 28 days (gCO₂eq/kWh). The red line marks the 2030 clean power target of 100 gCO₂eq/kWh. Intensity falls when renewables are generating strongly and rises when gas fills a larger share of demand.</p>
+    <p style="color:var(--muted); margin-bottom:20px;">Hourly carbon intensity of New Zealand electricity over the last 28 days (gCO₂eq/kWh). The red line marks the 2030 clean power target. Intensity falls when renewables are generating strongly and rises when gas fills a larger share of demand.</p>
     <div style="position:relative; height:320px;">
       <canvas id="carbon-intensity-chart"></canvas>
     </div>

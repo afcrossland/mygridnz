@@ -3,7 +3,7 @@
 const NAV_HTML = `
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="/index.html">MyGrid<span class="logo-accent">GB</span></a>
+    <a class="logo" href="/index.html">MyGrid<span class="logo-accent">NZ</span> 🇳🇿</a>
     <button id="nav-toggle" aria-label="Toggle menu">
       <span></span><span></span><span></span>
     </button>
@@ -18,22 +18,10 @@ const NAV_HTML = `
             <li><a href="/carbon-tracker/index.html">Carbon Tracker</a></li>
           </ul>
         </li>
-        <li><a href="/2030grid/index.html">The 2030 Blueprint</a></li>
-        <li>
-          <a href="/map/index.html">Resources ▾</a>
-          <ul>
-            <li><a href="/map/index.html">UK Renewable Energy Map</a></li>
-            <li><a href="https://renewables-map.robinhawkes.com/#5/55/-3.2" target="_blank">GB Renewables Map (External)</a></li>
-            <li><a href="/educational-resources/index.html">Educational Resources</a></li>
-            <li><a href="https://substack.com/@afcrossland" target="_blank">Blog (Substack)</a></li>
-          </ul>
-        </li>
-
-        <li><a href="/podcast/index.html">In the Media</a></li>
         <li>
           <a href="/about/index.html">About ▾</a>
           <ul>
-            <li><a href="/about/index.html">About MyGridGB</a></li>
+            <li><a href="/about/index.html">About MyGridNZ</a></li>
             <li><a href="/about-me/index.html">About Me</a></li>
           </ul>
         </li>
@@ -44,8 +32,8 @@ const NAV_HTML = `
 
 const FOOTER_HTML = `
 <footer id="site-footer">
-  <p>MyGridGB is kindly supported by the <a href="https://www.dur.ac.uk/dei/" target="_blank">Durham Energy Institute</a>.</p>
-  <p style="margin-top:8px">© MyGridGB · <a href="https://twitter.com/mygridgb" target="_blank">@mygridgb on X</a> · <a href="https://bsky.app/profile/mygridgb.bsky.social" target="_blank">Bluesky</a></p>
+  <p>MyGridNZ is kindly supported by the <a href="https://www.dur.ac.uk/dei/" target="_blank">Durham Energy Institute</a>.</p>
+  <p style="margin-top:8px">© MyGridNZ · <a href="https://twitter.com/mygridnz" target="_blank">@mygridnz on X</a> · <a href="https://bsky.app/profile/mygridnz.bsky.social" target="_blank">Bluesky</a></p>
 </footer>`;
 
 const SIDEBAR_HTML = `
@@ -55,7 +43,7 @@ const SIDEBAR_HTML = `
     <a href="https://www.dur.ac.uk/dei/" target="_blank" style="display:block; text-align:center;">
       <img src="/images/dei.webp" alt="Durham Energy Institute">
     </a>
-    <p>MyGridGB is kindly supported by the Durham Energy Institute.</p>
+    <p>MyGridNZ is kindly supported by the Durham Energy Institute.</p>
   </div>
   <div class="bottom-card">
     <div class="bottom-card-label">Book</div>
@@ -66,9 +54,9 @@ const SIDEBAR_HTML = `
   </div>
   <div class="bottom-card">
     <div class="bottom-card-label">Connect</div>
-    <p style="margin-bottom:12px">Follow for the latest GB electricity data and analysis, or connect on LinkedIn.</p>
-    <a href="https://twitter.com/intent/follow?screen_name=mygridgb" target="_blank" class="follow-btn">Follow @mygridgb on X</a>
-    <a href="https://bsky.app/profile/mygridgb.bsky.social" target="_blank" class="follow-btn" style="background:#0085ff">Follow on Bluesky</a>
+    <p style="margin-bottom:12px">Follow for the latest New Zealand electricity data and analysis, or connect on LinkedIn.</p>
+    <a href="https://twitter.com/intent/follow?screen_name=mygridnz" target="_blank" class="follow-btn">Follow @mygridnz on X</a>
+    <a href="https://bsky.app/profile/mygridnz.bsky.social" target="_blank" class="follow-btn" style="background:#0085ff">Follow on Bluesky</a>
     <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2">Connect on LinkedIn</a>
   </div>
 </div>`;
