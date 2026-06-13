@@ -114,7 +114,6 @@
 
 <script>
 (async () => {
-  const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
   const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -146,7 +145,7 @@
       .map(([label, sumMW]) => ({ label, source: label, value: Math.round(sumMW / 2000) }));
   }
 
-  const MONTHLY_ID = '1m6TYuBQfHMjyA5O3w4JOommPexE3rfdN-ht4jRjPtiM';
+  const MONTHLY_ID = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps';
   const url = `https://docs.google.com/spreadsheets/d/${MONTHLY_ID}/gviz/tq?tqx=out:json`;
   const t = await (await fetch(url)).text();
   const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
