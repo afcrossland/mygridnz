@@ -38,7 +38,7 @@
     /* ── Comparison stat strip ── */
     .compare-strip {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 16px;
       margin: 28px 0 36px;
     }
@@ -240,9 +240,6 @@
     .mobile-only  { display: none; }
     .desktop-only { display: inline; }
 
-    @media (max-width: 1100px) {
-      .compare-strip { grid-template-columns: repeat(3, 1fr); }
-    }
     @media (max-width: 900px) {
       .compare-strip { grid-template-columns: repeat(3, 1fr); }
     }
@@ -268,6 +265,8 @@
     <div class="compare-strip" id="compare-strip"></div>
     <!-- LCOE 3-stage card (populated by JS) -->
     <div id="lcoe-card"></div>
+    <!-- Marginal price card (populated by JS) -->
+    <div id="marginal-card" style="margin-top:16px;"></div>
 
     <!-- How it works (collapsed by default) -->
     <details class="manifesto-details" style="margin-bottom:36px;">
@@ -281,7 +280,7 @@
           <li><strong>Hydro and geothermal retained</strong> — the backbone of NZ's renewable electricity, unchanged</li>
           <li><strong>2.2 GW of wind</strong> — a significant expansion of the existing wind fleet</li>
           <li><strong>2.5 GW of solar</strong> — equivalent to fitting fewer than 3 × 500 W panels on every home in New Zealand; a modest ask per household that adds up to a major generation resource nationally</li>
-          <li><strong>1,000 MW / 4,000 MWh of battery storage</strong> — a 4-hour battery large enough to shift solar and wind generation into evening peaks and bridge short-duration dry and calm spells</li>
+          <li><strong>1,000 MW / 4,000 MWh of battery storage</strong> — a 4-hour battery that does two jobs: shifting solar and wind generation into evening peaks and bridging short-duration dry and calm spells; and providing the inertia, frequency response and voltage support that spinning thermal generators in the North Island currently supply, allowing those gas plant to run far less while keeping the grid stable</li>
           <li><strong>No new gas</strong> — existing gas retained only as an emergency last resort</li>
           <li><strong>No coal</strong></li>
         </ul>
@@ -316,8 +315,8 @@
     <div class="filter-bar" id="ts-filter">
       <span class="filter-bar-label">Show:</span>
       <button class="filter-btn" data-hours="48">Last 48 hrs</button>
-      <button class="filter-btn active" data-hours="168">Last 7 days</button>
-      <button class="filter-btn" data-hours="672">Last 28 days</button>
+      <button class="filter-btn" data-hours="168">Last 7 days</button>
+      <button class="filter-btn active" data-hours="672">Last 28 days</button>
       <button class="filter-btn" data-hours="0">All data</button>
     </div>
     <div style="position:relative; height:420px;">
@@ -360,11 +359,12 @@
 
   // Sheet 2 (timeseries) columns: Date(0), Hour(1), Geothermal(2), Solar(3), Wind(4), Storage(5), Hydro(6), Wood(7), Gas(8), Diesel(9), Other(10)
   // Values are in MW; divided by 1000 → GW when building datasets
+  // Plot order = stacking order (bottom to top)
   const TIME_SOURCES = [
-    { label: 'Hydro',      col: 6, color: '#3b82f6' },
     { label: 'Geothermal', col: 2, color: '#ef4444' },
     { label: 'Wind',       col: 4, color: '#0d9e6e' },
     { label: 'Solar',      col: 3, color: '#f59e0b' },
+    { label: 'Hydro',      col: 6, color: '#3b82f6' },
     { label: 'Wood',       col: 7, color: '#824e1a' },
     { label: 'Storage',    col: 5, color: '#f96c00' },
     { label: 'Gas',        col: 8, color: '#6b7280' },
@@ -574,8 +574,6 @@
         now: actual.gasPct, after: manifesto.gasPct, nowGood: false },
       { label: 'Thermal Losses',   suffix: '<span class="compare-val-sfx">%</span>', unit: '% of input energy',
         now: actual.thermalLossPct, after: manifesto.thermalLossPct, nowGood: false },
-      { label: 'Wholesale Price',  prefix: 'NZD ', suffix: '<span class="compare-val-sfx">/MWh</span>', unit: 'Est. marginal wholesale price',
-        now: mpActual, after: mpBlueprint, nowGood: false },
     ];
 
     metrics.forEach(m => {
@@ -613,6 +611,25 @@
           </div>
         </div>
         <div class="compare-unit" style="margin-top:10px">This is the <strong>Levelised Cost of Energy (LCOE)</strong> — the lifetime build-and-run cost per MWh for each power station, averaged across the whole mix. It answers the question: what price would each generator need to charge to cover all its costs? The third figure assumes 50% of surplus renewable electricity displaces fossil fuels for transport and heating, which effectively lowers the cost per unit of useful energy.</div>`;
+    }
+
+    // Marginal price card
+    const marginalEl = document.getElementById('marginal-card');
+    if (marginalEl) {
+      marginalEl.innerHTML = `
+        <div class="compare-card-label">Wholesale electricity price — what generators actually get paid</div>
+        <div class="lcoe-stages">
+          <div class="lcoe-stage">
+            <div class="compare-val compare-val--now">NZD ${mpActual}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="lcoe-stage-label">Today's mix</div>
+          </div>
+          <span class="compare-arrow-sym">→</span>
+          <div class="lcoe-stage">
+            <div class="compare-val compare-val--manifesto">NZD ${mpBlueprint}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="lcoe-stage-label">Blueprint</div>
+          </div>
+        </div>
+        <div class="compare-unit" style="margin-top:10px">Electricity markets use <strong>marginal pricing</strong> — the most expensive generator running at any moment sets the wholesale price paid to <em>all</em> generators. Today that is usually gas, pushing prices up for everyone. In the Blueprint, gas is rarely dispatched, so renewables with near-zero running costs set the price instead. This is how building more wind and solar can lower your electricity bill even while the total system costs more to build.</div>`;
     }
 
     // Helper: build sorted fuel list + pie data from a fuel data object
@@ -720,7 +737,7 @@
       return ds;
     }
 
-    const initHours = 168;
+    const initHours = 672;
     const initRows  = allRows.slice(-initHours);
     // col 0 is a date; col 1 is hour (0-23). Try Google Date format first, fall back to string.
     function rowDateLabel(r) {
