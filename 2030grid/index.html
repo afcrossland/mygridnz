@@ -38,7 +38,7 @@
     /* ── Comparison stat strip ── */
     .compare-strip {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 16px;
       margin: 28px 0 36px;
     }
@@ -240,6 +240,9 @@
     .mobile-only  { display: none; }
     .desktop-only { display: inline; }
 
+    @media (max-width: 1100px) {
+      .compare-strip { grid-template-columns: repeat(3, 1fr); }
+    }
     @media (max-width: 900px) {
       .compare-strip { grid-template-columns: repeat(3, 1fr); }
     }
@@ -273,17 +276,18 @@
         How the 2030 Blueprint works
       </summary>
       <div class="manifesto-body">
-        <p>To reach 100% renewable electricity I've made the following changes to the electricity mix:</p>
+        <p>The Blueprint simulates Aotearoa New Zealand's electricity system with the following generating capacity in place:</p>
         <ul>
-          <li>Existing hydro and geothermal capacity retained (Aotearoa New Zealand's renewable backbone)</li>
-          <li>3× the amount of wind generation</li>
-          <li>3× the amount of solar generation (solar on every suitable rooftop)</li>
-          <li>No new gas; existing gas used only as an emergency last resort</li>
-          <li>No coal</li>
-          <li>Large-scale battery storage — enough to bridge low-wind, low-hydro periods</li>
+          <li><strong>Hydro and geothermal retained</strong> — the backbone of NZ's renewable electricity, unchanged</li>
+          <li><strong>2.2 GW of wind</strong> — a significant expansion of the existing wind fleet</li>
+          <li><strong>2.5 GW of solar</strong> — equivalent to fitting fewer than 3 × 500 W panels on every home in New Zealand; a modest ask per household that adds up to a major generation resource nationally</li>
+          <li><strong>1,000 MW / 4,000 MWh of battery storage</strong> — a 4-hour battery large enough to shift solar and wind generation into evening peaks and bridge short-duration dry and calm spells</li>
+          <li><strong>No new gas</strong> — existing gas retained only as an emergency last resort</li>
+          <li><strong>No coal</strong></li>
         </ul>
-        <p>Dispatch order: hydro and geothermal run baseload, then wind and solar. When supply exceeds demand, storage charges until full — then wind and solar are curtailed. Gas is the absolute last resort, used only when all other sources are insufficient.</p>
-        <p>The assumptions are sufficient to show whether enough low carbon electricity can be generated when it is needed. They are not a complete optimisation of cost or carbon reduction. Demand profiles are not changed.</p>
+        <p>Dispatch order: hydro and geothermal run baseload, then wind and solar fill available demand. When supply exceeds demand, storage charges until full — then wind and solar are curtailed. Gas is the absolute last resort, used only when all other sources are insufficient.</p>
+        <p>The assumptions are sufficient to show whether enough low-carbon electricity can be generated when it is needed. They are not a complete optimisation of cost or system design. Demand profiles are not changed.</p>
+        <p><strong>Two cost measures are shown.</strong> The <em>Levelised Cost of Energy (LCOE)</em> is the lifetime build-and-run cost per MWh — it answers "what does this mix actually cost to build and operate?" The <em>Wholesale Price</em> estimate uses marginal pricing — the way electricity markets actually work. The last (most expensive) generator dispatched sets the spot price paid to <em>all</em> generators. Because renewables have near-zero fuel costs, they are dispatched first. In the Blueprint, gas is rarely needed, so it rarely sets the price — meaning wholesale electricity prices fall even though the capital cost of the system rises. This is the mechanism by which more renewables can lead to lower electricity bills.</p>
         <p>The 2030 Blueprint is outlined in my book <em>Decarbonising Electricity: Made Simple</em>. For the full methodology, see: Crossland et al., <em>Assessment of Electricity Decarbonization Scenarios for New Zealand and Great Britain</em>, Energies 2020, 13, 2799. <a href="https://doi.org/10.3390/en13112799" target="_blank">doi:10.3390/en13112799</a></p>
         <p>Full LCOE assumptions — including source data, the gas load-factor formula, curtailment accounting, and the nuclear exclusion rationale — are documented in the <a href="/about/index.html#lcoe-methodology">About page methodology section</a>.</p>
       </div>
@@ -384,6 +388,7 @@
   }
 
   // ── LCOE per source (NZD/MWh, approximate 2024 NZ prices) ──
+  // LCOE = lifetime cost to build + run ÷ lifetime output. Answers: "what price does each plant need to break even?"
   const LCOE_RATES = {
     Hydro:         40,   // Existing fleet (fully amortised large hydro)
     Geothermal:    85,   // Operating cost + well maintenance
@@ -394,6 +399,29 @@
     Coal:         260,   // High carbon cost + fuel
     Diesel:       350,   // Peaking diesel, high fuel cost
   };
+
+  // ── Marginal cost per source (NZD/MWh, short-run variable cost only) ──
+  // In a wholesale electricity market the marginal generator (last one dispatched) sets the price for everyone.
+  // More renewables → gas rarely dispatched → lower wholesale price → lower bills.
+  const MARGINAL_COSTS = {
+    Solar:         0,    // zero fuel cost
+    Wind:          5,    // near-zero
+    Hydro:         5,    // near-zero (water has opportunity cost but low variable cost)
+    Storage:      20,    // roundtrip efficiency loss
+    Geothermal:   25,    // operating cost
+    Wood:        100,    // fuel cost
+    Coal:         90,    // fuel + ETS carbon cost
+    Gas:         140,    // fuel + ETS carbon cost
+    Diesel:      220,    // high fuel cost
+  };
+
+  function marginalPrice(fd) {
+    const active = MIX_SOURCES
+      .filter(s => (fd[s.label] ?? 0) > 0)
+      .sort((a, b) => (MARGINAL_COSTS[a.label] ?? 0) - (MARGINAL_COSTS[b.label] ?? 0));
+    if (!active.length) return 0;
+    return MARGINAL_COSTS[active[active.length - 1].label] ?? 0;
+  }
 
   // Gas LCOE is load-factor dependent:
   //   low LF (peaking) → very high cost; high LF (baseload) → closer to NZD 140/MWh
@@ -532,6 +560,9 @@
 
     // Comparison strip
     const stripEl = document.getElementById('compare-strip');
+    const mpActual    = marginalPrice(fuelActual);
+    const mpBlueprint = marginalPrice(fuelBlueprint);
+
     const metrics = [
       { label: 'Carbon Intensity', suffix: '<span class="compare-val-sfx"> g/kWh</span>', unit: 'gCO₂eq/kWh',
         now: actual.ci,    after: manifesto.ci,    nowGood: false },
@@ -543,6 +574,8 @@
         now: actual.gasPct, after: manifesto.gasPct, nowGood: false },
       { label: 'Thermal Losses',   suffix: '<span class="compare-val-sfx">%</span>', unit: '% of input energy',
         now: actual.thermalLossPct, after: manifesto.thermalLossPct, nowGood: false },
+      { label: 'Wholesale Price',  prefix: 'NZD ', suffix: '<span class="compare-val-sfx">/MWh</span>', unit: 'Est. marginal wholesale price',
+        now: mpActual, after: mpBlueprint, nowGood: false },
     ];
 
     metrics.forEach(m => {
@@ -562,11 +595,11 @@
     const lcoeEl = document.getElementById('lcoe-card');
     if (lcoeEl) {
       lcoeEl.innerHTML = `
-        <div class="compare-card-label">System LCOE <a href="/about/index.html#lcoe-methodology" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--brand);margin-left:6px;">methodology ↗</a></div>
+        <div class="compare-card-label">True system cost — what does it actually cost to build and run this mix? <a href="/about/index.html#lcoe-methodology" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--brand);margin-left:6px;">methodology ↗</a></div>
         <div class="lcoe-stages">
           <div class="lcoe-stage">
             <div class="compare-val compare-val--now">NZD ${actualLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
-            <div class="lcoe-stage-label">Today</div>
+            <div class="lcoe-stage-label">Today's mix</div>
           </div>
           <span class="compare-arrow-sym">→</span>
           <div class="lcoe-stage">
@@ -576,10 +609,10 @@
           <span class="compare-arrow-sym">→</span>
           <div class="lcoe-stage">
             <div class="compare-val compare-val--manifesto">NZD ${manifestoUsefulLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
-            <div class="lcoe-stage-label">Blueprint + useful curtailment</div>
+            <div class="lcoe-stage-label">Blueprint + surplus used for EVs &amp; heating</div>
           </div>
         </div>
-        <div class="compare-unit">NZD/MWh delivered — decarbonisation slightly raises cost, but using curtailed renewables to displace petrol &amp; fossil gas brings it below today's level</div>`;
+        <div class="compare-unit" style="margin-top:10px">This is the <strong>Levelised Cost of Energy (LCOE)</strong> — the lifetime build-and-run cost per MWh for each power station, averaged across the whole mix. It answers the question: what price would each generator need to charge to cover all its costs? The third figure assumes 50% of surplus renewable electricity displaces fossil fuels for transport and heating, which effectively lowers the cost per unit of useful energy.</div>`;
     }
 
     // Helper: build sorted fuel list + pie data from a fuel data object
