@@ -353,15 +353,17 @@
     { label: 'Diesel',     col: 9, color: '#9ca3af', carbon: 650, lowCarbon: false, renewable: false },
   ];
 
-  // Sheet 2 (timeseries) columns: DateTime(0), Hydro(1), Geothermal(2), Wind(3), Solar(4), Wood(5), Storage(6), Gas(7), Curtailment(8)
+  // Sheet 2 (timeseries) columns: Date(0), Hour(1), Geothermal(2), Solar(3), Wind(4), Storage(5), Hydro(6), Wood(7), Gas(8), Diesel(9), Other(10)
+  // Values are in MW; divided by 1000 → GW when building datasets
   const TIME_SOURCES = [
-    { label: 'Hydro',      col: 1, color: '#3b82f6' },
+    { label: 'Hydro',      col: 6, color: '#3b82f6' },
     { label: 'Geothermal', col: 2, color: '#ef4444' },
-    { label: 'Wind',       col: 3, color: '#0d9e6e' },
-    { label: 'Solar',      col: 4, color: '#f59e0b' },
-    { label: 'Wood',       col: 5, color: '#824e1a' },
-    { label: 'Storage',    col: 6, color: '#f96c00' },
-    { label: 'Gas',        col: 7, color: '#6b7280' },
+    { label: 'Wind',       col: 4, color: '#0d9e6e' },
+    { label: 'Solar',      col: 3, color: '#f59e0b' },
+    { label: 'Wood',       col: 7, color: '#824e1a' },
+    { label: 'Storage',    col: 5, color: '#f96c00' },
+    { label: 'Gas',        col: 8, color: '#6b7280' },
+    { label: 'Diesel',     col: 9, color: '#9ca3af' },
   ];
 
   async function fetchTable(id, gid) {
@@ -637,7 +639,7 @@
   // ── Timeseries ────────────────────────────────────────────────────
   if (tsResult.status === 'fulfilled') {
     const allRows = tsResult.value.rows.filter(r => r.c.slice(1).some(c => c && c.v != null));
-    const hasCurtail = allRows.some(r => r.c[8]?.v > 0);
+    const hasCurtail = false; // sheet has no curtailment column
 
     function buildShowLabelAt(filteredLabels, hours) {
       const set = new Set();
@@ -658,7 +660,7 @@
     function buildDatasets(rows) {
       const ds = TIME_SOURCES.map(src => ({
         label: src.label,
-        data: rows.map(r => r.c[src.col]?.v ?? null),
+        data: rows.map(r => r.c[src.col]?.v != null ? r.c[src.col].v / 1000 : null),
         backgroundColor: src.color,
         borderColor: src.color,
         borderWidth: 0.5,
@@ -686,7 +688,8 @@
 
     const initHours = 168;
     const initRows  = allRows.slice(-initHours);
-    const initLabels = initRows.map(r => { const d = parseGDate(r.c[0].v); return d ? fmtDate(d) : ''; });
+    // col 0 is already a date string ("13 Jun"); col 1 is hour (0-23)
+    const initLabels = initRows.map(r => String(r.c[0]?.v ?? ''));
 
     const tsChart = new Chart(document.getElementById('timeseries-chart'), {
       type: 'line',
@@ -732,7 +735,7 @@
       btn.classList.add('active');
       const hours = parseInt(btn.dataset.hours, 10);
       const rows  = hours > 0 ? allRows.slice(-hours) : allRows;
-      const lbls  = rows.map(r => { const d = parseGDate(r.c[0].v); return d ? fmtDate(d) : ''; });
+      const lbls  = rows.map(r => String(r.c[0]?.v ?? ''));
       const showAt = buildShowLabelAt(lbls, hours);
       tsChart.data.labels = lbls;
       buildDatasets(rows).forEach((ds, i) => { tsChart.data.datasets[i].data = ds.data; });
