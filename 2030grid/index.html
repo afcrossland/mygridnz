@@ -245,6 +245,7 @@
     }
     @media (max-width: 760px) {
       .compare-strip { grid-template-columns: repeat(2, 1fr); }
+      .cost-cards    { grid-template-columns: 1fr !important; }
       .compare-mix   { grid-template-columns: 1fr; }
       .compare-arrow-col { display: none; }
       .mobile-only  { display: inline; }
@@ -263,10 +264,11 @@
 
     <!-- Comparison stat strip (populated by JS) -->
     <div class="compare-strip" id="compare-strip"></div>
-    <!-- LCOE 3-stage card (populated by JS) -->
-    <div id="lcoe-card"></div>
-    <!-- Marginal price card (populated by JS) -->
-    <div id="marginal-card" style="margin-top:16px;"></div>
+    <!-- Cost cards: LCOE + Wholesale Price side by side -->
+    <div class="cost-cards" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+      <div id="lcoe-card"></div>
+      <div id="marginal-card"></div>
+    </div>
 
     <!-- How it works (collapsed by default) -->
     <details class="manifesto-details" style="margin-bottom:36px;">
