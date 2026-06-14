@@ -71,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div class="bottom-card">
     <div class="bottom-card-label">Connect</div>
-    <p style="margin-bottom:12px">Connect on LinkedIn for the latest Aotearoa New Zealand electricity data and analysis.</p>
-    <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2">Connect on LinkedIn</a>
+    <p style="margin-bottom:12px">I'm Andrew Crossland — I share analysis and updates on Aotearoa New Zealand and Great Britain electricity decarbonisation. Connect with me on LinkedIn.</p>
+    <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2">Connect with Andrew</a>
   </div>
 </div>`;
 
