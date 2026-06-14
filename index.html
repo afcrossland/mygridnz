@@ -583,7 +583,7 @@
         if (v > 0.001) { lSrc.push(s); lTgt.push(t); lVal.push(+v.toFixed(3)); lCol.push(c); }
       };
 
-      // Geothermal gets its own "Spare heat" node; other thermals share "Thermal losses"
+      // Geothermal gets its own discharge node; other thermals share "Thermal losses"
       const combustionFuels = ['Gas','Coal','Diesel','Wood'].filter(n => gw[n] > 0);
       const geoFuels        = ['Geothermal'].filter(n => gw[n] > 0);
       const directSources   = ['Hydro','Wind','Solar'].filter(n => gw[n] > 0);
@@ -604,7 +604,7 @@
       // Middle column: spare heat (geothermal), thermal losses (combustion), electricity grid
       const geoSpareHeat = geoFuels.reduce((s, n) => s + (EFF[n] ? gw[n] / EFF[n] - gw[n] : 0), 0);
       const hasGeoSpare  = geoSpareHeat > 0.001;
-      const spareHeatNode = hasGeoSpare ? addNode('Spare heat', 'rgba(239,68,68,0.75)', 0.40, 0.05) : -1;
+      const spareHeatNode = hasGeoSpare ? addNode('Approx. geothermal heat discharge', 'rgba(239,68,68,0.75)', 0.40, 0.05) : -1;
 
       let thermalLossTotal = 0;
       combustionFuels.forEach(n => { if (EFF[n]) thermalLossTotal += gw[n] / EFF[n] - gw[n]; });
