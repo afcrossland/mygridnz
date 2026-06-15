@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <p style="margin:4px 0 12px;">Energy engineer, author &amp; researcher sharing analysis on Aotearoa NZ and GB electricity decarbonisation.</p>
     <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
       <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2;text-align:center;">Connect on LinkedIn</a>
+      <a href="https://www.researchgate.net/profile/Andrew-Crossland" target="_blank" class="follow-btn" style="background:#00d0af;text-align:center;">ResearchGate ↗</a>
       <a href="https://www.future-zero.com" target="_blank" class="follow-btn" style="background:var(--brand);text-align:center;">future-zero.com ↗</a>
     </div>
   </div>
