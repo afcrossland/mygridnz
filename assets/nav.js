@@ -71,8 +71,18 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div class="bottom-card">
     <div class="bottom-card-label">Connect</div>
-    <p style="margin-bottom:12px">I'm Andrew Crossland — I share analysis and updates on Aotearoa New Zealand and Great Britain electricity decarbonisation. Connect with me on LinkedIn.</p>
-    <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2">Connect with Andrew</a>
+    <a href="https://www.linkedin.com/in/afcrossland" target="_blank" style="display:block;text-align:center;text-decoration:none;">
+      <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;display:block;margin:0 auto 10px;">
+        <rect width="72" height="72" rx="8" fill="#0a66c2"/>
+        <path fill="#fff" d="M13.4 27.5h9.2v29.1h-9.2zm4.6-14.7a5.35 5.35 0 110 10.7 5.35 5.35 0 010-10.7zM28.2 27.5h8.8v4h.1c1.2-2.3 4.2-4.7 8.7-4.7 9.3 0 11 6.1 11 14.1v16.2h-9.1V42.7c0-3.4-.1-7.8-4.7-7.8-4.8 0-5.5 3.7-5.5 7.5v14.2h-9.3z"/>
+      </svg>
+      <span style="font-size:13px;font-weight:600;color:#0a66c2;">Andrew Crossland</span>
+    </a>
+    <p style="margin:4px 0 12px;">Energy engineer, author &amp; researcher sharing analysis on Aotearoa NZ and GB electricity decarbonisation.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+      <a href="https://www.linkedin.com/in/afcrossland" target="_blank" class="follow-btn" style="background:#0a66c2;text-align:center;">Connect on LinkedIn</a>
+      <a href="https://www.future-zero.com" target="_blank" class="follow-btn" style="background:var(--brand);text-align:center;">future-zero.com ↗</a>
+    </div>
   </div>
 </div>`;
 

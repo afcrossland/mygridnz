@@ -237,6 +237,49 @@
       margin-top: 3px;
     }
 
+    /* ── Insight callout tiles ── */
+    .insight-tiles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 0 0 40px;
+    }
+    .insight-tile {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      background: var(--surface);
+    }
+    .insight-tile-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .insight-stat {
+      font-size: 1.9rem;
+      font-weight: 300;
+      color: #15803d;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .insight-stat--warn { color: #b45309; }
+    .insight-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .insight-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .insight-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .insight-row-label { color: var(--muted); }
+    .insight-row-val   { font-weight: 600; color: var(--text); }
+    .insight-note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    @media (max-width: 600px) { .insight-tiles { grid-template-columns: 1fr; } }
+
     /* ── Responsive text helpers ── */
     .mobile-only  { display: none; }
     .desktop-only { display: inline; }
@@ -255,6 +298,46 @@
     @media (max-width: 400px) {
       .compare-strip { grid-template-columns: 1fr; }
     }
+
+    /* ── Capacity progress tiles ── */
+    .capacity-tiles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0 0;
+    }
+    .capacity-tile {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      background: var(--surface);
+    }
+    .capacity-tile-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .capacity-nums {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .capacity-now  { font-size: 1.7rem; font-weight: 300; color: var(--text); line-height: 1; }
+    .capacity-target { font-size: 0.9rem; color: var(--muted); }
+    .capacity-bar-wrap {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .capacity-bar { height: 100%; border-radius: 4px; }
+    .capacity-note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    @media (max-width: 500px) { .capacity-tiles { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -277,8 +360,34 @@
       <div id="marginal-card"></div>
     </div>
 
+    <!-- Capacity progress: current vs blueprint target -->
+    <div class="capacity-tiles">
+      <div class="capacity-tile">
+        <div class="capacity-tile-label">Wind capacity — today vs blueprint</div>
+        <div class="capacity-nums">
+          <span class="capacity-now">~0.9 GW</span>
+          <span class="capacity-target">Target: 2.2–2.5 GW</span>
+        </div>
+        <div class="capacity-bar-wrap">
+          <div class="capacity-bar" style="width:39%;background:#0d9e6e;"></div>
+        </div>
+        <div class="capacity-note">Q4 2025 installed capacity. Blueprint needs roughly <strong>1.3–1.6 GW of new wind</strong> — achievable with 5–7 large onshore wind farms over 5 years.</div>
+      </div>
+      <div class="capacity-tile">
+        <div class="capacity-tile-label">Solar capacity — today vs blueprint</div>
+        <div class="capacity-nums">
+          <span class="capacity-now">~0.2 GW</span>
+          <span class="capacity-target">Target: 3.2–3.5 GW</span>
+        </div>
+        <div class="capacity-bar-wrap">
+          <div class="capacity-bar" style="width:6%;background:#f59e0b;"></div>
+        </div>
+        <div class="capacity-note">Q4 2025 installed capacity (residential + utility). Blueprint needs roughly <strong>3.0 GW more solar</strong> — fewer than 4 × 500 W panels per NZ household if distributed, or a mix of utility-scale farms.</div>
+      </div>
+    </div>
+
     <!-- How it works (collapsed by default) -->
-    <details class="manifesto-details" style="margin-bottom:36px;">
+    <details class="manifesto-details" style="margin-bottom:36px;margin-top:24px;">
       <summary class="manifesto-summary">
         <span class="toggle-icon">▶</span>
         How the 2030 Blueprint works
@@ -294,6 +403,7 @@
           <li><strong>No coal</strong></li>
         </ul>
         <p>Dispatch order: hydro and geothermal run baseload, then wind and solar fill available demand. When supply exceeds demand, storage charges until full — then wind and solar are curtailed. Gas is the absolute last resort, used only when all other sources are insufficient.</p>
+        <p><strong>Run-of-river hydro</strong> — approximately 25% of hydro generation is modelled as must-run (run-of-river), reflecting the constraints of South Island rivers that cannot be easily stored. This sets a floor on hydro output regardless of demand or supply conditions.</p>
         <p>The assumptions are sufficient to show whether enough low-carbon electricity can be generated when it is needed. They are not a complete optimisation of cost or system design. Demand profiles are not changed.</p>
         <p><strong>Two cost measures are shown.</strong> The <em>Levelised Cost of Energy (LCOE)</em> is the lifetime build-and-run cost per MWh — it answers "what does this mix actually cost to build and operate?" The <em>Wholesale Price</em> estimate uses marginal pricing — the way electricity markets actually work. The last (most expensive) generator dispatched sets the spot price paid to <em>all</em> generators. Because renewables have near-zero fuel costs, they are dispatched first. In the Blueprint, gas is rarely needed, so it rarely sets the price — meaning wholesale electricity prices fall even though the capital cost of the system rises. This is the mechanism by which more renewables can lead to lower electricity bills.</p>
         <p>The 2030 Blueprint is outlined in my book <em>Decarbonising Electricity: Made Simple</em>. For the full methodology, see: Crossland et al., <em>Assessment of Electricity Decarbonization Scenarios for New Zealand and Great Britain</em>, Energies 2020, 13, 2799. <a href="https://doi.org/10.3390/en13112799" target="_blank">doi:10.3390/en13112799</a></p>
@@ -316,6 +426,12 @@
         <div class="pie-col"><canvas id="pie-manifesto"></canvas></div>
         <div class="fuel-list" id="fuel-manifesto"></div>
       </div>
+    </div>
+
+    <!-- Insight tiles: supply vs demand + curtailment in LCOE -->
+    <div class="insight-tiles" id="insight-tiles" style="display:none;">
+      <div class="insight-tile" id="supply-tile"></div>
+      <div class="insight-tile" id="curtail-tile"></div>
     </div>
 
     <!-- Timeseries -->
@@ -691,6 +807,74 @@
 
     buildPie('pie-actual',    'fuel-actual',    fuelActual);
     buildPie('pie-manifesto', 'fuel-manifesto', fuelBlueprint);
+
+    // ── Insight tiles ─────────────────────────────────────────────────
+    // Compute curtailment totals from curtailRows + fuelBlueprint
+    let totalCurtailGwh = 0, totalGeneratedGwh = 0;
+    const sourceCurtail = [];
+    if (curtailRows.length) {
+      curtailRows.forEach(r => {
+        const label = r.c[0]?.v;
+        const directFrac  = r.c[1]?.v ?? 0;
+        const curtailFrac = r.c[3]?.v ?? 0;
+        const deliveredGwh = fuelBlueprint[label] ?? 0;
+        if (directFrac > 0 && deliveredGwh > 0) {
+          const generated = deliveredGwh / directFrac;
+          const curtailed = generated * curtailFrac;
+          totalGeneratedGwh += generated;
+          totalCurtailGwh   += curtailed;
+          if (curtailFrac > 0.01) sourceCurtail.push({ label, pct: Math.round(curtailFrac * 100) });
+        }
+      });
+    }
+
+    const actualTotalGwh    = Object.values(fuelActual).reduce((s, v) => s + (v ?? 0), 0);
+    const blueprintDelivGwh = Object.values(fuelBlueprint).reduce((s, v) => s + (v ?? 0), 0);
+    const blueprintTotalGwh = blueprintDelivGwh + totalCurtailGwh;
+    const curtailPct = totalGeneratedGwh > 0 ? Math.round(totalCurtailGwh / totalGeneratedGwh * 100) : 0;
+    const gasBlueprintGwh = fuelBlueprint['Gas'] ?? 0;
+    const gasActualGwh    = fuelActual['Gas']    ?? 0;
+    const gasDropPct = gasActualGwh > 0 ? Math.round((1 - gasBlueprintGwh / gasActualGwh) * 100) : 0;
+
+    const supplyEl   = document.getElementById('supply-tile');
+    const curtailEl  = document.getElementById('curtail-tile');
+    if (supplyEl && curtailEl) {
+      document.getElementById('insight-tiles').style.display = '';
+      supplyEl.innerHTML = `
+        <div class="insight-tile-label">Blueprint — supply &amp; demand</div>
+        <div class="insight-stat">${(blueprintDelivGwh / 1000).toFixed(1)} TWh</div>
+        <div class="insight-note" style="margin-top:2px;margin-bottom:0">delivered to consumers (Blueprint)</div>
+        <div class="insight-rows" style="margin-top:12px;">
+          <div class="insight-row">
+            <span class="insight-row-label">Today's grid delivers</span>
+            <span class="insight-row-val">${(actualTotalGwh / 1000).toFixed(1)} TWh</span>
+          </div>
+          <div class="insight-row">
+            <span class="insight-row-label">Blueprint total generated</span>
+            <span class="insight-row-val">${(blueprintTotalGwh / 1000).toFixed(1)} TWh</span>
+          </div>
+          <div class="insight-row">
+            <span class="insight-row-label">Gas use in Blueprint</span>
+            <span class="insight-row-val">${gasDropPct > 0 ? '−'+gasDropPct+'%' : (gasBlueprintGwh / 1000).toFixed(1)+' TWh'}</span>
+          </div>
+        </div>
+        <p class="insight-note">Demand is unchanged — the Blueprint serves the same load with a different mix. Generation is higher because some renewable output is curtailed (see right).</p>`;
+
+      const curtailRows2 = sourceCurtail.sort((a, b) => b.pct - a.pct);
+      supplyEl.innerHTML = supplyEl.innerHTML; // no-op, already set
+      curtailEl.innerHTML = `
+        <div class="insight-tile-label">Renewable curtailment &amp; LCOE</div>
+        <div class="insight-stat insight-stat--warn">${curtailPct}%</div>
+        <div class="insight-note" style="margin-top:2px;margin-bottom:0">of Blueprint wind &amp; solar generation is curtailed</div>
+        <div class="insight-rows" style="margin-top:12px;">
+          ${curtailRows2.map(s => `
+          <div class="insight-row">
+            <span class="insight-row-label">${s.label} curtailed</span>
+            <span class="insight-row-val">${s.pct}%</span>
+          </div>`).join('')}
+        </div>
+        <p class="insight-note">✓ <strong>Yes — curtailment is already in the LCOE.</strong> The cost calculation pays for all energy generated, including curtailed amounts. The curtailed fraction raises the effective cost per delivered MWh, which is reflected in the "True system cost" figure above.</p>`;
+    }
   }
 
   // ── Timeseries ────────────────────────────────────────────────────
