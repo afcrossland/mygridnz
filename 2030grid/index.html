@@ -396,31 +396,32 @@
     return d.getDate() + ' ' + MONTHS[d.getMonth()];
   }
 
-  // ── LCOE per source (NZD/MWh, approximate 2024 NZ prices) ──
+  // ── LCOE per source (NZD/MWh, approximate 2024 NZ values) ──
   // LCOE = lifetime cost to build + run ÷ lifetime output. Answers: "what price does each plant need to break even?"
+  // These are NZD values based on NZ-specific conditions (amortised hydro fleet, NZ wind/solar resources, NZ labour costs).
   const LCOE_RATES = {
-    Hydro:         40,   // Existing fleet (fully amortised large hydro)
-    Geothermal:    85,   // Operating cost + well maintenance
-    Wind:          95,   // Blend of onshore NZ projects
-    Solar:         75,   // Residential + utility scale blend
-    Wood:         150,   // Biomass thermal including fuel cost
-    Storage:      130,   // Grid-scale BESS capital + O&M
-    Coal:         260,   // High carbon cost + fuel
+    Hydro:         40,   // Existing fleet — fully amortised, O&M only (~$30–50/MWh)
+    Geothermal:    85,   // Well maintenance + O&M (Contact/Mercury fleet, ~$60–90/MWh)
+    Wind:          95,   // Onshore NZ new build (Tilt/Mercury, ~$80–110/MWh)
+    Solar:         90,   // Utility-scale NZ new build (~$75–100/MWh)
+    Wood:         150,   // Biomass including fuel cost
+    Storage:      160,   // Grid-scale BESS capital + O&M (imported battery, NZ install)
+    Coal:         260,   // Fuel + ETS carbon cost (~$60/t CO₂)
     Diesel:       350,   // Peaking diesel, high fuel cost
   };
 
   // ── Marginal cost per source (NZD/MWh, short-run variable cost only) ──
-  // In a wholesale electricity market the marginal generator (last one dispatched) sets the price for everyone.
+  // The marginal generator (last one dispatched) sets the wholesale price paid to all generators.
   // More renewables → gas rarely dispatched → lower wholesale price → lower bills.
   const MARGINAL_COSTS = {
     Solar:         0,    // zero fuel cost
-    Wind:          5,    // near-zero
-    Hydro:         5,    // near-zero (water has opportunity cost but low variable cost)
+    Wind:          5,    // near-zero variable O&M
+    Hydro:         5,    // near-zero (water has opportunity cost but negligible variable cost)
     Storage:      20,    // roundtrip efficiency loss
-    Geothermal:   25,    // operating cost
+    Geothermal:   25,    // variable O&M (~$15–30/MWh)
     Wood:        100,    // fuel cost
-    Coal:         90,    // fuel + ETS carbon cost
-    Gas:         140,    // fuel + ETS carbon cost
+    Coal:         90,    // fuel + ETS (~$60/t CO₂ × ~0.95 t/MWh)
+    Gas:         140,    // fuel + ETS (Pohokura/Kupe gas, high & rising)
     Diesel:      220,    // high fuel cost
   };
 
@@ -432,18 +433,19 @@
     return MARGINAL_COSTS[active[active.length - 1].label] ?? 0;
   }
 
-  // Gas LCOE is load-factor dependent:
-  //   low LF (peaking) → very high cost; high LF (baseload) → closer to NZD 140/MWh
-  // Formula: LCOE = 20 / LF + 130  (fixed capital / load factor + variable fuel+carbon+O&M)
-  const GAS_CAPACITY_GW = 2.5;   // approximate NZ gas fleet (CCGT + OCGT)
-  const WINDOW_HOURS    = 28 * 24;
-  const GAS_LCOE_CAP    = 400;   // NZD/MWh cap for very low load-factor operation
+  // Gas LCOE is load-factor dependent: low utilisation (peaking) → very high cost per MWh
+  // Formula: LCOE = FixedCapital/LF + VariableCost  (NZD/MWh)
+  // Mix sheet contains annual GWh totals, so capacity window = 8760 h/year
+  const GAS_CAPACITY_GW  = 2.5;    // approximate NZ gas fleet (CCGT + OCGT)
+  const GAS_ANNUAL_HOURS = 8760;   // annual hours — mix data is annual GWh totals
+  const GAS_LCOE_CAP     = 400;    // NZD/MWh cap for very low load-factor operation
 
   function gasLcoeFromRow(fd) {
     const gwh = fd['Gas'] ?? 0;
-    if (gwh <= 0) return 180;  // fallback: ~30% LF
-    const lf  = Math.max(0.01, gwh / (GAS_CAPACITY_GW * WINDOW_HOURS));
-    return Math.min(GAS_LCOE_CAP, Math.round(20 / lf + 130));
+    if (gwh <= 0) return 240;  // fallback: ~15% LF baseline assumption
+    // At 30% LF (today ~$175/MWh); at 10% LF (~$305/MWh, capped at $400); at 50% LF (~$150/MWh)
+    const lf  = Math.min(1, Math.max(0.01, gwh / (GAS_CAPACITY_GW * GAS_ANNUAL_HOURS)));
+    return Math.min(GAS_LCOE_CAP, Math.round(20 / lf + 110));
   }
 
   // curtailUsefulFrac: fraction of curtailed energy treated as useful output (e.g. 0.5 = 50% used for EVs)
@@ -614,7 +616,7 @@
             <div class="lcoe-stage-label">Blueprint</div>
           </div>
         </div>
-        <div class="compare-unit" style="margin-top:10px">This is the <strong>Levelised Cost of Energy (LCOE)</strong> — the lifetime build-and-run cost per MWh for each power station, averaged across the whole mix. It answers the question: what price would each generator need to charge to cover all its costs?</div>`;
+        <div class="compare-unit" style="margin-top:10px">This is the <strong>Levelised Cost of Energy (LCOE)</strong> — the lifetime build-and-run cost per MWh for each power station, weighted by how much each generates. NZ's large amortised hydro fleet keeps this below the market wholesale price. Expected range: NZD $65–100/MWh.</div>`;
     }
 
     // Marginal price card
@@ -633,7 +635,7 @@
             <div class="lcoe-stage-label">Blueprint</div>
           </div>
         </div>
-        <div class="compare-unit" style="margin-top:10px">Electricity markets use <strong>marginal pricing</strong> — the most expensive generator running at any moment sets the wholesale price paid to <em>all</em> generators. Today that is usually gas, pushing prices up for everyone. In the Blueprint, gas is rarely dispatched, so renewables with near-zero running costs set the price instead. This is how building more wind and solar can lower your electricity bill even while the total system costs more to build.</div>`;
+        <div class="compare-unit" style="margin-top:10px">Electricity markets use <strong>marginal pricing</strong> — the most expensive generator dispatched at any moment sets the spot price paid to <em>all</em> generators. Today that is usually gas (~NZD $140/MWh variable cost), pushing prices up for everyone. In the Blueprint, gas is rarely needed, so geothermal or storage sets the price instead (~NZD $20–25/MWh variable cost). A low wholesale price here means generators earn less per MWh — it is not the same as LCOE (which covers full capital + running costs).</div>`;
     }
 
     // Helper: build sorted fuel list + pie data from a fuel data object
