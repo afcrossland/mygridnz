@@ -32,8 +32,7 @@ const NAV_HTML = `
 
 const FOOTER_HTML = `
 <footer id="site-footer">
-  <p>MyGridNZ is kindly supported by the <a href="https://www.dur.ac.uk/dei/" target="_blank">Durham Energy Institute</a>.</p>
-  <p style="margin-top:8px">© MyGridNZ</p>
+  <p>© MyGridNZ</p>
 </footer>`;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -55,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const SIDEBAR_HTML = `
 <div class="bottom-cards">
-  <div class="bottom-card">
+  <div class="bottom-card" style="display:none;">
     <div class="bottom-card-label">Supported by</div>
     <a href="https://www.dur.ac.uk/dei/" target="_blank" style="display:block; text-align:center;">
       <img src="${IMG('/images/dei.webp')}" alt="Durham Energy Institute" style="max-width:100%;border-radius:6px;">

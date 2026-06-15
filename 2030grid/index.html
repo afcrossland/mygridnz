@@ -346,11 +346,11 @@
     <h1 class="page-title">The 2030 Grid</h1>
 
     <div style="background:#1a4d7a; color:#fff; border-radius:10px; padding:32px 36px; margin:20px 0 32px;">
-      <p style="font-family:'DM Serif Display',Georgia,serif; font-size:1.75rem; font-weight:400; line-height:1.25; margin:0 0 14px; letter-spacing:-0.01em;">Solve the dry year problem with renewables — not imported LNG.</p>
+      <p style="font-family:'DM Serif Display',Georgia,serif; font-size:1.75rem; font-weight:400; line-height:1.25; margin:0 0 14px; letter-spacing:-0.01em;">Solve the dry year problem with renewables and batteries — not imported LNG.</p>
       <p style="font-size:1rem; line-height:1.7; margin:0; opacity:0.88;">In dry years, low hydro lakes force New Zealand to burn more fossil gas and risk blackouts. The standard response is to import Liquefied Natural Gas — expensive, slow to procure and shipped from overseas. This Blueprint shows a different answer: enough wind, solar and battery storage to keep the lights on through even the driest years, with energy that is <strong>cheap to run, fast to deploy and entirely locally produced</strong>.</p>
     </div>
 
-    <p class="page-intro">A simulation of what Aotearoa New Zealand's electricity could look like in 2030 — modelled against a full year of actual generation data.</p>
+    <p class="page-intro">What would New Zealand's power system look like in 2030 if we built more wind, solar and batteries? This page runs that Blueprint against a full year of real generation data to show whether it would actually work — and what it would cost.</p>
 
     <!-- Comparison stat strip (populated by JS) -->
     <div class="compare-strip" id="compare-strip"></div>
@@ -393,27 +393,25 @@
         How the 2030 Blueprint works
       </summary>
       <div class="manifesto-body">
-        <p>The Blueprint simulates Aotearoa New Zealand's electricity system with the following generating capacity in place:</p>
+        <p>The Blueprint imagines NZ's electricity in 2030 with more renewables and storage in place. Here's what changes:</p>
         <ul>
-          <li><strong>Hydro and geothermal retained</strong> — the backbone of NZ's renewable electricity, unchanged</li>
-          <li><strong>2.2–2.5 GW of wind</strong> — a significant expansion of the existing wind fleet</li>
-          <li><strong>3.2–3.5 GW of solar</strong> — equivalent to fewer than 4 × 500 W panels per NZ household; a modest ask per home that adds up to a major generation resource nationally</li>
-          <li><strong>1,000 MW / 4,000 MWh of battery storage</strong> — a 4-hour battery that does two jobs: shifting solar and wind generation into evening peaks and bridging short-duration dry and calm spells; and providing the inertia, frequency response and voltage support that spinning thermal generators in the North Island currently supply, allowing those gas plant to run far less while keeping the grid stable</li>
-          <li><strong>No new gas</strong> — existing gas retained only as an emergency last resort</li>
+          <li><strong>Hydro and geothermal stay the same</strong> — NZ's existing renewable backbone, kept exactly as today</li>
+          <li><strong>More wind: 2.2–2.5 GW total</strong> — roughly doubling what we have now, spread across good wind sites around the country</li>
+          <li><strong>Much more solar: 3.2–3.5 GW total</strong> — that's fewer than 4 standard panels per NZ household if spread across rooftops, or a mix of large solar farms. NZ is one of the least-solar countries in the OECD — this fixes that</li>
+          <li><strong>A large battery: 1,000 MW / 4,000 MWh</strong> — picture a battery that can power NZ for about 4 hours at full stretch. It charges up when there's surplus wind and solar, then releases that energy when demand peaks in the evening or during dry spells. It also does the stabilising work that gas turbines currently provide — keeping the grid's frequency and voltage steady — so those gas plants can run far less</li>
+          <li><strong>Gas kept only as emergency backup</strong> — not removed, just rarely used</li>
           <li><strong>No coal</strong></li>
         </ul>
-        <p>Dispatch order: hydro and geothermal run baseload, then wind and solar fill available demand. When supply exceeds demand, storage charges until full — then wind and solar are curtailed. Gas is the absolute last resort, used only when all other sources are insufficient.</p>
-        <p><strong>Run-of-river hydro</strong> — approximately 25% of hydro generation is modelled as must-run (run-of-river), reflecting the constraints of South Island rivers that cannot be easily stored. This sets a floor on hydro output regardless of demand or supply conditions.</p>
-        <p>The assumptions are sufficient to show whether enough low-carbon electricity can be generated when it is needed. They are not a complete optimisation of cost or system design. Demand profiles are not changed.</p>
-        <p><strong>Two cost measures are shown.</strong> The <em>Levelised Cost of Energy (LCOE)</em> is the lifetime build-and-run cost per MWh — it answers "what does this mix actually cost to build and operate?" The <em>Wholesale Price</em> estimate uses marginal pricing — the way electricity markets actually work. The last (most expensive) generator dispatched sets the spot price paid to <em>all</em> generators. Because renewables have near-zero fuel costs, they are dispatched first. In the Blueprint, gas is rarely needed, so it rarely sets the price — meaning wholesale electricity prices fall even though the capital cost of the system rises. This is the mechanism by which more renewables can lead to lower electricity bills.</p>
-        <p>The 2030 Blueprint is outlined in my book <em>Decarbonising Electricity: Made Simple</em>. For the full methodology, see: Crossland et al., <em>Assessment of Electricity Decarbonization Scenarios for New Zealand and Great Britain</em>, Energies 2020, 13, 2799. <a href="https://doi.org/10.3390/en13112799" target="_blank">doi:10.3390/en13112799</a></p>
-        <p>Full LCOE assumptions — including source data, the gas load-factor formula, curtailment accounting, and the nuclear exclusion rationale — are documented in the <a href="/about/index.html#lcoe-methodology">About page methodology section</a>.</p>
+        <p><strong>How the system decides what to run:</strong> Think of it like a queue. Hydro and geothermal run constantly as the foundation. Wind and solar fill demand as it arrives. If there's more electricity than NZ needs, the battery charges up first. Any surplus beyond what the battery can store is simply switched off — this is called curtailment. Gas is the last resort, only called on when everything else has been used up.</p>
+        <p><strong>South Island rivers:</strong> About 25% of hydro output is modelled as "must-run" — South Island rivers keep flowing regardless of demand, so their output can't simply be turned off. This is built into the simulation.</p>
+        <p><strong>What's not modelled:</strong> Demand is held the same as today. The Blueprint doesn't try to optimise every detail — it's designed to answer the key question: can we keep the lights on in even a dry year, without gas imports?</p>
+        <p>Based on research from my book <em>Decarbonising Electricity: Made Simple</em> and Crossland et al., Energies 2020. <a href="https://doi.org/10.3390/en13112799" target="_blank">Read the paper →</a></p>
       </div>
     </details>
 
     <!-- Side-by-side mix comparison -->
-    <h2 class="section-h2">Today vs the 2030 Blueprint</h2>
-    <p class="section-p">The <span class="desktop-only">right-hand</span><span class="mobile-only">lower</span> pie shows a simulation of what the 2030 Blueprint electricity mix would have looked like last month — using actual generation data, but with the Blueprint's generating capacity in place. The <span class="desktop-only">left</span><span class="mobile-only">upper</span> shows what actually happened.</p>
+    <h2 class="section-h2">Where does our electricity come from — now vs Blueprint?</h2>
+    <p class="section-p">The <span class="desktop-only">right-hand</span><span class="mobile-only">lower</span> chart shows how the Blueprint mix would have looked last year — same demand, same weather, but with the new wind, solar and batteries in place. The <span class="desktop-only">left</span><span class="mobile-only">upper</span> shows what actually happened.</p>
     <div class="compare-mix">
       <div>
         <div class="compare-panel-title compare-panel-title--now">Today's Grid</div>
@@ -435,8 +433,8 @@
     </div>
 
     <!-- Timeseries -->
-    <h2 class="section-h2">The 2030 Blueprint in action</h2>
-    <p class="section-p" id="timeseries-desc">The simulation runs the 2030 Blueprint mix against real-time weather and demand data over the last <span class="desktop-only">28 days</span><span class="mobile-only">7 days</span>, showing how an expanded fleet of wind, solar, hydro, geothermal and storage would actually perform. Gas almost disappears; storage charges during sunny and windy periods and discharges at night and during dry spells; curtailment rises when renewables generate more than demand and storage can absorb.</p>
+    <h2 class="section-h2">Hour by hour — what the Blueprint looks like in practice</h2>
+    <p class="section-p" id="timeseries-desc">This chart replays the last <span class="desktop-only">28 days</span><span class="mobile-only">7 days</span> of real NZ electricity data, but with the Blueprint's extra wind, solar and batteries running. Watch how gas almost disappears; batteries charge up during sunny and windy periods and release energy in the evening; and there are brief moments when renewables produce more than NZ needs and the excess is simply switched off.</p>
     <div class="filter-bar" id="ts-filter">
       <span class="filter-bar-label">Show:</span>
       <button class="filter-btn" data-hours="48">Last 48 hrs</button>
@@ -449,8 +447,8 @@
     </div>
 
     <!-- Curtailment -->
-    <h2 class="section-h2">Renewable curtailment</h2>
-    <p class="section-p">With 3× more wind and solar, some renewable generation must be curtailed — switched off when output exceeds demand and storage is full. The chart shows what happens to each unit of wind and solar generation under the 2030 Blueprint.</p>
+    <h2 class="section-h2">What happens to surplus renewable energy?</h2>
+    <p class="section-p">With far more wind and solar, there are times when they produce more electricity than NZ needs. The battery charges first — but when it's full, any remaining surplus is simply switched off. This "switched-off" energy is called curtailment. The chart shows where each unit of wind and solar energy ends up in the Blueprint: delivered directly to homes and businesses, routed via the battery, or switched off as surplus.</p>
     <div style="position:relative; height:160px;">
       <canvas id="curtailment-chart"></canvas>
     </div>
@@ -619,14 +617,14 @@
       if (b.hasCurtail) {
         const totalGen   = b.totalGwh;
         const contrib    = totalGWh > 0 ? Math.round(totalGen * b.rate / totalGWh) : 0;
-        lines.push(`  ${b.label}: ${sharePct}% delivered + ${Math.round(b.storageFrac*100)}% storage + ${Math.round(b.curtailFrac*100)}% curtailed × NZD ${b.rate} = NZD ${contrib}/MWh`);
+        lines.push(`  ${b.label}: ${sharePct}% delivered + ${Math.round(b.storageFrac*100)}% storage + ${Math.round(b.curtailFrac*100)}% curtailed × $${b.rate} = $${contrib}/MWh`);
       } else {
         const contrib = totalGWh > 0 ? Math.round(b.gwh * b.rate / totalGWh) : 0;
-        lines.push(`  ${b.label}: ${sharePct}% × NZD ${b.rate} = NZD ${contrib}/MWh`);
+        lines.push(`  ${b.label}: ${sharePct}% × $${b.rate} = $${contrib}/MWh`);
       }
     });
     lines.push(`  ──────────────────────`);
-    lines.push(`  Total: NZD ${lcoe}/MWh delivered`);
+    lines.push(`  Total: $${lcoe}/MWh delivered`);
     return lines.join('\n');
   }
 
@@ -720,38 +718,38 @@
     const lcoeEl = document.getElementById('lcoe-card');
     if (lcoeEl) {
       lcoeEl.innerHTML = `
-        <div class="compare-card-label">True system cost — what does it actually cost to build and run this mix? <a href="/about/index.html#lcoe-methodology" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--brand);margin-left:6px;">methodology ↗</a></div>
+        <div class="compare-card-label">True system cost (what it costs to build &amp; run)</div>
         <div class="lcoe-stages">
           <div class="lcoe-stage">
-            <div class="compare-val compare-val--now">NZD ${actualLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="compare-val compare-val--now">$${actualLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Today's mix</div>
           </div>
           <span class="compare-arrow-sym">→</span>
           <div class="lcoe-stage">
-            <div class="compare-val compare-val--lcoe-mid">NZD ${manifestoLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="compare-val compare-val--lcoe-mid">$${manifestoLcoe.lcoe}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Blueprint</div>
           </div>
         </div>
-        <div class="compare-unit" style="margin-top:10px">This is the <strong>Levelised Cost of Energy (LCOE)</strong> — the lifetime build-and-run cost per MWh for each power station, weighted by how much each generates. NZ's large amortised hydro fleet keeps this below the market wholesale price. Expected range: NZD $65–100/MWh.</div>`;
+        <div class="compare-unit" style="margin-top:10px">This is the full cost to build and operate every power station, divided by every unit of electricity produced — in NZ dollars per megawatt-hour ($/MWh). Think of it as what you'd need to charge per unit to pay off the whole system over its lifetime. Today's figure looks low partly because NZ's big hydro dams were built and paid off decades ago.</div>`;
     }
 
     // Marginal price card
     const marginalEl = document.getElementById('marginal-card');
     if (marginalEl) {
       marginalEl.innerHTML = `
-        <div class="compare-card-label">Wholesale electricity price — what generators actually get paid</div>
+        <div class="compare-card-label">Wholesale market price (what generators get paid)</div>
         <div class="lcoe-stages">
           <div class="lcoe-stage">
-            <div class="compare-val compare-val--now">NZD ${mpActual}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="compare-val compare-val--now">$${mpActual}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Today's mix</div>
           </div>
           <span class="compare-arrow-sym">→</span>
           <div class="lcoe-stage">
-            <div class="compare-val compare-val--manifesto">NZD ${mpBlueprint}<span class="compare-val-sfx">/MWh</span></div>
+            <div class="compare-val compare-val--manifesto">$${mpBlueprint}<span class="compare-val-sfx">/MWh</span></div>
             <div class="lcoe-stage-label">Blueprint</div>
           </div>
         </div>
-        <div class="compare-unit" style="margin-top:10px">Electricity markets use <strong>marginal pricing</strong> — the most expensive generator dispatched at any moment sets the spot price paid to <em>all</em> generators. Today that is usually gas (~NZD $140/MWh variable cost), pushing prices up for everyone. In the Blueprint, gas is rarely needed, so geothermal or storage sets the price instead (~NZD $20–25/MWh variable cost). A low wholesale price here means generators earn less per MWh — it is not the same as LCOE (which covers full capital + running costs).</div>`;
+        <div class="compare-unit" style="margin-top:10px">NZ's electricity market works like an auction: the most expensive generator running at any moment sets the price for <em>everyone</em> — including the cheap ones. Today that's usually gas, which is expensive to run, so it pushes up everyone's price. In the Blueprint, gas is barely used, so cheaper generators (like geothermal) set the price instead. This is how building more renewables can actually lower power bills, even while the upfront cost of the system rises.</div>`;
     }
 
     // Helper: build sorted fuel list + pie data from a fuel data object
@@ -782,7 +780,7 @@
                 label: ctx => {
                   const pct  = Math.round(ctx.parsed / total * 100);
                   const lcoe = LCOE_RATES[ctx.label];
-                  const lcoeStr = lcoe != null ? ` | NZD ${lcoe}/MWh` : '';
+                  const lcoeStr = lcoe != null ? ` | $${lcoe}/MWh` : '';
                   return ` ${ctx.label}: ${pct}%${lcoeStr}`;
                 }
               }
