@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:628px; overflow:hidden; background:#0f172a; font-family:'DM Sans',Arial,sans-serif; }
+
+  .wrap {
+    width:1200px; height:628px;
+    background: #0f172a;
+    display:flex;
+    flex-direction:column;
+    padding:44px 60px 36px;
+    position:relative;
+  }
+
+  .header {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:32px;
+  }
+
+  .logo {
+    font-family:'DM Serif Display',Georgia,serif;
+    font-size:20px;
+    color:#fff;
+    opacity:0.8;
+  }
+  .logo span { color:#4faadb; }
+
+  .header-right {
+    text-align:right;
+  }
+  .header-title {
+    font-family:'DM Serif Display',Georgia,serif;
+    font-size:32px;
+    color:#fff;
+    line-height:1.2;
+  }
+  .header-sub {
+    font-size:14px;
+    color:rgba(255,255,255,0.45);
+    margin-top:4px;
+  }
+
+  /* compare cards */
+  .compare-row {
+    display:grid;
+    grid-template-columns:1fr 56px 1fr;
+    gap:0;
+    align-items:center;
+    margin-bottom:28px;
+  }
+
+  .panel {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px;
+    padding:24px 28px;
+  }
+
+  .panel-title {
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    margin-bottom:18px;
+  }
+  .panel-title.now  { color:#94a3b8; }
+  .panel-title.blue { color:#4fdb9e; }
+
+  .fuel-row {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .fuel-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .fuel-name { font-size:13px; color:rgba(255,255,255,0.7); flex:1; }
+  .fuel-bar-bg { height:6px; width:160px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
+  .fuel-bar { height:100%; border-radius:3px; }
+  .fuel-pct { font-size:12px; font-weight:600; color:rgba(255,255,255,0.5); width:36px; text-align:right; }
+
+  .arrow-col {
+    text-align:center;
+    font-size:28px;
+    color:rgba(255,255,255,0.2);
+  }
+
+  /* bottom stat strip */
+  .stat-strip {
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+  }
+
+  .stat-card {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;
+    padding:14px 16px;
+    text-align:center;
+  }
+
+  .stat-now {
+    font-size:11px;
+    color:#f87171;
+    font-weight:600;
+    margin-bottom:2px;
+  }
+  .stat-arrow { font-size:11px; color:rgba(255,255,255,0.25); }
+  .stat-after {
+    font-size:18px;
+    font-weight:300;
+    color:#4fdb9e;
+    line-height:1.1;
+  }
+  .stat-sfx { font-size:11px; opacity:0.6; }
+  .stat-label {
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.07em;
+    color:rgba(255,255,255,0.35);
+    margin-top:4px;
+  }
+
+  .url {
+    position:absolute;
+    bottom:20px;
+    right:60px;
+    font-size:12px;
+    color:rgba(255,255,255,0.2);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">MyGrid<span>NZ</span> 🇳🇿</div>
+    <div class="header-right">
+      <div class="header-title">Today's grid vs the 2030 Blueprint</div>
+      <div class="header-sub">Simulated against a full year of real NZ generation data</div>
+    </div>
+  </div>
+
+  <div class="compare-row">
+    <!-- TODAY -->
+    <div class="panel">
+      <div class="panel-title now">Today's grid</div>
+
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#3b82f6"></div>
+        <div class="fuel-name">Hydro</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:58%;background:#3b82f6"></div></div>
+        <div class="fuel-pct">58%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#ef4444"></div>
+        <div class="fuel-name">Geothermal</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:18%;background:#ef4444"></div></div>
+        <div class="fuel-pct">18%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#6b7280"></div>
+        <div class="fuel-name">Gas</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:12%;background:#6b7280"></div></div>
+        <div class="fuel-pct">12%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#0d9e6e"></div>
+        <div class="fuel-name">Wind</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:8%;background:#0d9e6e"></div></div>
+        <div class="fuel-pct">8%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#824e1a"></div>
+        <div class="fuel-name">Wood / Biomass</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:3%;background:#824e1a"></div></div>
+        <div class="fuel-pct">3%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#f59e0b"></div>
+        <div class="fuel-name">Solar</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:1%;background:#f59e0b"></div></div>
+        <div class="fuel-pct">1%</div>
+      </div>
+    </div>
+
+    <div class="arrow-col">→</div>
+
+    <!-- BLUEPRINT -->
+    <div class="panel">
+      <div class="panel-title blue">2030 Blueprint</div>
+
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#3b82f6"></div>
+        <div class="fuel-name">Hydro</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:48%;background:#3b82f6"></div></div>
+        <div class="fuel-pct">48%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#ef4444"></div>
+        <div class="fuel-name">Geothermal</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:15%;background:#ef4444"></div></div>
+        <div class="fuel-pct">15%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#0d9e6e"></div>
+        <div class="fuel-name">Wind</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:16%;background:#0d9e6e"></div></div>
+        <div class="fuel-pct">16%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#f59e0b"></div>
+        <div class="fuel-name">Solar</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:14%;background:#f59e0b"></div></div>
+        <div class="fuel-pct">14%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#f96c00"></div>
+        <div class="fuel-name">Battery storage</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:5%;background:#f96c00"></div></div>
+        <div class="fuel-pct">5%</div>
+      </div>
+      <div class="fuel-row">
+        <div class="fuel-dot" style="background:#6b7280"></div>
+        <div class="fuel-name">Gas (emergency only)</div>
+        <div class="fuel-bar-bg"><div class="fuel-bar" style="width:1%;background:#6b7280"></div></div>
+        <div class="fuel-pct">&lt;2%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat strip -->
+  <div class="stat-strip">
+    <div class="stat-card">
+      <div class="stat-now">~80 g</div>
+      <div class="stat-arrow">↓</div>
+      <div class="stat-after">~20<span class="stat-sfx"> g</span></div>
+      <div class="stat-label">Carbon intensity (gCO₂/kWh)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-now">80%</div>
+      <div class="stat-arrow">↑</div>
+      <div class="stat-after">99<span class="stat-sfx">%</span></div>
+      <div class="stat-label">Low-carbon generation</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-now">12%</div>
+      <div class="stat-arrow">↓</div>
+      <div class="stat-after">&lt;2<span class="stat-sfx">%</span></div>
+      <div class="stat-label">Gas share</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-now">$140</div>
+      <div class="stat-arrow">↓</div>
+      <div class="stat-after">~$25<span class="stat-sfx">/MWh</span></div>
+      <div class="stat-label">Wholesale price</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-now">~$65</div>
+      <div class="stat-arrow">↑</div>
+      <div class="stat-after">~$85<span class="stat-sfx">/MWh</span></div>
+      <div class="stat-label">System LCOE</div>
+    </div>
+  </div>
+
+  <div class="url">www.mygrid.nz — simulation based on real NZ generation data</div>
+</div>
+</body>
+</html>

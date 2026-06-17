@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:628px; overflow:hidden; background:#f8fafc; font-family:'DM Sans',Arial,sans-serif; }
+
+  .wrap {
+    width:1200px; height:628px;
+    background:#f8fafc;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  /* LEFT: dark hero panel */
+  .left {
+    background: linear-gradient(160deg, #0d1f35 0%, #1a4d7a 100%);
+    padding:52px 52px 44px;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+  }
+  .left::after {
+    content:'';
+    position:absolute;
+    bottom:-80px; right:-80px;
+    width:300px; height:300px;
+    border-radius:50%;
+    background:rgba(79,170,219,0.1);
+  }
+
+  .logo {
+    font-family:'DM Serif Display',Georgia,serif;
+    font-size:20px;
+    color:#fff;
+    letter-spacing:-0.01em;
+    margin-bottom:32px;
+    opacity:0.9;
+  }
+  .logo span { color:#4faadb; }
+
+  .left-title {
+    font-family:'DM Serif Display',Georgia,serif;
+    font-size:40px;
+    font-weight:400;
+    color:#fff;
+    line-height:1.2;
+    letter-spacing:-0.02em;
+    margin-bottom:16px;
+    flex:1;
+    display:flex;
+    align-items:center;
+  }
+
+  .dispatch {
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;
+    padding:16px 20px;
+    font-size:13px;
+    color:rgba(255,255,255,0.7);
+    line-height:1.65;
+  }
+  .dispatch strong { color:#4faadb; }
+
+  /* RIGHT: capacity tiles */
+  .right {
+    padding:44px 52px;
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+
+  .right-title {
+    font-family:'DM Serif Display',Georgia,serif;
+    font-size:22px;
+    font-weight:400;
+    color:#1a4d7a;
+    margin-bottom:28px;
+  }
+
+  .cap-tile {
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:18px 22px;
+    margin-bottom:14px;
+  }
+  .cap-tile:last-child { margin-bottom:0; }
+
+  .cap-label {
+    font-size:10px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:#94a3b8;
+    margin-bottom:10px;
+  }
+
+  .cap-nums {
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:10px;
+  }
+
+  .cap-now {
+    font-family:'DM Serif Display',Georgia,serif;
+    font-size:32px;
+    font-weight:400;
+    color:#0f172a;
+    line-height:1;
+  }
+
+  .cap-arrow { color:#94a3b8; font-size:16px; margin:0 8px; }
+
+  .cap-target {
+    font-size:18px;
+    font-weight:600;
+    color:#1a4d7a;
+  }
+
+  .cap-bar-bg {
+    height:8px;
+    background:#f1f5f9;
+    border-radius:4px;
+    overflow:hidden;
+    margin-bottom:8px;
+  }
+  .cap-bar { height:100%; border-radius:4px; }
+
+  .cap-note {
+    font-size:12px;
+    color:#94a3b8;
+    line-height:1.5;
+  }
+
+  .url {
+    font-size:12px;
+    color:#94a3b8;
+    margin-top:auto;
+    padding-top:8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="logo">MyGrid<span>NZ</span> 🇳🇿</div>
+    <div class="left-title">The 2030 Blueprint — what we need to build</div>
+    <div class="dispatch">
+      <strong>Dispatch order:</strong> Hydro and geothermal run baseload. Wind and solar fill demand. Storage charges when there's surplus. Gas only as absolute last resort.<br><br>
+      Result: gas almost disappears. Wholesale electricity prices fall. The dry year problem is solved with local generation.
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="right-title">Capacity today vs Blueprint target</div>
+
+    <!-- Wind -->
+    <div class="cap-tile">
+      <div class="cap-label">Wind capacity</div>
+      <div class="cap-nums">
+        <span class="cap-now">~0.9 GW</span>
+        <span class="cap-arrow">→</span>
+        <span class="cap-target">2.2–2.5 GW</span>
+      </div>
+      <div class="cap-bar-bg">
+        <div class="cap-bar" style="width:39%;background:#0d9e6e;"></div>
+      </div>
+      <div class="cap-note">5–7 large onshore wind farms — <strong>1.3–1.6 GW of new capacity needed</strong></div>
+    </div>
+
+    <!-- Solar -->
+    <div class="cap-tile">
+      <div class="cap-label">Solar capacity</div>
+      <div class="cap-nums">
+        <span class="cap-now">~0.2 GW</span>
+        <span class="cap-arrow">→</span>
+        <span class="cap-target">3.2–3.5 GW</span>
+      </div>
+      <div class="cap-bar-bg">
+        <div class="cap-bar" style="width:6%;background:#f59e0b;"></div>
+      </div>
+      <div class="cap-note">Fewer than <strong>4 × 500 W panels per NZ household</strong> — or a mix of utility-scale farms</div>
+    </div>
+
+    <!-- Battery -->
+    <div class="cap-tile">
+      <div class="cap-label">Battery storage</div>
+      <div class="cap-nums">
+        <span class="cap-now">~0.1 GW</span>
+        <span class="cap-arrow">→</span>
+        <span class="cap-target">1.0 GW / 4.0 GWh</span>
+      </div>
+      <div class="cap-bar-bg">
+        <div class="cap-bar" style="width:10%;background:#f96c00;"></div>
+      </div>
+      <div class="cap-note">4-hour battery that <strong>replaces gas for grid stability</strong> and bridges dry spells</div>
+    </div>
+
+    <div class="url">Simulation based on real 2024 NZ generation data — www.mygrid.nz</div>
+  </div>
+</div>
+</body>
+</html>
