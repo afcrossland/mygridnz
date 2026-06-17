@@ -385,13 +385,13 @@
     <div class="compare-mix">
       <div>
         <div class="compare-panel-title compare-panel-title--now">Today's Grid</div>
-        <div class="pie-col"><canvas id="pie-actual"></canvas></div>
+        <div class="pie-col" style="position:relative;"><div class="chart-spinner"></div><canvas id="pie-actual"></canvas></div>
         <div class="fuel-list" id="fuel-actual"></div>
       </div>
       <div class="compare-arrow-col">→</div>
       <div>
         <div class="compare-panel-title compare-panel-title--manifesto">2030 Blueprint</div>
-        <div class="pie-col"><canvas id="pie-manifesto"></canvas></div>
+        <div class="pie-col" style="position:relative;"><div class="chart-spinner"></div><canvas id="pie-manifesto"></canvas></div>
         <div class="fuel-list" id="fuel-manifesto"></div>
       </div>
     </div>
@@ -407,6 +407,7 @@
       <button class="filter-btn" data-hours="0">All data</button>
     </div>
     <div style="position:relative; height:420px;">
+      <div class="chart-spinner"></div>
       <canvas id="timeseries-chart"></canvas>
     </div>
 
@@ -414,6 +415,7 @@
     <h2 class="section-h2">Renewable curtailment</h2>
     <p class="section-p">With 3× more wind and solar, some renewable generation must be curtailed — switched off when output exceeds demand and storage is full. The chart shows what happens to each unit of wind and solar generation under the 2030 Blueprint.</p>
     <div style="position:relative; height:160px;">
+      <div class="chart-spinner"></div>
       <canvas id="curtailment-chart"></canvas>
     </div>
 
@@ -422,7 +424,7 @@
 </div>
 
 <script>
-(async () => {
+(async () => { try {
   const MIX_ID        = '1-_pQ39Qd7lN0r9rQWHT8_ZLOiFbvGbttYnrbowVBtS0';
   const TIMESERIES_ID = '1ODNW-bT018Adl-PRhPkpVjVFTp9qo_0sLOSHuqGxipk';
   const CURTAIL_ID    = '1bRqBHmH6lJQzhtewnFxauYWcLZ5hohSKDhELVC6mo2E';
@@ -927,6 +929,7 @@
       }
     });
   }
+} finally { document.querySelectorAll('.chart-spinner').forEach(el => el.remove()); }
 })();
 </script>
 

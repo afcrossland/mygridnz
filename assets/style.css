@@ -254,6 +254,28 @@ nav ul ul li a:hover {
 
 .bottom-card p { font-size: 13px; color: var(--muted); line-height: 1.55; }
 
+/* ===== CHART LOADING SPINNER ===== */
+.chart-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  z-index: 10;
+  border-radius: 4px;
+}
+.chart-spinner::after {
+  content: '';
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: chart-spin .7s linear infinite;
+}
+@keyframes chart-spin { to { transform: rotate(360deg); } }
+
 .follow-btn {
   display: inline-block;
   background: var(--brand);

@@ -342,7 +342,8 @@
 
       <!-- Pie left + fuel list right -->
       <div class="mix-layout">
-        <div class="pie-col">
+        <div class="pie-col" style="position:relative;">
+          <div class="chart-spinner"></div>
           <canvas id="mix-chart"></canvas>
         </div>
         <div class="fuel-list" id="fuel-list"></div>
@@ -385,6 +386,7 @@
         <button class="filter-btn active" data-months="12">Last 12 months</button>
       </div>
       <div style="position:relative; height:300px;">
+        <div class="chart-spinner"></div>
         <canvas id="week-chart"></canvas>
       </div>
     </section>
@@ -399,6 +401,7 @@
       <h2 style="font-size:1.6rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin-bottom:8px;">Decarbonising Aotearoa New Zealand Electricity</h2>
       <p style="font-size:1rem; color:var(--muted); margin-bottom:20px; line-height:1.5;">The carbon intensity of Aotearoa New Zealand electricity has fallen over recent years, driven by growth in wind and solar alongside geothermal and hydro. The chart tracks this progress — and how far there is still to go to meet the 2030 clean power target.</p>
       <div style="position:relative; height:400px;">
+        <div class="chart-spinner"></div>
         <canvas id="carbon-chart"></canvas>
       </div>
     </section>
@@ -446,7 +449,7 @@
 </div>
 
 <script>
-(async () => {
+(async () => { try {
   const MONTHLY_ID = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps';
   const ANNUAL_ID  = '1EN4wI5rzmdJgzSrynqSkoduw-uATYeVkkhuY_HvFVHs';
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
@@ -710,6 +713,7 @@
       }
     });
   }
+} finally { document.querySelectorAll('.chart-spinner').forEach(el => el.remove()); }
 })();
 
 // ── 2030 Countdown ─────────────────────────────────────────────
@@ -805,6 +809,7 @@
       weekChart.update();
     });
   } catch (e) { console.error('Recent chart error:', e); }
+  finally { document.querySelectorAll('.chart-spinner').forEach(el => el.remove()); }
 })();
 </script>
 

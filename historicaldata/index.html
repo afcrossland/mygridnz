@@ -42,6 +42,7 @@
         <h2 class="chart-h2">Annual generation by fuel type (TWh)</h2>
         <p class="chart-p">Absolute electricity generation in terawatt-hours by fuel type each year. The growth of wind and solar alongside Aotearoa New Zealand's dominant hydro and geothermal base is clear. The most recent year is partial.</p>
         <div style="position:relative; height:440px;">
+          <div class="chart-spinner"></div>
           <canvas id="twh-chart"></canvas>
         </div>
       </div>
@@ -49,6 +50,7 @@
         <h2 class="chart-h2">Annual electricity mix (%)</h2>
         <p class="chart-p">How Aotearoa New Zealand's electricity generation mix has changed over time. Hydro and geothermal have long provided the backbone; wind and solar are growing contributors. Each bar shows the proportional share of generation from each fuel type for that year.</p>
         <div style="position:relative; height:440px;">
+          <div class="chart-spinner"></div>
           <canvas id="history-chart"></canvas>
         </div>
       </div>
@@ -56,6 +58,7 @@
     <h2 style="font-size:1.3rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:40px 0 8px;">Annual carbon emissions</h2>
     <p style="color:var(--muted); margin-bottom:16px;">Megatons of CO₂ equivalent from Aotearoa New Zealand electricity generation each year. The long-term downward trend reflects the decarbonisation of the grid. The most recent bar is a partial estimate based on data available so far this year.</p>
     <div style="position:relative; height:300px;">
+      <div class="chart-spinner"></div>
       <canvas id="carbon-emissions-chart"></canvas>
     </div>
   </main>
@@ -63,7 +66,7 @@
 </div>
 
 <script>
-(async () => {
+(async () => { try {
   const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
 
@@ -124,8 +127,8 @@
       datasets: FUELS.map(f => ({
         label: f,
         data: rows.map(r => {
-          const total = r.c[FUEL_COL.Total]?.v ?? 1;
-          return total > 0 ? (r.c[FUEL_COL[f]]?.v ?? 0) / total : 0;
+          const total = FUELS.reduce((s, g) => s + (r.c[FUEL_COL[g]]?.v ?? 0), 0) || 1;
+          return (r.c[FUEL_COL[f]]?.v ?? 0) / total;
         }),
         backgroundColor: PALETTE[f], borderColor: '#fff', borderWidth: 1,
       })),
@@ -173,6 +176,7 @@
     }
   });
 
+} finally { document.querySelectorAll('.chart-spinner').forEach(el => el.remove()); }
 })();
 </script>
 

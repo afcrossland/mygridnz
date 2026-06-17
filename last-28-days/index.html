@@ -35,6 +35,7 @@
     <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:24px 0 8px;">Generation mix share</h2>
     <p style="color:var(--muted); margin-bottom:16px;">Each tile shows the average contribution of a fuel type to Aotearoa New Zealand electricity last month, sized by its share of the mix. In windy and wet periods, renewables dominate; gas fills the gaps when weather-dependent generation is low.</p>
     <div style="position:relative; height:420px;">
+      <div class="chart-spinner"></div>
       <canvas id="treemap-chart"></canvas>
     </div>
 
@@ -48,6 +49,7 @@
       <button class="filter-btn" data-periods="96">Last 48 hrs</button>
     </div>
     <div style="position:relative; height:400px;">
+      <div class="chart-spinner"></div>
       <canvas id="gen-chart"></canvas>
     </div>
 
@@ -55,6 +57,7 @@
     <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:40px 0 12px;">Carbon intensity</h2>
     <p style="color:var(--muted); margin-bottom:20px;">Half-hourly carbon intensity of Aotearoa New Zealand electricity last month (gCO₂eq/kWh). The red line marks a 50 gCO₂eq/kWh target consistent with a near-fully-renewable grid. Intensity falls when renewables are generating strongly and rises when gas fills a larger share of demand.</p>
     <div style="position:relative; height:320px;">
+      <div class="chart-spinner"></div>
       <canvas id="carbon-intensity-chart"></canvas>
     </div>
   </main>
@@ -62,7 +65,7 @@
 </div>
 
 <script>
-(async () => {
+(async () => { try {
   const DATA_SHEET_ID    = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE'; // raw half-hourly data tab
   const MONTHLY_SHEET_ID = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps'; // dedicated monthly sheet
 
@@ -248,6 +251,7 @@
       }
     }
   });
+} finally { document.querySelectorAll('.chart-spinner').forEach(el => el.remove()); }
 })();
 </script>
 

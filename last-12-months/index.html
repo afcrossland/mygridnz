@@ -81,6 +81,7 @@
         <button class="filter-btn active" data-months="12">12 months</button>
       </div>
       <div style="position:relative; height:360px;">
+        <div class="chart-spinner"></div>
         <canvas id="treemap-chart"></canvas>
       </div>
     </div>
@@ -99,6 +100,7 @@
     <div class="chart-section">
       <p>Average power output (GW) by fuel type per month. Winter months typically see higher total demand and more wind; summer brings solar peaks. Gas acts as the primary balancing fuel, rising when renewables are low.</p>
       <div style="position:relative; height:420px;">
+        <div class="chart-spinner"></div>
         <canvas id="gen-chart"></canvas>
       </div>
     </div>
@@ -107,6 +109,7 @@
       <h2>Monthly carbon intensity</h2>
       <p>Average carbon intensity of Aotearoa New Zealand electricity (gCO₂eq/kWh) for each month. Carbon intensity falls when hydro, wind and geothermal output is high and rises when gas fills a larger share of demand.</p>
       <div style="position:relative; height:320px;">
+        <div class="chart-spinner"></div>
         <canvas id="carbon-chart"></canvas>
       </div>
     </div>
@@ -115,7 +118,7 @@
 </div>
 
 <script>
-(async () => {
+(async () => { try {
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
   const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -249,6 +252,7 @@
     carbonChart.data.datasets[0].data = fg.map(r => +rowCarbon(r).toFixed(1));
     carbonChart.update();
   });
+} finally { document.querySelectorAll('.chart-spinner').forEach(el => el.remove()); }
 })();
 </script>
 
