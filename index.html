@@ -553,7 +553,16 @@
       const carbonInt    = totalMW > 0 ? Math.round(carbonW      / totalMW)       : 0;
       const fossilPct    = totalMW > 0 ? Math.round((mw.Gas + mw.Coal) / totalMW * 100) : 0;
 
-      liveMode = { dtFmt, mw, totalMW, lowCarbonPct, renewPct, carbonInt, fossilPct };
+      const THERM_EFF_L = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Geothermal: 0.15, Wood: 0.39 };
+      let tInput = 0, tLoss = 0;
+      Object.entries(THERM_EFF_L).forEach(([src, eff]) => {
+        const v = mw[src] || 0;
+        if (v > 0) { tInput += v / eff; tLoss += v / eff - v; }
+      });
+      const directMW = totalMW - Object.keys(THERM_EFF_L).reduce((s,k) => s + (mw[k] || 0), 0);
+      const thermalLossPct = (tInput + directMW) > 0 ? Math.round(tLoss / (tInput + directMW) * 100) : 0;
+
+      liveMode = { dtFmt, mw, totalMW, lowCarbonPct, renewPct, carbonInt, fossilPct, thermalLossPct };
     }
   }
 
@@ -620,13 +629,13 @@
     if (!liveMode) { renderLastMonth(); return; }
     document.getElementById('mix-month-label').textContent = 'Live — as at ' + liveMode.dtFmt;
 
-    const { mw, totalMW, lowCarbonPct, renewPct, carbonInt, fossilPct } = liveMode;
+    const { mw, totalMW, lowCarbonPct, renewPct, carbonInt, fossilPct, thermalLossPct } = liveMode;
     setStatCard('renewables-card',   'Renewables',          renewPct,     '%',         renewPct > 60 ? 'stat-card--low' : renewPct > 40 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('generation-card',   'Total',               Math.round(totalMW).toLocaleString(), 'MW', 'stat-card--low');
     setStatCard('independence-card', 'Fossil Fuels',        fossilPct,    '%',         fossilPct < 5 ? 'stat-card--low' : fossilPct < 15 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('carbon-card',       'Carbon Intensity',    carbonInt,    'gCO₂/kWh', carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
-    document.getElementById('thermal-card').style.display = 'none';
-    document.querySelector('.stat-strip').style.gridTemplateColumns = 'repeat(4, 1fr)';
+    setStatCard('thermal-card',      'Thermal Losses',      thermalLossPct, '%',       thermalLossPct < 10 ? 'stat-card--low' : thermalLossPct < 25 ? 'stat-card--mid' : 'stat-card--high');
+    document.querySelector('.stat-strip').style.gridTemplateColumns = 'repeat(5, 1fr)';
 
     renderMixChart(mw, totalMW, 'MW');
   }
