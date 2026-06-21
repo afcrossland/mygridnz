@@ -134,13 +134,6 @@
       <div class="fuel-list" id="live-fuel-list"></div>
     </div>
 
-    <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:8px 0 8px;">Last 24 hours</h2>
-    <p style="color:var(--muted); margin-bottom:16px;">Half-hourly generation by fuel type for the last 48 trading periods.</p>
-    <div style="position:relative; height:300px;">
-      <div class="chart-spinner"></div>
-      <canvas id="live-bar"></canvas>
-    </div>
-
     <!-- Blueprint hero -->
     <div style="background:#1a4d7a; color:#fff; border-radius:10px; padding:32px 36px; margin:40px 0 0;">
       <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; opacity:.65; margin:0 0 10px;">The 2030 Blueprint</p>
@@ -157,7 +150,6 @@
 (async () => {
   const SHEET_ID   = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
   const SHEET_NAME = 'TP data';
-  const FONT       = "'DM Sans','Segoe UI',Arial,sans-serif";
 
   const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
   const PALETTE = {
@@ -176,7 +168,7 @@
   const COL = { DateTime:0, Date:1, TP:2, Hydro:3, Geothermal:4, Gas:5, Wind:6, Solar:7, Wood:8, Coal:9, Diesel:10, Other:11, Total:12 };
 
   try {
-    const tq  = encodeURIComponent('SELECT * WHERE B IS NOT NULL ORDER BY A DESC LIMIT 96');
+    const tq  = encodeURIComponent('SELECT * WHERE B IS NOT NULL ORDER BY A DESC LIMIT 1');
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&tq=${tq}`;
     const t   = await (await fetch(url)).text();
     const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
@@ -237,38 +229,6 @@
         datasets: [{ data: pieFuels.map(f => +mw[f].toFixed(1)), backgroundColor: pieFuels.map(f => PALETTE[f]), borderColor: '#fff', borderWidth: 2, hoverOffset: 8 }]
       },
       options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${Math.round(ctx.parsed)} MW` } } } }
-    });
-
-    // Bar chart: reverse to ascending time order
-    const chartRows = [...rows].reverse();
-    const labels = chartRows.map(r => {
-      const f = r.c[COL.DateTime]?.f ?? String(r.c[COL.DateTime]?.v ?? '');
-      const m = f.match(/(\d{1,2}:\d{2})/);
-      return m ? m[1] : f.slice(-5);
-    });
-
-    new Chart(document.getElementById('live-bar'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: FUELS.map(f => ({
-          label: f,
-          data: chartRows.map(r => +(r.c[COL[f]]?.v ?? 0).toFixed(1)),
-          backgroundColor: PALETTE[f],
-          borderWidth: 0,
-        })),
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { font: { family: FONT, size: 11 }, padding: 12, usePointStyle: true, pointStyle: 'circle', boxWidth: 9, boxHeight: 9 } },
-          tooltip: { mode: 'index', callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} MW` } }
-        },
-        scales: {
-          x: { stacked: true, ticks: { font: { family: FONT, size: 10 }, maxTicksLimit: 12 }, grid: { display: false } },
-          y: { stacked: true, beginAtZero: true, title: { display: true, text: 'MW', font: { family: FONT, size: 11 }, color: '#555' }, ticks: { font: { family: FONT, size: 10 } }, grid: { color: '#eeeeee' } }
-        }
-      }
     });
 
   } catch (e) {
