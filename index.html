@@ -521,7 +521,7 @@
     const carbonInt    = totalGW > 0 ? Math.round(carbonW     / totalGW)       : 0;
     const domesticPct  = totalGW > 0 ? Math.round((totalGW - gwBySource.Gas * 0.4 - gwBySource.Coal * 0.9 - gwBySource.Diesel) / totalGW * 100) : 0;
 
-    const THERM_EFF = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Geothermal: 0.15, Wood: 0.39 };
+    const THERM_EFF = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Wood: 0.39 };
     let thermalInput = 0, thermalLoss = 0;
     Object.entries(THERM_EFF).forEach(([src, eff]) => {
       const gw = gwBySource[src] || 0;
@@ -553,7 +553,7 @@
       const carbonInt    = totalMW > 0 ? Math.round(carbonW      / totalMW)       : 0;
       const fossilPct    = totalMW > 0 ? Math.round((mw.Gas + mw.Coal) / totalMW * 100) : 0;
 
-      const THERM_EFF_L = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Geothermal: 0.15, Wood: 0.39 };
+      const THERM_EFF_L = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Wood: 0.39 };
       let tInput = 0, tLoss = 0;
       Object.entries(THERM_EFF_L).forEach(([src, eff]) => {
         const v = mw[src] || 0;
