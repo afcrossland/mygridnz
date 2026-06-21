@@ -211,10 +211,10 @@
       document.getElementById('card-carbon').classList.add(carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
     }
 
-    // Pie + fuel list
-    const pieFuels = FUELS.filter(f => mw[f] > 0).sort((a,b) => mw[b] - mw[a]);
+    // Pie + fuel list — include Other if non-zero
+    const allFuels = [...FUELS.filter(f => mw[f] > 0), ...(mw.Other > 0 ? ['Other'] : [])].sort((a,b) => mw[b] - mw[a]);
     const listEl = document.getElementById('live-fuel-list');
-    pieFuels.forEach(f => {
+    allFuels.forEach(f => {
       const pct = totalMW > 0 ? Math.round(mw[f] / totalMW * 100) : 0;
       const row = document.createElement('div');
       row.className = 'fuel-row';
@@ -225,8 +225,8 @@
     new Chart(document.getElementById('live-pie'), {
       type: 'pie',
       data: {
-        labels: pieFuels,
-        datasets: [{ data: pieFuels.map(f => +mw[f].toFixed(1)), backgroundColor: pieFuels.map(f => PALETTE[f]), borderColor: '#fff', borderWidth: 2, hoverOffset: 8 }]
+        labels: allFuels,
+        datasets: [{ data: allFuels.map(f => +mw[f].toFixed(1)), backgroundColor: allFuels.map(f => PALETTE[f]), borderColor: '#fff', borderWidth: 2, hoverOffset: 8 }]
       },
       options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${Math.round(ctx.parsed)} MW` } } } }
     });
