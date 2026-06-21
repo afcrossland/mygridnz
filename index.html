@@ -312,7 +312,11 @@
 
     <section>
       <h2 class="mix-title">Aotearoa New Zealand's Electricity Mix</h2>
-      <p class="mix-subtitle" style="margin-bottom:4px;">Average generation last month — <span id="mix-month-label">loading…</span></p>
+      <div class="filter-bar mix-toggle" style="justify-content:center; margin:14px 0 4px;">
+        <button class="filter-btn active" data-mode="live">Live</button>
+        <button class="filter-btn" data-mode="month">Last Month</button>
+      </div>
+      <p class="mix-subtitle" style="margin-bottom:4px;"><span id="mix-month-label">loading…</span></p>
 
       <!-- Five stat cards -->
       <div class="stat-strip">
@@ -452,14 +456,15 @@
 
 <script>
 (async () => { try {
-  const MONTHLY_ID = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps';
-  const ANNUAL_ID  = '1EN4wI5rzmdJgzSrynqSkoduw-uATYeVkkhuY_HvFVHs';
+  const MONTHLY_ID  = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps';
+  const ANNUAL_ID   = '1EN4wI5rzmdJgzSrynqSkoduw-uATYeVkkhuY_HvFVHs';
+  const TP_SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
   const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // monthly tab: Year(0), Month(1), Hydro(2), Geo(3), Gas(4), Wind(5), Solar(6), Wood(7), Coal(8), Diesel(9), Other(10), Total(11)
-  const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
-  const MC = { Hydro:2, Geothermal:3, Gas:4, Wind:5, Solar:6, Wood:7, Coal:8, Diesel:9, Other:10, Total:11 };
+  const FUELS  = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
+  const MC     = { Hydro:2, Geothermal:3, Gas:4, Wind:5, Solar:6, Wood:7, Coal:8, Diesel:9, Other:10, Total:11 };
+  const TP_COL = { Hydro:3, Geothermal:4, Gas:5, Wind:6, Solar:7, Wood:8, Coal:9, Diesel:10, Other:11, Total:12 };
 
   const PALETTE = {
     Hydro:'#3b82f6', Geothermal:'#ef4444', Gas:'#6b7280', Wind:'#0d9e6e',
@@ -468,91 +473,200 @@
   const CARBON_FACTORS = {
     Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
   };
-
-  const LOW_CARBON  = new Set(['Hydro','Geothermal','Wind','Solar','Wood']);
-  const RENEWABLE   = new Set(['Hydro','Geothermal','Wind','Solar']);
+  const LOW_CARBON = new Set(['Hydro','Geothermal','Wind','Solar','Wood']);
+  const RENEWABLE  = new Set(['Hydro','Geothermal','Wind','Solar']);
 
   async function fetchSheet(id) {
     const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json`;
     const t = await (await fetch(url)).text();
     return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
   }
+  async function fetchTPData() {
+    const tq  = encodeURIComponent('SELECT * WHERE B IS NOT NULL ORDER BY A DESC LIMIT 1');
+    const url = `https://docs.google.com/spreadsheets/d/${TP_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('TP data')}&tq=${tq}`;
+    const t   = await (await fetch(url)).text();
+    return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
+  }
 
-  const [monthlyResult, annualResult] = await Promise.allSettled([
+  const [monthlyResult, annualResult, liveResult] = await Promise.allSettled([
     fetchSheet(MONTHLY_ID),
     fetchSheet(ANNUAL_ID),
+    fetchTPData(),
   ]);
 
-  // ── Stats + pie from last month of monthly tab ───────────────
-  if (monthlyResult.status === 'fulfilled') {
-    const rows = monthlyResult.value.rows;
-    const lastRow = rows[rows.length - 1];
-    const year = lastRow.c[0].v, month = lastRow.c[1].v; // month is 0-indexed from QUERY
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    document.getElementById('mix-month-label').textContent = MONTHS_LBL[month] + ' ' + year;
-    const monthPeriods = daysInMonth * 48;
+  // ── Process monthly data ─────────────────────────────────────
+  let monthlyMode = null;
+  let gwBySource  = {};   // also used by sankey below
 
-    const gwBySource = {};
+  if (monthlyResult.status === 'fulfilled') {
+    const rows    = monthlyResult.value.rows;
+    const lastRow = rows[rows.length - 1];
+    const year = lastRow.c[0].v, month = lastRow.c[1].v;
+    const daysInMonth  = new Date(year, month + 1, 0).getDate();
+    const monthPeriods = daysInMonth * 48;
+    const label        = MONTHS_LBL[month] + ' ' + year;
+
+    gwBySource = {};
     FUELS.forEach(f => { gwBySource[f] = (lastRow.c[MC[f]]?.v ?? 0) / monthPeriods / 1000; });
     gwBySource.Other = (lastRow.c[MC.Other]?.v ?? 0) / monthPeriods / 1000;
+    const totalGW = (lastRow.c[MC.Total]?.v ?? 0) / monthPeriods / 1000;
 
-    const totalGW      = (lastRow.c[MC.Total]?.v ?? 0) / monthPeriods / 1000;
+    // GWh = stored MW-period sums × 0.5 h / 1000
+    const gwhBySource = {};
+    FUELS.forEach(f => { gwhBySource[f] = (lastRow.c[MC[f]]?.v ?? 0) / 2000; });
+    gwhBySource.Other = (lastRow.c[MC.Other]?.v ?? 0) / 2000;
+    const totalGWh = (lastRow.c[MC.Total]?.v ?? 0) / 2000;
+
     const lowCarbonGW  = FUELS.filter(f => LOW_CARBON.has(f)).reduce((s,f) => s + gwBySource[f], 0);
     const renewableGW  = FUELS.filter(f => RENEWABLE.has(f)).reduce((s,f) => s + gwBySource[f], 0);
     const carbonW      = [...FUELS,'Other'].reduce((s,f) => s + gwBySource[f] * (CARBON_FACTORS[f] ?? 200), 0);
+    const lowCarbonPct = totalGW > 0 ? Math.round(lowCarbonGW / totalGW * 100) : 0;
+    const renewPct     = totalGW > 0 ? Math.round(renewableGW / totalGW * 100) : 0;
+    const carbonInt    = totalGW > 0 ? Math.round(carbonW     / totalGW)       : 0;
+    const domesticPct  = totalGW > 0 ? Math.round((totalGW - gwBySource.Gas * 0.4 - gwBySource.Coal * 0.9 - gwBySource.Diesel) / totalGW * 100) : 0;
 
-    if (totalGW > 0) {
-      const lowCarbonPct    = Math.round(lowCarbonGW / totalGW * 100);
-      const renewablesPct   = Math.round(renewableGW / totalGW * 100);
-      const carbonIntensity = Math.round(carbonW / totalGW);
-      const domesticPct     = Math.round((totalGW - gwBySource.Gas * 0.4 - gwBySource.Coal * 0.9 - gwBySource.Diesel) / totalGW * 100);
+    const THERM_EFF = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Geothermal: 0.15, Wood: 0.39 };
+    let thermalInput = 0, thermalLoss = 0;
+    Object.entries(THERM_EFF).forEach(([src, eff]) => {
+      const gw = gwBySource[src] || 0;
+      if (gw > 0) { thermalInput += gw / eff; thermalLoss += gw / eff - gw; }
+    });
+    const directGW       = totalGW - Object.keys(THERM_EFF).reduce((s,k) => s + (gwBySource[k] || 0), 0);
+    const thermalLossPct = (thermalInput + directGW) > 0 ? Math.round(thermalLoss / (thermalInput + directGW) * 100) : 0;
 
-      const THERM_EFF = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Geothermal: 0.15, Wood: 0.39 };
-      let thermalInput = 0, thermalLoss = 0;
-      Object.entries(THERM_EFF).forEach(([src, eff]) => {
-        const gw = gwBySource[src] || 0;
-        if (gw > 0) { thermalInput += gw / eff; thermalLoss += gw / eff - gw; }
-      });
-      const directGW = totalGW - Object.keys(THERM_EFF).reduce((s,k) => s + (gwBySource[k] || 0), 0);
-      const thermalLossPct = (thermalInput + directGW) > 0 ? Math.round(thermalLoss / (thermalInput + directGW) * 100) : 0;
+    monthlyMode = { label, gwBySource, gwhBySource, totalGW, totalGWh, lowCarbonPct, renewPct, carbonInt, domesticPct, thermalLossPct };
+  }
 
-      document.getElementById('stat-lowcarbon').textContent    = lowCarbonPct;
-      document.getElementById('stat-renewables').textContent   = renewablesPct;
-      document.getElementById('stat-generation').textContent   = totalGW.toFixed(1);
-      document.getElementById('stat-independence').textContent = domesticPct;
-      document.getElementById('stat-carbon').textContent       = carbonIntensity;
-      document.getElementById('stat-thermal').textContent      = thermalLossPct;
+  // ── Process live (TP) data ───────────────────────────────────
+  let liveMode = null;
+  if (liveResult.status === 'fulfilled') {
+    const rows = liveResult.value.rows;
+    if (rows && rows.length > 0) {
+      const latest = rows[0];
+      const dtFmt  = latest.c[0]?.f ?? String(latest.c[0]?.v ?? '').slice(0, 16);
+      const mw = {};
+      FUELS.forEach(f => { mw[f] = latest.c[TP_COL[f]]?.v ?? 0; });
+      mw.Other = latest.c[TP_COL.Other]?.v ?? 0;
+      const totalMW = latest.c[TP_COL.Total]?.v || FUELS.reduce((s,f) => s + mw[f], 0) + mw.Other;
 
-      document.getElementById('lowcarbon-card').classList.add(lowCarbonPct > 80 ? 'stat-card--low' : lowCarbonPct > 60 ? 'stat-card--mid' : 'stat-card--high');
-      document.getElementById('renewables-card').classList.add(renewablesPct > 60 ? 'stat-card--low' : renewablesPct > 40 ? 'stat-card--mid' : 'stat-card--high');
-      document.getElementById('generation-card').classList.add(totalGW > 6 ? 'stat-card--high' : totalGW > 4 ? 'stat-card--mid' : 'stat-card--low');
-      document.getElementById('independence-card').classList.add(domesticPct > 80 ? 'stat-card--low' : domesticPct > 60 ? 'stat-card--mid' : 'stat-card--high');
-      document.getElementById('carbon-card').classList.add(carbonIntensity < 100 ? 'stat-card--low' : carbonIntensity < 200 ? 'stat-card--mid' : 'stat-card--high');
-      document.getElementById('thermal-card').classList.add(thermalLossPct < 10 ? 'stat-card--low' : thermalLossPct < 25 ? 'stat-card--mid' : 'stat-card--high');
+      const lowCarbonMW  = FUELS.filter(f => LOW_CARBON.has(f)).reduce((s,f) => s + mw[f], 0);
+      const renewableMW  = FUELS.filter(f => RENEWABLE.has(f)).reduce((s,f) => s + mw[f], 0);
+      const carbonW      = [...FUELS,'Other'].reduce((s,f) => s + mw[f] * (CARBON_FACTORS[f] ?? 200), 0);
+      const lowCarbonPct = totalMW > 0 ? Math.round(lowCarbonMW / totalMW * 100) : 0;
+      const renewPct     = totalMW > 0 ? Math.round(renewableMW  / totalMW * 100) : 0;
+      const carbonInt    = totalMW > 0 ? Math.round(carbonW      / totalMW)       : 0;
+      const fossilPct    = totalMW > 0 ? Math.round((mw.Gas + mw.Coal) / totalMW * 100) : 0;
+
+      liveMode = { dtFmt, mw, totalMW, lowCarbonPct, renewPct, carbonInt, fossilPct };
     }
+  }
 
-    // Pie + fuel list
-    const pieFuels = FUELS.filter(f => gwBySource[f] > 0).sort((a,b) => gwBySource[b] - gwBySource[a]);
+  // ── Shared chart + render helpers ────────────────────────────
+  let mixChart = null;
+  let currentTooltipUnit = 'MW';
+
+  function setStatCard(cardId, label, value, unit, cssClass) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    card.querySelector('.stat-label').textContent = label;
+    card.querySelector('.stat-num span:first-child').textContent = value ?? '—';
+    card.querySelector('.stat-unit').textContent = unit;
+    card.className = 'stat-card' + (cssClass ? ' ' + cssClass : '');
+    card.style.display = '';
+  }
+
+  function renderMixChart(fuelsData, totalVal, unit) {
+    currentTooltipUnit = unit;
+    const allFuels = [...FUELS.filter(f => fuelsData[f] > 0.001), ...(fuelsData.Other > 0.001 ? ['Other'] : [])].sort((a,b) => fuelsData[b] - fuelsData[a]);
+
     const listEl = document.getElementById('fuel-list');
-    pieFuels.forEach(f => {
-      const gw = gwBySource[f], pct = totalGW > 0 ? Math.round(gw / totalGW * 100) : 0;
+    listEl.innerHTML = '';
+    allFuels.forEach(f => {
+      const pct    = totalVal > 0 ? Math.round(fuelsData[f] / totalVal * 100) : 0;
+      const valStr = unit === 'GWh' ? `${Math.round(fuelsData[f]).toLocaleString()} GWh`
+                   : unit === 'MW'  ? `${Math.round(fuelsData[f])} MW`
+                                    : `${fuelsData[f].toFixed(2)} GW`;
       const row = document.createElement('div');
       row.className = 'fuel-row';
-      row.innerHTML = `<span class="fuel-dot" style="background:${PALETTE[f]}"></span><span class="fuel-gw">${gw.toFixed(2)} GW</span><span class="fuel-name">${f}</span><div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${pct}%;background:${PALETTE[f]}"></div></div><span class="fuel-pct">${pct}%</span>`;
+      row.innerHTML = `<span class="fuel-dot" style="background:${PALETTE[f]}"></span><span class="fuel-gw">${valStr}</span><span class="fuel-name">${f}</span><div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${pct}%;background:${PALETTE[f]}"></div></div><span class="fuel-pct">${pct}%</span>`;
       listEl.appendChild(row);
     });
 
-    new Chart(document.getElementById('mix-chart'), {
-      type: 'pie',
-      data: {
-        labels: pieFuels,
-        datasets: [{ data: pieFuels.map(f => +gwBySource[f].toFixed(3)), backgroundColor: pieFuels.map(f => PALETTE[f]), borderColor: '#fff', borderWidth: 2, hoverOffset: 8 }]
-      },
-      options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(2)} GW` } } } }
-    });
+    const chartVals = allFuels.map(f => unit === 'GWh' ? Math.round(fuelsData[f]) : unit === 'MW' ? Math.round(fuelsData[f] * 10) / 10 : +fuelsData[f].toFixed(3));
+    if (mixChart) {
+      mixChart.data.labels = allFuels;
+      mixChart.data.datasets[0].data = chartVals;
+      mixChart.data.datasets[0].backgroundColor = allFuels.map(f => PALETTE[f]);
+      mixChart.update();
+    } else {
+      mixChart = new Chart(document.getElementById('mix-chart'), {
+        type: 'pie',
+        data: {
+          labels: allFuels,
+          datasets: [{ data: chartVals, backgroundColor: allFuels.map(f => PALETTE[f]), borderColor: '#fff', borderWidth: 2, hoverOffset: 8 }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => {
+              if (currentTooltipUnit === 'GWh') return ` ${ctx.label}: ${Math.round(ctx.parsed).toLocaleString()} GWh`;
+              if (currentTooltipUnit === 'MW')  return ` ${ctx.label}: ${Math.round(ctx.parsed)} MW`;
+              return ` ${ctx.label}: ${ctx.parsed.toFixed(2)} GW`;
+            }}}
+          }
+        }
+      });
+    }
+  }
 
-    // ── Sankey ────────────────────────────────────────────────────
-    if (totalGW > 0) {
+  function renderLive() {
+    if (!liveMode) { renderLastMonth(); return; }
+    document.getElementById('mix-month-label').textContent = 'Live — as at ' + liveMode.dtFmt;
+
+    const { mw, totalMW, lowCarbonPct, renewPct, carbonInt, fossilPct } = liveMode;
+    setStatCard('lowcarbon-card',    'Low Carbon',          lowCarbonPct, '%',         lowCarbonPct > 80 ? 'stat-card--low' : lowCarbonPct > 60 ? 'stat-card--mid' : 'stat-card--high');
+    setStatCard('renewables-card',   'Renewables',          renewPct,     '%',         renewPct > 60 ? 'stat-card--low' : renewPct > 40 ? 'stat-card--mid' : 'stat-card--high');
+    setStatCard('generation-card',   'Total',               Math.round(totalMW).toLocaleString(), 'MW', 'stat-card--low');
+    setStatCard('independence-card', 'Fossil Fuels',        fossilPct,    '%',         fossilPct < 5 ? 'stat-card--low' : fossilPct < 15 ? 'stat-card--mid' : 'stat-card--high');
+    setStatCard('carbon-card',       'Carbon Intensity',    carbonInt,    'gCO₂/kWh', carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
+    document.getElementById('thermal-card').style.display = 'none';
+    document.querySelector('.stat-strip').style.gridTemplateColumns = 'repeat(5, 1fr)';
+
+    renderMixChart(mw, totalMW, 'MW');
+  }
+
+  function renderLastMonth() {
+    if (!monthlyMode) return;
+    const { label, gwhBySource, totalGWh, lowCarbonPct, renewPct, carbonInt, domesticPct, thermalLossPct } = monthlyMode;
+    document.getElementById('mix-month-label').textContent = 'Last month — ' + label;
+
+    setStatCard('lowcarbon-card',    'Low Carbon',               lowCarbonPct,   '%',         lowCarbonPct > 80 ? 'stat-card--low' : lowCarbonPct > 60 ? 'stat-card--mid' : 'stat-card--high');
+    setStatCard('renewables-card',   'Renewables',               renewPct,       '%',         renewPct > 60 ? 'stat-card--low' : renewPct > 40 ? 'stat-card--mid' : 'stat-card--high');
+    setStatCard('generation-card',   'Generation',               Math.round(totalGWh).toLocaleString(), 'GWh', 'stat-card--low');
+    setStatCard('independence-card', 'Electricity Independence', domesticPct,    '%',         domesticPct > 80 ? 'stat-card--low' : domesticPct > 60 ? 'stat-card--mid' : 'stat-card--high');
+    setStatCard('carbon-card',       'Carbon Intensity',         carbonInt,      'gCO₂/kWh', carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
+    setStatCard('thermal-card',      'Thermal Losses',           thermalLossPct, '%',         thermalLossPct < 10 ? 'stat-card--low' : thermalLossPct < 25 ? 'stat-card--mid' : 'stat-card--high');
+    document.querySelector('.stat-strip').style.gridTemplateColumns = '';
+
+    renderMixChart(gwhBySource, totalGWh, 'GWh');
+  }
+
+  // Toggle
+  document.querySelectorAll('.mix-toggle .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mix-toggle .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (btn.dataset.mode === 'live') renderLive(); else renderLastMonth();
+    });
+  });
+
+  // Default: live if available, else last month
+  if (liveMode) renderLive(); else renderLastMonth();
+
+  // ── Sankey (monthly data only) ────────────────────────────────
+  if (monthlyMode && monthlyMode.totalGW > 0) {
+    const totalGW = monthlyMode.totalGW;
       const EFF       = { Gas: 0.57, Coal: 0.35, Diesel: 0.35, Geothermal: 0.15, Wood: 0.39 };
       const FUEL_LABEL = { Gas: 'Gas fuel', Coal: 'Coal', Diesel: 'Diesel', Geothermal: 'Geothermal heat', Wood: 'Wood' };
       const GRID_LOSS = 0.06;
@@ -681,7 +795,6 @@
         const el = document.getElementById('sankey-chart');
         if (el) el.style.display = 'none';
       });
-    }
   }
 
   // ── Carbon intensity history from annual tab ─────────────────
