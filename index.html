@@ -320,10 +320,6 @@
 
       <!-- Five stat cards -->
       <div class="stat-strip">
-        <div class="stat-card" id="lowcarbon-card">
-          <div class="stat-label">Low Carbon</div>
-          <div class="stat-num"><span id="stat-lowcarbon">&mdash;</span><span class="stat-unit">%</span></div>
-        </div>
         <div class="stat-card" id="renewables-card">
           <div class="stat-label">Renewables</div>
           <div class="stat-num"><span id="stat-renewables">&mdash;</span><span class="stat-unit">%</span></div>
@@ -625,13 +621,12 @@
     document.getElementById('mix-month-label').textContent = 'Live — as at ' + liveMode.dtFmt;
 
     const { mw, totalMW, lowCarbonPct, renewPct, carbonInt, fossilPct } = liveMode;
-    setStatCard('lowcarbon-card',    'Low Carbon',          lowCarbonPct, '%',         lowCarbonPct > 80 ? 'stat-card--low' : lowCarbonPct > 60 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('renewables-card',   'Renewables',          renewPct,     '%',         renewPct > 60 ? 'stat-card--low' : renewPct > 40 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('generation-card',   'Total',               Math.round(totalMW).toLocaleString(), 'MW', 'stat-card--low');
     setStatCard('independence-card', 'Fossil Fuels',        fossilPct,    '%',         fossilPct < 5 ? 'stat-card--low' : fossilPct < 15 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('carbon-card',       'Carbon Intensity',    carbonInt,    'gCO₂/kWh', carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
     document.getElementById('thermal-card').style.display = 'none';
-    document.querySelector('.stat-strip').style.gridTemplateColumns = 'repeat(5, 1fr)';
+    document.querySelector('.stat-strip').style.gridTemplateColumns = 'repeat(4, 1fr)';
 
     renderMixChart(mw, totalMW, 'MW');
   }
@@ -641,7 +636,6 @@
     const { label, gwhBySource, totalGWh, lowCarbonPct, renewPct, carbonInt, domesticPct, thermalLossPct } = monthlyMode;
     document.getElementById('mix-month-label').textContent = 'Last month — ' + label;
 
-    setStatCard('lowcarbon-card',    'Low Carbon',               lowCarbonPct,   '%',         lowCarbonPct > 80 ? 'stat-card--low' : lowCarbonPct > 60 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('renewables-card',   'Renewables',               renewPct,       '%',         renewPct > 60 ? 'stat-card--low' : renewPct > 40 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('generation-card',   'Generation',               Math.round(totalGWh).toLocaleString(), 'GWh', 'stat-card--low');
     setStatCard('independence-card', 'Electricity Independence', domesticPct,    '%',         domesticPct > 80 ? 'stat-card--low' : domesticPct > 60 ? 'stat-card--mid' : 'stat-card--high');
