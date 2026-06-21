@@ -29,10 +29,12 @@
     /* ── Stat strip ── */
     .stat-strip {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 16px;
       margin: 28px 0 32px;
     }
+    @media (max-width: 900px) { .stat-strip { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 560px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } }
 
     .stat-card {
       border: 1px solid var(--border);
@@ -635,7 +637,6 @@
     setStatCard('independence-card', 'Fossil Fuels',        fossilPct,    '%',         fossilPct < 5 ? 'stat-card--low' : fossilPct < 15 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('carbon-card',       'Carbon Intensity',    carbonInt,    'gCO₂/kWh', carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('thermal-card',      'Thermal Losses',      thermalLossPct, '%',       thermalLossPct < 10 ? 'stat-card--low' : thermalLossPct < 25 ? 'stat-card--mid' : 'stat-card--high');
-    document.querySelector('.stat-strip').style.gridTemplateColumns = 'repeat(5, 1fr)';
 
     renderMixChart(mw, totalMW, 'MW');
   }
@@ -650,7 +651,6 @@
     setStatCard('independence-card', 'Electricity Independence', domesticPct,    '%',         domesticPct > 80 ? 'stat-card--low' : domesticPct > 60 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('carbon-card',       'Carbon Intensity',         carbonInt,      'gCO₂/kWh', carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
     setStatCard('thermal-card',      'Thermal Losses',           thermalLossPct, '%',         thermalLossPct < 10 ? 'stat-card--low' : thermalLossPct < 25 ? 'stat-card--mid' : 'stat-card--high');
-    document.querySelector('.stat-strip').style.gridTemplateColumns = 'repeat(5, 1fr)';
 
     renderMixChart(gwhBySource, totalGWh, 'GWh');
   }
