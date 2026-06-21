@@ -114,7 +114,7 @@
         <div class="stat-num"><span id="stat-renewables">&mdash;</span><span class="stat-unit">%</span></div>
       </div>
       <div class="stat-card" id="card-gas">
-        <div class="stat-label">Gas</div>
+        <div class="stat-label">Fossil Fuels</div>
         <div class="stat-num"><span id="stat-gas">&mdash;</span><span class="stat-unit">%</span></div>
       </div>
       <div class="stat-card" id="card-carbon">
@@ -195,7 +195,7 @@
       const carbonW      = [...FUELS,'Other'].reduce((s,f) => s + mw[f] * (CARBON_FACTORS[f] ?? 200), 0);
       const lowCarbonPct = Math.round(lowCarbonMW / totalMW * 100);
       const renewPct     = Math.round(renewableMW  / totalMW * 100);
-      const gasPct       = Math.round(mw.Gas / totalMW * 100);
+      const gasPct       = Math.round((mw.Gas + mw.Coal) / totalMW * 100);
       const carbonInt    = Math.round(carbonW / totalMW);
 
       document.getElementById('stat-total').textContent     = Math.round(totalMW).toLocaleString();
