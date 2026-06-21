@@ -11,28 +11,18 @@
   <script src="/assets/nav.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    .live-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: #16a34a;
-      margin-bottom: 4px;
-    }
-    .live-badge::before {
-      content: '';
+    .live-dot {
       display: inline-block;
       width: 8px; height: 8px;
       border-radius: 50%;
       background: #16a34a;
+      margin-right: 6px;
+      vertical-align: middle;
       animation: live-pulse 1.8s ease-in-out infinite;
     }
     @keyframes live-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: .4; transform: scale(.75); }
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
     }
 
     .stat-strip {
@@ -56,7 +46,7 @@
       margin-bottom: 8px;
     }
     .stat-num {
-      font-size: 2.4rem;
+      font-size: 2.2rem;
       font-weight: 300;
       line-height: 1;
       color: var(--text);
@@ -65,7 +55,7 @@
       font-size: 0.78rem;
       font-weight: 500;
       color: var(--muted);
-      margin-left: 3px;
+      margin-left: 2px;
     }
     .stat-card--low  { border-color: #16a34a; }
     .stat-card--mid  { border-color: #f59e0b; }
@@ -73,19 +63,6 @@
     .stat-card--low  .stat-num { color: #15803d; }
     .stat-card--mid  .stat-num { color: #d97706; }
     .stat-card--high .stat-num { color: #dc2626; }
-
-    .mix-title {
-      font-family: 'DM Serif Display', Georgia, serif;
-      font-size: 1.8rem;
-      font-weight: 400;
-      color: #1a4d7a;
-      margin-bottom: 4px;
-    }
-    .mix-subtitle {
-      color: var(--muted);
-      font-size: 1rem;
-      margin-bottom: 20px;
-    }
 
     .mix-layout {
       display: grid;
@@ -111,15 +88,6 @@
     .fuel-bar { height: 100%; border-radius: 3px; }
     .fuel-pct { font-size: 12px; font-weight: 600; color: var(--muted); text-align: right; }
 
-    .no-data {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-    }
-    .no-data strong { display: block; font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
-
     @media (max-width: 900px) { .stat-strip { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 560px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 700px) { .mix-layout { grid-template-columns: 1fr; } }
@@ -129,59 +97,52 @@
 
 <div class="page-wrap">
   <main>
-    <div class="home-hero">
-      <div class="live-badge">Live</div>
-      <h1>Current Generation</h1>
-      <p>Aotearoa New Zealand electricity generation by fuel type — scraped from Transpower every 30 minutes.</p>
+    <h1 class="page-title"><span class="live-dot"></span>Live Generation</h1>
+    <p class="page-intro">Aotearoa New Zealand electricity generation by fuel type, scraped from Transpower every 30 minutes. As at <strong id="live-timestamp">loading…</strong></p>
+
+    <div class="stat-strip">
+      <div class="stat-card" id="card-total">
+        <div class="stat-label">Total</div>
+        <div class="stat-num"><span id="stat-total">&mdash;</span><span class="stat-unit">MW</span></div>
+      </div>
+      <div class="stat-card" id="card-lowcarbon">
+        <div class="stat-label">Low Carbon</div>
+        <div class="stat-num"><span id="stat-lowcarbon">&mdash;</span><span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat-card" id="card-renewables">
+        <div class="stat-label">Renewables</div>
+        <div class="stat-num"><span id="stat-renewables">&mdash;</span><span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat-card" id="card-gas">
+        <div class="stat-label">Gas</div>
+        <div class="stat-num"><span id="stat-gas">&mdash;</span><span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat-card" id="card-carbon">
+        <div class="stat-label">Carbon Intensity</div>
+        <div class="stat-num"><span id="stat-carbon">&mdash;</span><span class="stat-unit">gCO₂/kWh</span></div>
+      </div>
     </div>
 
-    <section id="live-section">
-      <h2 class="mix-title">Generation right now</h2>
-      <p class="mix-subtitle">As at <span id="live-timestamp">loading…</span></p>
+    <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:0 0 8px;">Current generation mix</h2>
+    <p style="color:var(--muted); margin-bottom:20px;">Generation by fuel type for the most recent half-hour trading period. Hydro and geothermal provide constant baseload; wind and solar vary with weather; gas fills gaps as needed.</p>
 
-      <div class="stat-strip">
-        <div class="stat-card" id="card-total">
-          <div class="stat-label">Total</div>
-          <div class="stat-num"><span id="stat-total">&mdash;</span><span class="stat-unit">MW</span></div>
-        </div>
-        <div class="stat-card" id="card-lowcarbon">
-          <div class="stat-label">Low Carbon</div>
-          <div class="stat-num"><span id="stat-lowcarbon">&mdash;</span><span class="stat-unit">%</span></div>
-        </div>
-        <div class="stat-card" id="card-renewables">
-          <div class="stat-label">Renewables</div>
-          <div class="stat-num"><span id="stat-renewables">&mdash;</span><span class="stat-unit">%</span></div>
-        </div>
-        <div class="stat-card" id="card-gas">
-          <div class="stat-label">Gas</div>
-          <div class="stat-num"><span id="stat-gas">&mdash;</span><span class="stat-unit">%</span></div>
-        </div>
-        <div class="stat-card" id="card-carbon">
-          <div class="stat-label">Carbon Intensity</div>
-          <div class="stat-num"><span id="stat-carbon">&mdash;</span><span class="stat-unit">gCO₂/kWh</span></div>
-        </div>
-      </div>
-
-      <div class="mix-layout">
-        <div class="pie-col">
-          <div class="chart-spinner"></div>
-          <canvas id="live-pie"></canvas>
-        </div>
-        <div class="fuel-list" id="live-fuel-list"></div>
-      </div>
-    </section>
-
-    <section style="margin: 32px 0;">
-      <h2 style="font-size:1.6rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin-bottom:6px;">Last 24 hours</h2>
-      <p style="color:var(--muted); font-size:14px; margin-bottom:16px;">Half-hourly generation by fuel type for the last 48 trading periods.</p>
-      <div style="position:relative; height:300px;">
+    <div class="mix-layout">
+      <div class="pie-col">
         <div class="chart-spinner"></div>
-        <canvas id="live-bar"></canvas>
+        <canvas id="live-pie"></canvas>
       </div>
-    </section>
+      <div class="fuel-list" id="live-fuel-list"></div>
+    </div>
+
+    <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:8px 0 8px;">Last 24 hours</h2>
+    <p style="color:var(--muted); margin-bottom:16px;">Half-hourly generation by fuel type for the last 48 trading periods.</p>
+    <div style="position:relative; height:300px;">
+      <div class="chart-spinner"></div>
+      <canvas id="live-bar"></canvas>
+    </div>
 
     <!-- Blueprint hero -->
-    <div style="background:#1a4d7a; color:#fff; border-radius:10px; padding:32px 36px; margin:40px 0 32px;">
+    <div style="background:#1a4d7a; color:#fff; border-radius:10px; padding:32px 36px; margin:40px 0 0;">
       <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; opacity:.65; margin:0 0 10px;">The 2030 Blueprint</p>
       <p style="font-family:'DM Serif Display',Georgia,serif; font-size:1.75rem; font-weight:400; line-height:1.25; margin:0 0 14px; letter-spacing:-0.01em;">Solve the dry year problem with renewables — not imported LNG.</p>
       <p style="font-size:1rem; line-height:1.7; margin:0 0 22px; opacity:0.88;">In dry years, low hydro lakes force New Zealand to burn more fossil gas and risk blackouts. The standard response is to import Liquefied Natural Gas — expensive, slow to procure and shipped from overseas. The 2030 Blueprint shows a different answer: enough wind, solar and battery storage to keep the lights on through even the driest years, with energy that is <strong>cheap to run, fast to deploy and entirely locally produced</strong>.</p>
@@ -201,7 +162,7 @@
   const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
   const PALETTE = {
     Hydro:'#3b82f6', Geothermal:'#ef4444', Gas:'#6b7280', Wind:'#0d9e6e',
-    Solar:'#f59e0b', Wood:'#824e1a', Coal:'#111827', Diesel:'#9ca3af', Other:'#d1d5db',
+    Solar:'#f59e0b', Wood:'#824e1a', Coal:'#111827', Diesel:'#9ca3af',
   };
   const CARBON_FACTORS = {
     Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
@@ -209,13 +170,10 @@
   const LOW_CARBON = new Set(['Hydro','Geothermal','Wind','Solar','Wood']);
   const RENEWABLE  = new Set(['Hydro','Wind','Solar']);
 
-  // Column indices in the gviz result (SELECT * from TP data sheet)
   // A=DateTime(0), B=Date(1), C=Trading_Period(2),
   // D=Hydro(3), E=Geo(4), F=Gas(5), G=Wind(6), H=Solar(7),
   // I=Wood(8), J=Coal(9), K=Diesel(10), L=Other(11), M=Total(12)
   const COL = { DateTime:0, Date:1, TP:2, Hydro:3, Geothermal:4, Gas:5, Wind:6, Solar:7, Wood:8, Coal:9, Diesel:10, Other:11, Total:12 };
-
-  function val(row, key) { return row.c[COL[key]]?.v ?? 0; }
 
   try {
     const tq  = encodeURIComponent('SELECT * WHERE B IS NOT NULL ORDER BY A DESC LIMIT 96');
@@ -224,22 +182,20 @@
     const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
 
     if (!rows || rows.length === 0) {
-      document.getElementById('live-timestamp').textContent = 'no data yet — run importFromTranspower() to start collecting';
+      document.getElementById('live-timestamp').textContent = 'no data yet';
       document.querySelectorAll('.chart-spinner').forEach(el => el.remove());
       return;
     }
 
-    // ── Latest snapshot (rows[0] = most recent, DESC order) ──────
+    // Latest snapshot — rows[0] is most recent (DESC order)
     const latest = rows[0];
-    const dtRaw  = latest.c[COL.DateTime]?.v ?? latest.c[COL.DateTime]?.f ?? '';
-    // gviz may return a Date object formatted string — just show the formatted value
-    const dtFmt  = latest.c[COL.DateTime]?.f ?? String(dtRaw).slice(0, 16);
+    const dtFmt  = latest.c[COL.DateTime]?.f ?? String(latest.c[COL.DateTime]?.v ?? '').slice(0, 16);
     document.getElementById('live-timestamp').textContent = dtFmt;
 
     const mw = {};
-    FUELS.forEach(f => { mw[f] = val(latest, f); });
-    mw.Other = val(latest, 'Other');
-    const totalMW = val(latest, 'Total') || FUELS.reduce((s,f) => s + mw[f], 0) + mw.Other;
+    FUELS.forEach(f => { mw[f] = latest.c[COL[f]]?.v ?? 0; });
+    mw.Other = latest.c[COL.Other]?.v ?? 0;
+    const totalMW = latest.c[COL.Total]?.v || FUELS.reduce((s,f) => s + mw[f], 0) + mw.Other;
 
     if (totalMW > 0) {
       const lowCarbonMW  = FUELS.filter(f => LOW_CARBON.has(f)).reduce((s,f) => s + mw[f], 0);
@@ -250,11 +206,11 @@
       const gasPct       = Math.round(mw.Gas / totalMW * 100);
       const carbonInt    = Math.round(carbonW / totalMW);
 
-      document.getElementById('stat-total').textContent    = Math.round(totalMW).toLocaleString();
+      document.getElementById('stat-total').textContent     = Math.round(totalMW).toLocaleString();
       document.getElementById('stat-lowcarbon').textContent = lowCarbonPct;
       document.getElementById('stat-renewables').textContent = renewPct;
-      document.getElementById('stat-gas').textContent      = gasPct;
-      document.getElementById('stat-carbon').textContent   = carbonInt;
+      document.getElementById('stat-gas').textContent       = gasPct;
+      document.getElementById('stat-carbon').textContent    = carbonInt;
 
       document.getElementById('card-total').classList.add('stat-card--low');
       document.getElementById('card-lowcarbon').classList.add(lowCarbonPct > 80 ? 'stat-card--low' : lowCarbonPct > 60 ? 'stat-card--mid' : 'stat-card--high');
@@ -283,11 +239,10 @@
       options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${Math.round(ctx.parsed)} MW` } } } }
     });
 
-    // ── Bar chart: last 48 periods ascending ─────────────────────
-    const chartRows = [...rows].reverse(); // was DESC, now ASC for time axis
+    // Bar chart: reverse to ascending time order
+    const chartRows = [...rows].reverse();
     const labels = chartRows.map(r => {
       const f = r.c[COL.DateTime]?.f ?? String(r.c[COL.DateTime]?.v ?? '');
-      // Extract HH:MM from the formatted string
       const m = f.match(/(\d{1,2}:\d{2})/);
       return m ? m[1] : f.slice(-5);
     });
