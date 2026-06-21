@@ -9,6 +9,7 @@ const NAV_HTML = `
     </button>
     <nav id="main-nav">
       <ul>
+        <li><a href="/live/index.html">Live</a></li>
         <li>
           <a href="/last-28-days/index.html">Electricity Data ▾</a>
           <ul>

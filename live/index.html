@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Generation — MyGridNZ</title>
+  <meta name="description" content="Live electricity generation in Aotearoa New Zealand by fuel type — updated every 30 minutes.">
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/nav.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #16a34a;
+      margin-bottom: 4px;
+    }
+    .live-badge::before {
+      content: '';
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      animation: live-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .4; transform: scale(.75); }
+    }
+
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin: 20px 0 28px;
+    }
+    .stat-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-num {
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--text);
+    }
+    .stat-unit {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-left: 3px;
+    }
+    .stat-card--low  { border-color: #16a34a; }
+    .stat-card--mid  { border-color: #f59e0b; }
+    .stat-card--high { border-color: #ef4444; }
+    .stat-card--low  .stat-num { color: #15803d; }
+    .stat-card--mid  .stat-num { color: #d97706; }
+    .stat-card--high .stat-num { color: #dc2626; }
+
+    .mix-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: #1a4d7a;
+      margin-bottom: 4px;
+    }
+    .mix-subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+
+    .mix-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 36px;
+      align-items: center;
+      margin-bottom: 36px;
+    }
+    .pie-col { position: relative; width: 100%; max-width: 280px; }
+
+    .fuel-list { display: flex; flex-direction: column; gap: 9px; }
+    .fuel-row {
+      display: grid;
+      grid-template-columns: 10px auto auto 1fr 40px;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .fuel-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .fuel-name { font-weight: 500; color: var(--text); }
+    .fuel-gw { font-size: 13px; color: var(--muted); text-align: right; white-space: nowrap; }
+    .fuel-bar-wrap { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .fuel-bar { height: 100%; border-radius: 3px; }
+    .fuel-pct { font-size: 12px; font-weight: 600; color: var(--muted); text-align: right; }
+
+    .no-data {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+    .no-data strong { display: block; font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
+
+    @media (max-width: 900px) { .stat-strip { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 560px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px) { .mix-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <main>
+    <div class="home-hero">
+      <div class="live-badge">Live</div>
+      <h1>Current Generation</h1>
+      <p>Aotearoa New Zealand electricity generation by fuel type — scraped from Transpower every 30 minutes.</p>
+    </div>
+
+    <section id="live-section">
+      <h2 class="mix-title">Generation right now</h2>
+      <p class="mix-subtitle">As at <span id="live-timestamp">loading…</span></p>
+
+      <div class="stat-strip">
+        <div class="stat-card" id="card-total">
+          <div class="stat-label">Total</div>
+          <div class="stat-num"><span id="stat-total">&mdash;</span><span class="stat-unit">MW</span></div>
+        </div>
+        <div class="stat-card" id="card-lowcarbon">
+          <div class="stat-label">Low Carbon</div>
+          <div class="stat-num"><span id="stat-lowcarbon">&mdash;</span><span class="stat-unit">%</span></div>
+        </div>
+        <div class="stat-card" id="card-renewables">
+          <div class="stat-label">Renewables</div>
+          <div class="stat-num"><span id="stat-renewables">&mdash;</span><span class="stat-unit">%</span></div>
+        </div>
+        <div class="stat-card" id="card-gas">
+          <div class="stat-label">Gas</div>
+          <div class="stat-num"><span id="stat-gas">&mdash;</span><span class="stat-unit">%</span></div>
+        </div>
+        <div class="stat-card" id="card-carbon">
+          <div class="stat-label">Carbon Intensity</div>
+          <div class="stat-num"><span id="stat-carbon">&mdash;</span><span class="stat-unit">gCO₂/kWh</span></div>
+        </div>
+      </div>
+
+      <div class="mix-layout">
+        <div class="pie-col">
+          <div class="chart-spinner"></div>
+          <canvas id="live-pie"></canvas>
+        </div>
+        <div class="fuel-list" id="live-fuel-list"></div>
+      </div>
+    </section>
+
+    <section style="margin: 32px 0;">
+      <h2 style="font-size:1.6rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin-bottom:6px;">Last 24 hours</h2>
+      <p style="color:var(--muted); font-size:14px; margin-bottom:16px;">Half-hourly generation by fuel type for the last 48 trading periods.</p>
+      <div style="position:relative; height:300px;">
+        <div class="chart-spinner"></div>
+        <canvas id="live-bar"></canvas>
+      </div>
+    </section>
+
+    <!-- Blueprint hero -->
+    <div style="background:#1a4d7a; color:#fff; border-radius:10px; padding:32px 36px; margin:40px 0 32px;">
+      <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; opacity:.65; margin:0 0 10px;">The 2030 Blueprint</p>
+      <p style="font-family:'DM Serif Display',Georgia,serif; font-size:1.75rem; font-weight:400; line-height:1.25; margin:0 0 14px; letter-spacing:-0.01em;">Solve the dry year problem with renewables — not imported LNG.</p>
+      <p style="font-size:1rem; line-height:1.7; margin:0 0 22px; opacity:0.88;">In dry years, low hydro lakes force New Zealand to burn more fossil gas and risk blackouts. The standard response is to import Liquefied Natural Gas — expensive, slow to procure and shipped from overseas. The 2030 Blueprint shows a different answer: enough wind, solar and battery storage to keep the lights on through even the driest years, with energy that is <strong>cheap to run, fast to deploy and entirely locally produced</strong>.</p>
+      <a href="/2030grid/index.html" style="display:inline-block; background:#fff; color:#1a4d7a; font-weight:700; font-size:14px; padding:11px 24px; border-radius:6px; text-decoration:none; letter-spacing:.01em;">Explore the 2030 Blueprint →</a>
+    </div>
+  </main>
+
+  <div id="sidebar-placeholder"></div>
+</div>
+
+<script>
+(async () => {
+  const SHEET_ID   = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
+  const SHEET_NAME = 'TP data';
+  const FONT       = "'DM Sans','Segoe UI',Arial,sans-serif";
+
+  const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
+  const PALETTE = {
+    Hydro:'#3b82f6', Geothermal:'#ef4444', Gas:'#6b7280', Wind:'#0d9e6e',
+    Solar:'#f59e0b', Wood:'#824e1a', Coal:'#111827', Diesel:'#9ca3af', Other:'#d1d5db',
+  };
+  const CARBON_FACTORS = {
+    Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
+  };
+  const LOW_CARBON = new Set(['Hydro','Geothermal','Wind','Solar','Wood']);
+  const RENEWABLE  = new Set(['Hydro','Wind','Solar']);
+
+  // Column indices in the gviz result (SELECT * from TP data sheet)
+  // A=DateTime(0), B=Date(1), C=Trading_Period(2),
+  // D=Hydro(3), E=Geo(4), F=Gas(5), G=Wind(6), H=Solar(7),
+  // I=Wood(8), J=Coal(9), K=Diesel(10), L=Other(11), M=Total(12)
+  const COL = { DateTime:0, Date:1, TP:2, Hydro:3, Geothermal:4, Gas:5, Wind:6, Solar:7, Wood:8, Coal:9, Diesel:10, Other:11, Total:12 };
+
+  function val(row, key) { return row.c[COL[key]]?.v ?? 0; }
+
+  try {
+    const tq  = encodeURIComponent('SELECT * WHERE B IS NOT NULL ORDER BY A DESC LIMIT 96');
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&tq=${tq}`;
+    const t   = await (await fetch(url)).text();
+    const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
+
+    if (!rows || rows.length === 0) {
+      document.getElementById('live-timestamp').textContent = 'no data yet — run importFromTranspower() to start collecting';
+      document.querySelectorAll('.chart-spinner').forEach(el => el.remove());
+      return;
+    }
+
+    // ── Latest snapshot (rows[0] = most recent, DESC order) ──────
+    const latest = rows[0];
+    const dtRaw  = latest.c[COL.DateTime]?.v ?? latest.c[COL.DateTime]?.f ?? '';
+    // gviz may return a Date object formatted string — just show the formatted value
+    const dtFmt  = latest.c[COL.DateTime]?.f ?? String(dtRaw).slice(0, 16);
+    document.getElementById('live-timestamp').textContent = dtFmt;
+
+    const mw = {};
+    FUELS.forEach(f => { mw[f] = val(latest, f); });
+    mw.Other = val(latest, 'Other');
+    const totalMW = val(latest, 'Total') || FUELS.reduce((s,f) => s + mw[f], 0) + mw.Other;
+
+    if (totalMW > 0) {
+      const lowCarbonMW  = FUELS.filter(f => LOW_CARBON.has(f)).reduce((s,f) => s + mw[f], 0);
+      const renewableMW  = FUELS.filter(f => RENEWABLE.has(f)).reduce((s,f) => s + mw[f], 0);
+      const carbonW      = [...FUELS,'Other'].reduce((s,f) => s + mw[f] * (CARBON_FACTORS[f] ?? 200), 0);
+      const lowCarbonPct = Math.round(lowCarbonMW / totalMW * 100);
+      const renewPct     = Math.round(renewableMW  / totalMW * 100);
+      const gasPct       = Math.round(mw.Gas / totalMW * 100);
+      const carbonInt    = Math.round(carbonW / totalMW);
+
+      document.getElementById('stat-total').textContent    = Math.round(totalMW).toLocaleString();
+      document.getElementById('stat-lowcarbon').textContent = lowCarbonPct;
+      document.getElementById('stat-renewables').textContent = renewPct;
+      document.getElementById('stat-gas').textContent      = gasPct;
+      document.getElementById('stat-carbon').textContent   = carbonInt;
+
+      document.getElementById('card-total').classList.add('stat-card--low');
+      document.getElementById('card-lowcarbon').classList.add(lowCarbonPct > 80 ? 'stat-card--low' : lowCarbonPct > 60 ? 'stat-card--mid' : 'stat-card--high');
+      document.getElementById('card-renewables').classList.add(renewPct > 60 ? 'stat-card--low' : renewPct > 40 ? 'stat-card--mid' : 'stat-card--high');
+      document.getElementById('card-gas').classList.add(gasPct < 5 ? 'stat-card--low' : gasPct < 15 ? 'stat-card--mid' : 'stat-card--high');
+      document.getElementById('card-carbon').classList.add(carbonInt < 100 ? 'stat-card--low' : carbonInt < 200 ? 'stat-card--mid' : 'stat-card--high');
+    }
+
+    // Pie + fuel list
+    const pieFuels = FUELS.filter(f => mw[f] > 0).sort((a,b) => mw[b] - mw[a]);
+    const listEl = document.getElementById('live-fuel-list');
+    pieFuels.forEach(f => {
+      const pct = totalMW > 0 ? Math.round(mw[f] / totalMW * 100) : 0;
+      const row = document.createElement('div');
+      row.className = 'fuel-row';
+      row.innerHTML = `<span class="fuel-dot" style="background:${PALETTE[f]}"></span><span class="fuel-gw">${Math.round(mw[f])} MW</span><span class="fuel-name">${f}</span><div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${pct}%;background:${PALETTE[f]}"></div></div><span class="fuel-pct">${pct}%</span>`;
+      listEl.appendChild(row);
+    });
+
+    new Chart(document.getElementById('live-pie'), {
+      type: 'pie',
+      data: {
+        labels: pieFuels,
+        datasets: [{ data: pieFuels.map(f => +mw[f].toFixed(1)), backgroundColor: pieFuels.map(f => PALETTE[f]), borderColor: '#fff', borderWidth: 2, hoverOffset: 8 }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${Math.round(ctx.parsed)} MW` } } } }
+    });
+
+    // ── Bar chart: last 48 periods ascending ─────────────────────
+    const chartRows = [...rows].reverse(); // was DESC, now ASC for time axis
+    const labels = chartRows.map(r => {
+      const f = r.c[COL.DateTime]?.f ?? String(r.c[COL.DateTime]?.v ?? '');
+      // Extract HH:MM from the formatted string
+      const m = f.match(/(\d{1,2}:\d{2})/);
+      return m ? m[1] : f.slice(-5);
+    });
+
+    new Chart(document.getElementById('live-bar'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: FUELS.map(f => ({
+          label: f,
+          data: chartRows.map(r => +(r.c[COL[f]]?.v ?? 0).toFixed(1)),
+          backgroundColor: PALETTE[f],
+          borderWidth: 0,
+        })),
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: FONT, size: 11 }, padding: 12, usePointStyle: true, pointStyle: 'circle', boxWidth: 9, boxHeight: 9 } },
+          tooltip: { mode: 'index', callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} MW` } }
+        },
+        scales: {
+          x: { stacked: true, ticks: { font: { family: FONT, size: 10 }, maxTicksLimit: 12 }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, title: { display: true, text: 'MW', font: { family: FONT, size: 11 }, color: '#555' }, ticks: { font: { family: FONT, size: 10 } }, grid: { color: '#eeeeee' } }
+        }
+      }
+    });
+
+  } catch (e) {
+    console.error('Live data error:', e);
+    document.getElementById('live-timestamp').textContent = 'error loading data';
+  } finally {
+    document.querySelectorAll('.chart-spinner').forEach(el => el.remove());
+  }
+})();
+</script>
+
+</body>
+</html>
