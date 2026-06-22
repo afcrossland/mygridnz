@@ -886,7 +886,7 @@
 
     const initHours = window.innerWidth < 768 ? 168 : 672;
     document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.hours && parseInt(b.dataset.hours) === initHours);
+      b.classList.toggle('active', !!b.dataset.hours && parseInt(b.dataset.hours) === initHours);
     });
     const initRows   = allRows.slice(-initHours);
     const initLabels = initRows.map(rowDateLabel);
