@@ -846,54 +846,52 @@
       return { rows: syntheticRows, labels: syntheticLabels };
     }
 
-    const initHours = window.innerWidth < 768 ? 168 : 672;
-    document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.hours && parseInt(b.dataset.hours) === initHours);
-    });
-    const initRows  = allRows.slice(-initHours);
-    // col 0 is a date; col 1 is hour (0-23). Try Google Date format first, fall back to string.
     function rowDateLabel(r) {
       const d = parseGDate(r.c[0]?.v);
       return d ? fmtDate(d) : String(r.c[0]?.v ?? '');
     }
-    const initLabels = initRows.map(rowDateLabel);
 
-    const tsChart = new Chart(document.getElementById('timeseries-chart'), {
-      type: 'line',
-      data: { labels: initLabels, datasets: buildDatasets(initRows) },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { font: { family: FONT, size: 12 }, padding: 14, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10 }
-          },
-          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' GW' : '—'}` } }
-        },
-        scales: {
-          x: {
-            stacked: true,
-            ticks: {
-              font: { family: FONT, size: 10 },
-              maxRotation: 45, minRotation: 0, autoSkip: false,
-              callback: (_, idx) => buildShowLabelAt(initLabels, initHours).has(idx) ? initLabels[idx] : ''
-            },
-            grid: { display: false }
-          },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            min: 0,
-            title: { display: true, text: 'Power, GW', font: { family: FONT, size: 12 }, color: '#555' },
-            ticks: { font: { family: FONT, size: 11 } },
-            grid: { color: '#eeeeee' }
-          }
-        }
+    function buildBarDatasets(rows) {
+      return TIME_SOURCES.map(src => ({
+        label: src.label,
+        data: rows.map(r => r.c[src.col]?.v != null ? r.c[src.col].v / 1000 : null),
+        backgroundColor: src.color,
+        borderWidth: 0,
+        stack: 'sources',
+      }));
+    }
+
+    const SHARED_OPTIONS = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: FONT, size: 12 }, padding: 14, usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' GW' : '—'}` } }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font: { family: FONT, size: 10 }, maxRotation: 45, minRotation: 0, autoSkip: false }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, min: 0, title: { display: true, text: 'Power, GW', font: { family: FONT, size: 12 }, color: '#555' }, ticks: { font: { family: FONT, size: 11 } }, grid: { color: '#eeeeee' } }
       }
+    };
+
+    let tsChart = null;
+    function makeTsChart(type, labels, datasets, xTickCallback) {
+      if (tsChart) tsChart.destroy();
+      const opts = JSON.parse(JSON.stringify(SHARED_OPTIONS));
+      opts.scales.x.ticks.callback = xTickCallback;
+      tsChart = new Chart(document.getElementById('timeseries-chart'), { type, data: { labels, datasets }, options: opts });
+    }
+
+    const initHours = window.innerWidth < 768 ? 168 : 672;
+    document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.hours && parseInt(b.dataset.hours) === initHours);
     });
+    const initRows   = allRows.slice(-initHours);
+    const initLabels = initRows.map(rowDateLabel);
+    const initShowAt = buildShowLabelAt(initLabels, initHours);
+    makeTsChart('line', initLabels, buildDatasets(initRows), (_, idx) => initShowAt.has(idx) ? initLabels[idx] : '');
 
     document.getElementById('ts-filter').addEventListener('click', e => {
       const btn = e.target.closest('.filter-btn');
@@ -903,19 +901,13 @@
 
       if (btn.dataset.mode === 'monthly') {
         const { rows: mRows, labels: mLabels } = aggregateMonthly(allRows);
-        tsChart.data.labels = mLabels;
-        buildDatasets(mRows).forEach((ds, i) => { tsChart.data.datasets[i].data = ds.data; });
-        tsChart.options.scales.x.ticks.callback = (_, idx) => mLabels[idx];
-        tsChart.update('none');
+        makeTsChart('bar', mLabels, buildBarDatasets(mRows), (_, idx) => mLabels[idx]);
       } else {
         const hours  = parseInt(btn.dataset.hours, 10);
         const rows   = allRows.slice(-hours);
         const lbls   = rows.map(rowDateLabel);
         const showAt = buildShowLabelAt(lbls, hours);
-        tsChart.data.labels = lbls;
-        buildDatasets(rows).forEach((ds, i) => { tsChart.data.datasets[i].data = ds.data; });
-        tsChart.options.scales.x.ticks.callback = (_, idx) => showAt.has(idx) ? lbls[idx] : '';
-        tsChart.update('none');
+        makeTsChart('line', lbls, buildDatasets(rows), (_, idx) => showAt.has(idx) ? lbls[idx] : '');
       }
     });
   }
