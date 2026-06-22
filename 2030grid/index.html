@@ -398,13 +398,12 @@
 
     <!-- Timeseries -->
     <h2 class="section-h2">The 2030 Blueprint in action</h2>
-    <p class="section-p" id="timeseries-desc">The simulation runs the 2030 Blueprint mix against real-time weather and demand data over the last <span class="desktop-only">28 days</span><span class="mobile-only">7 days</span>, showing how an expanded fleet of wind, solar, hydro, geothermal and storage would actually perform. Gas almost disappears; storage charges during sunny and windy periods and discharges at night and during dry spells; curtailment rises when renewables generate more than demand and storage can absorb.</p>
+    <p class="section-p" id="timeseries-desc">The simulation runs the 2030 Blueprint mix against real-time weather and demand data, showing how an expanded fleet of wind, solar, hydro, geothermal and storage would actually perform. Gas almost disappears; storage charges during sunny and windy periods and discharges at night and during dry spells; curtailment rises when renewables generate more than demand and storage can absorb.</p>
     <div class="filter-bar" id="ts-filter">
       <span class="filter-bar-label">Show:</span>
-      <button class="filter-btn" data-hours="48">Last 48 hrs</button>
       <button class="filter-btn" data-hours="168">Last 7 days</button>
       <button class="filter-btn active" data-hours="672">Last 28 days</button>
-      <button class="filter-btn" data-hours="0">All data</button>
+      <button class="filter-btn" data-mode="monthly">Last 12 months</button>
     </div>
     <div style="position:relative; height:420px;">
       <div class="chart-spinner"></div>
@@ -823,9 +822,33 @@
       return ds;
     }
 
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function aggregateMonthly(rows) {
+      const monthMap = new Map();
+      rows.forEach(r => {
+        const d = parseGDate(r.c[0]?.v);
+        if (!d) return;
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const lbl = MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
+        if (!monthMap.has(key)) monthMap.set(key, { lbl, count: 0, totals: {} });
+        const m = monthMap.get(key);
+        m.count++;
+        TIME_SOURCES.forEach(src => { m.totals[src.col] = (m.totals[src.col] || 0) + (r.c[src.col]?.v ?? 0); });
+      });
+      const syntheticRows = [], syntheticLabels = [];
+      monthMap.forEach(m => {
+        syntheticLabels.push(m.lbl);
+        const c = {};
+        TIME_SOURCES.forEach(src => { c[src.col] = { v: m.count > 0 ? m.totals[src.col] / m.count : 0 }; });
+        syntheticRows.push({ c });
+      });
+      return { rows: syntheticRows, labels: syntheticLabels };
+    }
+
     const initHours = window.innerWidth < 768 ? 168 : 672;
     document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
-      b.classList.toggle('active', parseInt(b.dataset.hours) === initHours);
+      b.classList.toggle('active', b.dataset.hours && parseInt(b.dataset.hours) === initHours);
     });
     const initRows  = allRows.slice(-initHours);
     // col 0 is a date; col 1 is hour (0-23). Try Google Date format first, fall back to string.
@@ -877,14 +900,23 @@
       if (!btn) return;
       document.querySelectorAll('#ts-filter .filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const hours = parseInt(btn.dataset.hours, 10);
-      const rows  = hours > 0 ? allRows.slice(-hours) : allRows;
-      const lbls  = rows.map(rowDateLabel);
-      const showAt = buildShowLabelAt(lbls, hours);
-      tsChart.data.labels = lbls;
-      buildDatasets(rows).forEach((ds, i) => { tsChart.data.datasets[i].data = ds.data; });
-      tsChart.options.scales.x.ticks.callback = (_, idx) => showAt.has(idx) ? lbls[idx] : '';
-      tsChart.update('none');
+
+      if (btn.dataset.mode === 'monthly') {
+        const { rows: mRows, labels: mLabels } = aggregateMonthly(allRows);
+        tsChart.data.labels = mLabels;
+        buildDatasets(mRows).forEach((ds, i) => { tsChart.data.datasets[i].data = ds.data; });
+        tsChart.options.scales.x.ticks.callback = (_, idx) => mLabels[idx];
+        tsChart.update('none');
+      } else {
+        const hours  = parseInt(btn.dataset.hours, 10);
+        const rows   = allRows.slice(-hours);
+        const lbls   = rows.map(rowDateLabel);
+        const showAt = buildShowLabelAt(lbls, hours);
+        tsChart.data.labels = lbls;
+        buildDatasets(rows).forEach((ds, i) => { tsChart.data.datasets[i].data = ds.data; });
+        tsChart.options.scales.x.ticks.callback = (_, idx) => showAt.has(idx) ? lbls[idx] : '';
+        tsChart.update('none');
+      }
     });
   }
 
