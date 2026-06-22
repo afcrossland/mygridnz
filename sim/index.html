@@ -1052,14 +1052,19 @@ async function runSim() {
       opt.value = opt.textContent = y;
       sel.appendChild(opt);
     });
-    if (years.length) sel.value = years[years.length - 1];
+    sel.value = years.includes(2025) ? 2025 : years[years.length - 1];
 
     // Update slider defaults from actual fleet capacity
-    if (caps['Gas']?.NI)    setSlider('ni-gas',    caps['Gas'].NI);
-    if (caps['Coal']?.NI)   setSlider('ni-coal',   caps['Coal'].NI);
-    if (caps['Wood']?.NI)   setSlider('ni-wood',   caps['Wood'].NI);
-    if (caps['Diesel']?.NI) setSlider('ni-diesel', caps['Diesel'].NI);
-    if (caps['Other']?.NI)  setSlider('ni-other',  caps['Other'].NI);
+    console.log('capacity_perIsland keys:', Object.keys(caps), caps);
+    const setIfPresent = (key, sliderId) => {
+      const v = caps[key]?.NI;
+      if (v != null && v > 0) setSlider(sliderId, v);
+    };
+    setIfPresent('Gas',    'ni-gas');
+    setIfPresent('Coal',   'ni-coal');
+    setIfPresent('Wood',   'ni-wood');
+    setIfPresent('Diesel', 'ni-diesel');
+    setIfPresent('Other',  'ni-other');
 
     document.getElementById('sim-status').textContent =
       `${years.length} years available (${years[0]}–${years[years.length-1]}). ` +
