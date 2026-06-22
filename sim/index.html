@@ -303,26 +303,35 @@ async function loadCapacity() {
 }
 
 async function loadIslandData(year) {
-  // Filter to the selected year only — fixes the multi-year demand inflation
   const q = `SELECT * WHERE year(A) = ${year} ORDER BY A`;
   const json = await fetchGviz('data_perIsland', q);
   const rows = json.table.rows || [];
   if (!rows.length) throw new Error(`No data for ${year} in data_perIsland.`);
 
+  // Build column index by label — robust against gviz omitting null columns
+  const colIdx = {};
+  (json.table.cols || []).forEach((col, i) => { colIdx[col.label] = i; });
+
+  function col(r, name) { const i = colIdx[name]; return (i != null) ? gv(r.c[i]) : 0; }
+
   return rows.map(r => {
-    const c = r.c;
-    // gviz datetime v = "Date(year,month0,day,h,m,s)" — month is 0-indexed
-    const dtv = String(c[0]?.v || '');
+    const c0 = r.c[colIdx['DateTime'] ?? 0];
+    const dtv = String(c0?.v || '');
     const dtm = dtv.match(/Date\(\d+,(\d+)/);
     const month = dtm ? parseInt(dtm[1], 10) : 0;
-    const dt = c[0]?.f || dtv;  // formatted label e.g. "2024-06-01 00:00"
+    const dt = c0?.f || dtv;
     return {
       dt, month,
-      NI_Hydro: gv(c[3]),  NI_Geo:  gv(c[4]),
-      NI_Wind:  gv(c[6]),  NI_Solar:gv(c[7]),
-      SI_Hydro: gv(c[13]), SI_Geo:  gv(c[14]),
-      SI_Wind:  gv(c[16]), SI_Solar:gv(c[17]),
-      NI_Demand:gv(c[23]), SI_Demand:gv(c[24]),
+      NI_Hydro:  col(r, 'NI_Hydro_MW'),
+      NI_Geo:    col(r, 'NI_Geothermal_MW'),
+      NI_Wind:   col(r, 'NI_Wind_MW'),
+      NI_Solar:  col(r, 'NI_Solar_MW'),
+      SI_Hydro:  col(r, 'SI_Hydro_MW'),
+      SI_Geo:    col(r, 'SI_Geothermal_MW'),
+      SI_Wind:   col(r, 'SI_Wind_MW'),
+      SI_Solar:  col(r, 'SI_Solar_MW'),
+      NI_Demand: col(r, 'NI_Demand_MW'),
+      SI_Demand: col(r, 'SI_Demand_MW'),
     };
   });
 }
@@ -362,13 +371,13 @@ function simulate(data, caps, p) {
 
     // ── Phase 1: low-carbon per island ──
     const niGeo  = row.NI_Geo;
-    const niWind = row.NI_Wind  * niWindSc;
-    const niSol  = row.NI_Solar * niSolarSc;
-    const niHist = row.NI_Hydro;
+    const niWind   = row.NI_Wind  * niWindSc;
+    const niSolar  = row.NI_Solar * niSolarSc;
+    const niHist   = row.NI_Hydro;
     const niRoRmw  = niHist * niRoR;
     const niFlex   = niHist * (1 - niRoR);
 
-    const niBase   = niGeo + niWind + niSol + niRoRmw;
+    const niBase   = niGeo + niWind + niSolar + niRoRmw;
     const niGap1   = Math.max(row.NI_Demand - niBase, 0);
     const niFlexD  = Math.min(niGap1, niFlex);
     const niUnused = niFlex - niFlexD;
@@ -381,13 +390,13 @@ function simulate(data, caps, p) {
     let niDef  = Math.max(row.NI_Demand - niBase - niFlexD - niExMW, 0);
 
     const siGeo  = row.SI_Geo;
-    const siWind = row.SI_Wind  * siWindSc;
-    const siSol  = row.SI_Solar * siSolarSc;
+    const siWind   = row.SI_Wind  * siWindSc;
+    const siSolar  = row.SI_Solar * siSolarSc;
     const siHist = row.SI_Hydro;
     const siRoRmw  = siHist * siRoR;
     const siFlex   = siHist * (1 - siRoR);
 
-    const siBase   = siGeo + siWind + siSol + siRoRmw;
+    const siBase   = siGeo + siWind + siSolar + siRoRmw;
     const siGap1   = Math.max(row.SI_Demand - siBase, 0);
     const siFlexD  = Math.min(siGap1, siFlex);
     const siUnused = siFlex - siFlexD;
@@ -450,7 +459,7 @@ function simulate(data, caps, p) {
     mo[m].niGeo      += niGeo          * K;
     mo[m].niHydro    += niHydroTotal   * K;
     mo[m].niWind     += niWind         * K;
-    mo[m].niSolar    += niSol          * K;
+    mo[m].niSolar    += niSolar         * K;
     mo[m].niStorage  += niDischarge    * K;
     mo[m].niWood     += dWood          * K;
     mo[m].niGas      += dGas           * K;
@@ -460,7 +469,7 @@ function simulate(data, caps, p) {
     mo[m].siGeo      += siGeo          * K;
     mo[m].siHydro    += siHydroTotal   * K;
     mo[m].siWind     += siWind         * K;
-    mo[m].siSolar    += siSol          * K;
+    mo[m].siSolar    += siSolar         * K;
     mo[m].hvdcNiSi   += hvdcNiSi      * K;
     mo[m].hvdcSiNi   += hvdcSiNi      * K;
     mo[m].niCurtail  += niSurp         * K;
