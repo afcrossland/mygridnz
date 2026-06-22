@@ -504,6 +504,7 @@ function simulate(data, caps, p) {
       dt: row.dt,
       niDemand: row.NI_Demand, siDemand: row.SI_Demand,
       niGeo, niHydro: niHydroTotal, niWind, niSolar, niStorage: niDischarge,
+      niCharge,  // battery charging from surplus — stacks above demand line
       niWood: dWood, niGas: dGas, niCoal: dCoal, niDiesel: dDiesel, niOther: dOther,
       siGeo, siHydro: siHydroTotal, siWind, siSolar,
       hvdcNiSi, hvdcSiNi,
@@ -716,21 +717,23 @@ function mkTsChart(id, datasets) {
 function renderTsCharts() {
   document.getElementById('ts-label').textContent = tsLabel(tsSlice());
 
-  // NI — includes SI→NI HVDC imports in the supply stack
+  // NI — surplus above demand line shown as storage charging + curtailment
   mkTsChart('ts-ni', [
     tsLineDataset('Geothermal',  'niGeo',    C.Geo,      true, 'stack'),
     tsLineDataset('Hydro',       'niHydro',  C.Hydro,    true, 'stack'),
     tsLineDataset('Wind',        'niWind',   C.Wind,     true, 'stack'),
     tsLineDataset('Solar',       'niSolar',  C.Solar,    true, 'stack'),
-    tsLineDataset('Storage',     'niStorage',C.Storage,  true, 'stack'),
+    tsLineDataset('Storage disch','niStorage',C.Storage,  true, 'stack'),
     tsLineDataset('← SI HVDC',  'hvdcSiNi', C.HvdcSiNi, true, 'stack'),
     tsLineDataset('Wood',        'niWood',   C.Wood,     true, 'stack'),
     tsLineDataset('Gas',         'niGas',    C.Gas,      true, 'stack'),
     tsLineDataset('Coal',        'niCoal',   C.Coal,     true, 'stack'),
     tsDemandLine('niDemand'),
+    tsLineDataset('→ Storage',   'niCharge', '#c084fc',  true, 'stack'),
+    tsLineDataset('Curtailed',   'niCurtail','#6ee7b7',  true, 'stack'),
   ]);
 
-  // SI — includes NI→SI HVDC imports in the supply stack
+  // SI — surplus above demand line shown as curtailment
   mkTsChart('ts-si', [
     tsLineDataset('Geo',         'siGeo',    C.Geo,      true, 'stack'),
     tsLineDataset('Hydro',       'siHydro',  C.Hydro,    true, 'stack'),
@@ -738,20 +741,23 @@ function renderTsCharts() {
     tsLineDataset('Solar',       'siSolar',  C.Solar,    true, 'stack'),
     tsLineDataset('← NI HVDC',  'hvdcNiSi', C.HvdcNiSi, true, 'stack'),
     tsDemandLine('siDemand'),
+    tsLineDataset('Curtailed',   'siCurtail','#6ee7b7',  true, 'stack'),
   ]);
 
   // National combined
   const natSlice = tsSlice().map(p => ({
     dt: p.dt,
-    natDemand: p.niDemand + p.siDemand,
-    natGeo:    p.niGeo    + p.siGeo,
-    natHydro:  p.niHydro  + p.siHydro,
-    natWind:   p.niWind   + p.siWind,
-    natSolar:  p.niSolar  + p.siSolar,
-    natStorage:p.niStorage,
-    natWood:   p.niWood,
-    natGas:    p.niGas,
-    natCoal:   p.niCoal,
+    natDemand:  p.niDemand  + p.siDemand,
+    natGeo:     p.niGeo     + p.siGeo,
+    natHydro:   p.niHydro   + p.siHydro,
+    natWind:    p.niWind    + p.siWind,
+    natSolar:   p.niSolar   + p.siSolar,
+    natStorage: p.niStorage,
+    natWood:    p.niWood,
+    natGas:     p.niGas,
+    natCoal:    p.niCoal,
+    natCharge:  p.niCharge,
+    natCurtail: p.niCurtail + p.siCurtail,
   }));
 
   charts['ts-nat']?.destroy();
@@ -765,8 +771,10 @@ function renderTsCharts() {
       { label:'Storage',    type:'line', data:natSlice.map(p=>+p.natStorage.toFixed(1)),borderColor:C.Storage, backgroundColor:C.Storage+'44', fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'s' },
       { label:'Wood',       type:'line', data:natSlice.map(p=>+p.natWood.toFixed(1)),   borderColor:C.Wood,    backgroundColor:C.Wood+'44',    fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'s' },
       { label:'Gas',        type:'line', data:natSlice.map(p=>+p.natGas.toFixed(1)),    borderColor:C.Gas,     backgroundColor:C.Gas+'44',     fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'s' },
-      { label:'Coal',       type:'line', data:natSlice.map(p=>+p.natCoal.toFixed(1)),   borderColor:C.Coal,    backgroundColor:C.Coal+'44',    fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'s' },
-      { label:'Demand', type:'line', data:natSlice.map(p=>+p.natDemand.toFixed(1)), borderColor:C.Demand, borderWidth:1.5, borderDash:[4,3], fill:false, pointRadius:0, tension:0.1 },
+      { label:'Coal',        type:'line', data:natSlice.map(p=>+p.natCoal.toFixed(1)),    borderColor:C.Coal,    backgroundColor:C.Coal+'44',    fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'s' },
+      { label:'Demand',      type:'line', data:natSlice.map(p=>+p.natDemand.toFixed(1)),  borderColor:C.Demand,  borderWidth:1.5, borderDash:[4,3], fill:false, pointRadius:0, tension:0.1 },
+      { label:'→ Storage',   type:'line', data:natSlice.map(p=>+p.natCharge.toFixed(1)),  borderColor:'#c084fc', backgroundColor:'#c084fc44', fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'s' },
+      { label:'Curtailed',   type:'line', data:natSlice.map(p=>+p.natCurtail.toFixed(1)), borderColor:'#6ee7b7', backgroundColor:'#6ee7b744', fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'s' },
     ]},
     options:{ responsive:true, animation:false,
       plugins:{ legend:{position:'bottom',labels:{boxWidth:9,font:{size:10}}},
