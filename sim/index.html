@@ -111,9 +111,9 @@
   <p class="page-intro">Half-hourly per-island forward-pass simulation using actual metered generation data.
     Configure capacity, then run to see renewables share, carbon intensity, LCOE and system costs.</p>
 
-  <!-- Settings: demand/weather data year + reservoir params -->
+  <!-- Settings: demand/weather data year + HVDC caps -->
   <details class="settings">
-    <summary>Demand and weather data settings</summary>
+    <summary>Demand, weather and grid settings</summary>
     <div class="settings-body">
       <div class="slider-row">
         <div class="sl">
@@ -125,6 +125,15 @@
           <input type="range" id="hvdc-ni-si" min="0" max="3000" step="100" value="1200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>HVDC SI→NI cap</span><span id="hvdc-si-ni-v" class="sl-val">1200 MW</span></div>
           <input type="range" id="hvdc-si-ni" min="0" max="3000" step="100" value="1200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- Settings: hydro reservoir -->
+  <details class="settings">
+    <summary>Hydro storage</summary>
+    <div class="settings-body">
+      <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>NI reservoir max</span><span id="ni-res-max-v" class="sl-val">500 GWh</span></div>
           <input type="range" id="ni-res-max" min="0" max="2000" step="50" value="500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>SI reservoir max</span><span id="si-res-max-v" class="sl-val">4500 GWh</span></div>
@@ -257,6 +266,10 @@
     <div class="chart-row">
       <div class="chart-box"><h3>National — generation vs demand</h3><canvas id="ts-nat"></canvas></div>
       <div class="chart-box"><h3>HVDC flows (MW)</h3><canvas id="ts-hvdc"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Available reserves (MW)</h3><canvas id="ts-reserves"></canvas></div>
+      <div class="chart-box"><h3>Battery — SoC &amp; charge / discharge rate</h3><canvas id="ts-batt"></canvas></div>
     </div>
 
     <!-- Demand simulation placeholder -->
@@ -580,6 +593,14 @@ function simulate(data, caps, p) {
       niCurtail: niSurp, siCurtail: siSurp,
       niUnserved: niDef, siUnserved: siDef,
       niSoC, siSoC, niResMWh: niRes, siResMWh: siRes,
+      niSoCpct:   p.battCap    > 0 ? +(niSoC / p.battCap    * 100).toFixed(1) : 0,
+      siBattPct:  p.siBattCap  > 0 ? +(siSoC / p.siBattCap  * 100).toFixed(1) : 0,
+      // reserves: available MW headroom for each source
+      niHydroReserve: +niFlexAvail.toFixed(0),
+      niBattReserve:  +(Math.max(0, Math.min(p.battPower,    (niSoC - BATT_RESERVE * p.battCap)    * p.battEff   / 0.5))).toFixed(0),
+      niThermReserve: +(Math.max(0, (p.niGas + p.niCoal + p.niWood + p.niDiesel + p.niOther) - (dGas + dCoal + dWood + dDiesel + dOther))).toFixed(0),
+      siHydroReserve: +siFlexAvail.toFixed(0),
+      siBattReserve:  +(Math.max(0, Math.min(p.siBattPower,  (siSoC - BATT_RESERVE * p.siBattCap)  * p.siBattEff / 0.5))).toFixed(0),
     });
   }
   return { mo, pp, pk };
@@ -751,8 +772,8 @@ function renderAnnualCharts(mo) {
   mkStacked('chart-ni', [
     { label:'Geothermal', data:mo.map(m=>+m.niGeo.toFixed(1)),     backgroundColor:C.Geo,     stack:'s' },
     { label:'Hydro',      data:mo.map(m=>+m.niHydro.toFixed(1)),   backgroundColor:C.Hydro,   stack:'s' },
-    { label:'Wind',       data:mo.map(m=>+m.niWind.toFixed(1)),    backgroundColor:C.Wind,    stack:'s' },
     { label:'Solar',      data:mo.map(m=>+m.niSolar.toFixed(1)),   backgroundColor:C.Solar,   stack:'s' },
+    { label:'Wind',       data:mo.map(m=>+m.niWind.toFixed(1)),    backgroundColor:C.Wind,    stack:'s' },
     { label:'Storage',    data:mo.map(m=>+m.niStorage.toFixed(1)), backgroundColor:C.Storage, stack:'s' },
     { label:'Wood',       data:mo.map(m=>+m.niWood.toFixed(1)),    backgroundColor:C.Wood,    stack:'s' },
     { label:'Gas',        data:mo.map(m=>+m.niGas.toFixed(1)),     backgroundColor:C.Gas,     stack:'s' },
@@ -760,8 +781,8 @@ function renderAnnualCharts(mo) {
   ]);
   mkStacked('chart-si', [
     { label:'Hydro',      data:mo.map(m=>+m.siHydro.toFixed(1)),   backgroundColor:C.Hydro,   stack:'s' },
-    { label:'Wind',       data:mo.map(m=>+m.siWind.toFixed(1)),    backgroundColor:C.Wind,    stack:'s' },
     { label:'Solar',      data:mo.map(m=>+m.siSolar.toFixed(1)),   backgroundColor:C.Solar,   stack:'s' },
+    { label:'Wind',       data:mo.map(m=>+m.siWind.toFixed(1)),    backgroundColor:C.Wind,    stack:'s' },
     { label:'← NI HVDC', data:mo.map(m=>+m.hvdcNiSi.toFixed(1)),  backgroundColor:C.HvdcNiSi,stack:'s' },
   ]);
   charts['chart-res'] = new Chart(document.getElementById('chart-res'), {
@@ -860,9 +881,10 @@ function mkTsChart(id, datasets, xMaxTicks) {
   charts[id] = new Chart(document.getElementById(id), {
     data:{ labels: tsXLabels(), datasets },
     options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10},
+          filter: item => item.text !== '' } },
         tooltip:{ mode:'index', intersect:false, callbacks:{
-          label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW`
+          label: ctx => ctx.dataset.label ? `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` : null
         }}},
       scales:{
         x:{ ticks:{ maxTicksLimit: xMaxTicks, maxRotation:0, autoSkipPadding:6 } },
@@ -877,32 +899,32 @@ function renderTsCharts() {
   document.getElementById('ts-label').textContent = tsLabel(slice);
   const xt = tsWindowDays <= 7 ? 14 : 32;
 
-  // NI — stacked gen, then demand on top (demand line last = renders above fill, no shading artifact)
+  // NI — solar before wind; curtailment unlabelled band above demand
   mkTsChart('ts-ni', [
     mkTsDs('Geothermal', 'niGeo',    C.Geo,      true),
     mkTsDs('Hydro',      'niHydro',  C.Hydro,    true),
-    mkTsDs('Wind',       'niWind',   C.Wind,     true),
     mkTsDs('Solar',      'niSolar',  C.Solar,    true),
+    mkTsDs('Wind',       'niWind',   C.Wind,     true),
     mkTsDs('Storage',    'niStorage',C.Storage,  true),
     mkTsDs('← SI HVDC', 'hvdcSiNi', C.HvdcSiNi, true),
     mkTsDs('Wood',       'niWood',   C.Wood,     true),
     mkTsDs('Gas',        'niGas',    C.Gas,      true),
     mkTsDs('Coal',       'niCoal',   C.Coal,     true),
     mkTsDs('→ Storage',  'niCharge', C.Charge,   true),
-    mkTsDs('Curtailed',  'niCurtail',C.Curtail,  true),
-    mkDemand('niDemand'),   // demand line LAST — no fill interference
+    mkTsDs('',           'niCurtail',C.Curtail,  true),
+    mkDemand('niDemand'),
   ], xt);
 
   // SI
   mkTsChart('ts-si', [
     mkTsDs('Geo',        'siGeo',    C.Geo,      true),
     mkTsDs('Hydro',      'siHydro',  C.Hydro,    true),
-    mkTsDs('Wind',       'siWind',   C.Wind,     true),
     mkTsDs('Solar',      'siSolar',  C.Solar,    true),
+    mkTsDs('Wind',       'siWind',   C.Wind,     true),
     mkTsDs('Storage',    'siStorage',C.Storage,  true),
     mkTsDs('← NI HVDC', 'hvdcNiSi', C.HvdcNiSi, true),
     mkTsDs('→ Storage',  'siCharge', C.Charge,   true),
-    mkTsDs('Curtailed',  'siCurtail',C.Curtail,  true),
+    mkTsDs('',           'siCurtail',C.Curtail,  true),
     mkDemand('siDemand'),
   ], xt);
 
@@ -929,14 +951,14 @@ function renderTsCharts() {
     data:{ labels:tsXLabels(), datasets:[
       nd('Geo',       'natGeo',     C.Geo,      true),
       nd('Hydro',     'natHydro',   C.Hydro,    true),
-      nd('Wind',      'natWind',    C.Wind,     true),
       nd('Solar',     'natSolar',   C.Solar,    true),
+      nd('Wind',      'natWind',    C.Wind,     true),
       nd('Storage',   'natStorage', C.Storage,  true),
       nd('Wood',      'natWood',    C.Wood,     true),
       nd('Gas',       'natGas',     C.Gas,      true),
       nd('Coal',      'natCoal',    C.Coal,     true),
       nd('→ Storage', 'natCharge',  C.Charge,   true),
-      nd('Curtailed', 'natCurtail', C.Curtail,  true),
+      nd('',          'natCurtail', C.Curtail,  true),
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ]},
@@ -962,6 +984,79 @@ function renderTsCharts() {
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ title:{ display:true, text:'MW' } } } },
+  });
+
+  // Reserves — NI stacked (hydro / battery / thermal), SI total line
+  charts['ts-reserves']?.destroy();
+  charts['ts-reserves'] = new Chart(document.getElementById('ts-reserves'), {
+    type:'line',
+    data:{ labels:tsXLabels(), datasets:[
+      { label:'NI Hydro headroom',
+        data: slice.map(p=>+(p.niHydroReserve??0)),
+        borderColor:C.Hydro, backgroundColor:C.Hydro+'50',
+        fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
+      { label:'NI Battery',
+        data: slice.map(p=>+(p.niBattReserve??0)),
+        borderColor:C.Storage, backgroundColor:C.Storage+'50',
+        fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
+      { label:'NI Thermal standby',
+        data: slice.map(p=>+(p.niThermReserve??0)),
+        borderColor:C.Gas, backgroundColor:C.Gas+'50',
+        fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
+      { label:'SI Hydro + Battery',
+        data: slice.map(p=>+(( p.siHydroReserve??0)+(p.siBattReserve??0))),
+        borderColor:'#7dd3fc', borderDash:[4,3],
+        fill:false, borderWidth:1.8, pointRadius:0, tension:.1 },
+    ]},
+    options:{ responsive:true, animation:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false }},
+      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
+  });
+
+  // Battery — SoC % on left axis, charge/discharge MW on right axis
+  charts['ts-batt']?.destroy();
+  charts['ts-batt'] = new Chart(document.getElementById('ts-batt'), {
+    data:{ labels:tsXLabels(), datasets:[
+      { label:'NI SoC %', type:'line',
+        data: slice.map(p=>+(p.niSoCpct??0).toFixed(1)),
+        borderColor:C.Storage, backgroundColor:C.Storage+'25', fill:true,
+        yAxisID:'ySoC', pointRadius:0, tension:.2, borderWidth:1.5 },
+      { label:'SI SoC %', type:'line',
+        data: slice.map(p=>+(p.siBattPct??0).toFixed(1)),
+        borderColor:'#818cf8', borderDash:[4,3],
+        fill:false, yAxisID:'ySoC', pointRadius:0, tension:.2, borderWidth:1.2 },
+      { label:'NI Charging', type:'line',
+        data: slice.map(p=>+(p.niCharge??0).toFixed(0)),
+        borderColor:'#a78bfa', backgroundColor:'#a78bfa35', fill:true,
+        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
+      { label:'NI Discharging', type:'line',
+        data: slice.map(p=>+(p.niStorage??0).toFixed(0)),
+        borderColor:'#6d28d9', backgroundColor:'#6d28d935', fill:true,
+        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
+      { label:'SI Charging', type:'line',
+        data: slice.map(p=>+(p.siCharge??0).toFixed(0)),
+        borderColor:'#c084fc', backgroundColor:'#c084fc25', fill:true,
+        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
+      { label:'SI Discharging', type:'line',
+        data: slice.map(p=>+(p.siStorage??0).toFixed(0)),
+        borderColor:'#9333ea', backgroundColor:'#9333ea25', fill:true,
+        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
+    ]},
+    options:{ responsive:true, animation:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10},
+        filter: item => item.text !== '' } },
+        tooltip:{ mode:'index', intersect:false }},
+      scales:{
+        x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        ySoC:{ type:'linear', position:'left', min:0, max:100,
+          title:{ display:true, text:'SoC %' } },
+        yMW:{ type:'linear', position:'right',
+          title:{ display:true, text:'MW' },
+          grid:{ drawOnChartArea:false } },
+      },
+    },
   });
 }
 
