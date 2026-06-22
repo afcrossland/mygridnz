@@ -369,47 +369,45 @@ function simulate(data, caps, p) {
   for (const row of data) {
     const m = row.month;
 
-    // ── Phase 1: low-carbon per island ──
+    // ── Phase 1: fixed (must-run) generation per island ──
     const niGeo  = row.NI_Geo;
     const niWind   = row.NI_Wind  * niWindSc;
     const niSolar  = row.NI_Solar * niSolarSc;
     const niHist   = row.NI_Hydro;
     const niRoRmw  = niHist * niRoR;
     const niFlex   = niHist * (1 - niRoR);
-
-    const niBase   = niGeo + niWind + niSolar + niRoRmw;
-    const niGap1   = Math.max(row.NI_Demand - niBase, 0);
-    const niFlexD  = Math.min(niGap1, niFlex);
-    const niUnused = niFlex - niFlexD;
-    const niGap2   = Math.max(row.NI_Demand - niBase - niFlexD, 0);
-    const niExMWh  = Math.min(niGap2 * 0.5, niRes);
-    const niExMW   = niExMWh / 0.5;
-    niRes = Math.min(Math.max(niRes + niUnused * 0.5 - p.niLoss - niExMWh, 0), p.niResMax);
-
-    let niSurp = Math.max(niBase + niFlexD + niExMW - row.NI_Demand, 0);
-    let niDef  = Math.max(row.NI_Demand - niBase - niFlexD - niExMW, 0);
+    const niFixed  = niGeo + niWind + niSolar + niRoRmw;
 
     const siGeo  = row.SI_Geo;
     const siWind   = row.SI_Wind  * siWindSc;
     const siSolar  = row.SI_Solar * siSolarSc;
-    const siHist = row.SI_Hydro;
+    const siHist   = row.SI_Hydro;
     const siRoRmw  = siHist * siRoR;
     const siFlex   = siHist * (1 - siRoR);
+    const siFixed  = siGeo + siWind + siSolar + siRoRmw;
 
-    const siBase   = siGeo + siWind + siSolar + siRoRmw;
-    const siGap1   = Math.max(row.SI_Demand - siBase, 0);
-    const siFlexD  = Math.min(siGap1, siFlex);
-    const siUnused = siFlex - siFlexD;
-    const siGap2   = Math.max(row.SI_Demand - siBase - siFlexD, 0);
-    const siExMWh  = Math.min(siGap2 * 0.5, siRes);
-    const siExMW   = siExMWh / 0.5;
-    siRes = Math.min(Math.max(siRes + siUnused * 0.5 - p.siLoss - siExMWh, 0), p.siResMax);
+    // ── Phase 1b: local flexible hydro dispatch (meet local demand only) ──
+    // niFlexUsed/siFlexUsed are mutable — Phase 2b may increase them for cross-island
+    let niFlexUsed = Math.min(Math.max(row.NI_Demand - niFixed, 0), niFlex);
+    let siFlexUsed = Math.min(Math.max(row.SI_Demand - siFixed, 0), siFlex);
+    let niFlexAvail = niFlex - niFlexUsed;  // can still be dispatched this period
+    let siFlexAvail = siFlex - siFlexUsed;
 
-    let siSurp = Math.max(siBase + siFlexD + siExMW - row.SI_Demand, 0);
-    let siDef  = Math.max(row.SI_Demand - siBase - siFlexD - siExMW, 0);
+    // Reservoir draw for remaining local deficit
+    let niDef = Math.max(row.NI_Demand - niFixed - niFlexUsed, 0);
+    let siDef = Math.max(row.SI_Demand - siFixed - siFlexUsed, 0);
+    const niExMWh = Math.min(niDef * 0.5, niRes);
+    const siExMWh = Math.min(siDef * 0.5, siRes);
+    niDef = Math.max(niDef - niExMWh / 0.5, 0);
+    siDef = Math.max(siDef - siExMWh / 0.5, 0);
 
-    // ── Phase 2: HVDC — low-carbon surplus before storage ──
+    let niSurp = Math.max(niFixed + niFlexUsed + niExMWh / 0.5 - row.NI_Demand, 0);
+    let siSurp = Math.max(siFixed + siFlexUsed + siExMWh / 0.5 - row.SI_Demand, 0);
+
+    // ── Phase 2: HVDC ──
     let hvdcNiSi = 0, hvdcSiNi = 0;
+
+    // 2a: transfer actual surplus (wind/solar/geo overshoot) before touching storage
     if (niSurp > 0 && siDef > 0) {
       const x = Math.min(niSurp, siDef, p.hvdcNiSi);
       niSurp -= x; siDef -= x; hvdcNiSi += x;
@@ -417,6 +415,21 @@ function simulate(data, caps, p) {
       const x = Math.min(siSurp, niDef, p.hvdcSiNi);
       siSurp -= x; niDef -= x; hvdcSiNi += x;
     }
+
+    // 2b: dispatch idle flexible hydro from the other island to cover remaining deficits
+    // (fixes: SI hydro sitting unused while NI runs gas/coal, or vice versa)
+    if (siFlexAvail > 0 && niDef > 0) {
+      const x = Math.min(siFlexAvail, niDef, p.hvdcSiNi - hvdcSiNi);
+      siFlexAvail -= x; siFlexUsed += x; niDef -= x; hvdcSiNi += x;
+    }
+    if (niFlexAvail > 0 && siDef > 0) {
+      const x = Math.min(niFlexAvail, siDef, p.hvdcNiSi - hvdcNiSi);
+      niFlexAvail -= x; niFlexUsed += x; siDef -= x; hvdcNiSi += x;
+    }
+
+    // Reservoir update: only truly unused flex spills in — after all cross-island decisions
+    niRes = Math.min(Math.max(niRes + niFlexAvail * 0.5 - p.niLoss - niExMWh, 0), p.niResMax);
+    siRes = Math.min(Math.max(siRes + siFlexAvail * 0.5 - p.siLoss - siExMWh, 0), p.siResMax);
 
     // ── Phase 3: Storage (NI only) ──
     let niCharge = 0, niDischarge = 0;
@@ -451,8 +464,8 @@ function simulate(data, caps, p) {
     siDef = Math.max(siDef - forSi, 0);
 
     // ── Accumulate ──
-    const niHydroTotal = niRoRmw + niFlexD + niExMW;
-    const siHydroTotal = siRoRmw + siFlexD + siExMW;
+    const niHydroTotal = niRoRmw + niFlexUsed + niExMWh / 0.5;
+    const siHydroTotal = siRoRmw + siFlexUsed + siExMWh / 0.5;
 
     mo[m].niDemand   += row.NI_Demand * K;
     mo[m].siDemand   += row.SI_Demand * K;
