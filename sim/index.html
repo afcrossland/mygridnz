@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Island Simulation — MyGridNZ</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/nav.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .sim-section {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      background: var(--surface);
+    }
+    .sim-section h3 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 20px;
+      margin-bottom: 8px;
+    }
+    .input-row label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .input-row label span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .input-row input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #fff;
+    }
+    .run-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .btn-run {
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 11px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-run:hover  { background: var(--brand-dark); }
+    .btn-run:disabled { opacity: .5; cursor: default; }
+    #sim-status { font-size: 14px; color: var(--muted); }
+
+    /* Summary stat cards */
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .scard {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+      background: var(--surface);
+    }
+    .scard-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+    .scard-num   { font-size: 1.9rem; font-weight: 300; line-height: 1; color: var(--text); }
+    .scard-unit  { font-size: 0.72rem; font-weight: 500; color: var(--muted); margin-left: 2px; }
+    .scard--good { border-color: #16a34a; }  .scard--good .scard-num { color: #15803d; }
+    .scard--warn { border-color: #f59e0b; }  .scard--warn .scard-num { color: #d97706; }
+    .scard--bad  { border-color: #ef4444; }  .scard--bad  .scard-num { color: #dc2626; }
+
+    /* Island breakdown tables */
+    .island-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+    .itbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .itbl th { text-align: left; padding: 6px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .itbl td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+    .itbl td:not(:first-child) { text-align: right; color: var(--muted); }
+    .itbl .fuel-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; }
+    .itbl .row-total td { font-weight: 600; color: var(--text); border-top: 2px solid var(--border); }
+
+    /* Charts */
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+    .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .chart-box h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+
+    @media (max-width: 800px) {
+      .sim-grid, .island-grid, .chart-row, .stat-row { grid-template-columns: 1fr; }
+      .stat-row { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <main>
+    <h1 class="page-title">NI / SI Island Simulation</h1>
+    <p class="page-intro" style="margin-bottom:24px;">Forward-pass half-hourly simulation using one year of actual metered generation data. Configure installed capacity and dispatchables, then run.</p>
+
+    <!-- ── Controls ── -->
+    <div class="sim-grid">
+
+      <div class="sim-section">
+        <h3>North Island — Renewables</h3>
+        <div class="input-row">
+          <label>Wind <span>installed GW</span><input type="number" id="ni-wind" value="2.1" step="0.1" min="0"></label>
+          <label>Solar <span>installed GW</span><input type="number" id="ni-solar" value="2.5" step="0.1" min="0"></label>
+        </div>
+        <div class="input-row">
+          <label>Battery Power <span>MW</span><input type="number" id="batt-power" value="1000" step="100" min="0"></label>
+          <label>Battery Capacity <span>MWh</span><input type="number" id="batt-cap" value="8000" step="500" min="0"></label>
+        </div>
+        <div class="input-row">
+          <label>Battery Efficiency <span>%</span><input type="number" id="batt-eff" value="92" step="1" min="50" max="100"></label>
+          <label>Hydro run-of-river <span>% must-run</span><input type="number" id="ni-ror" value="70" step="5" min="0" max="100"></label>
+        </div>
+      </div>
+
+      <div class="sim-section">
+        <h3>South Island — Renewables</h3>
+        <div class="input-row">
+          <label>Wind <span>installed GW</span><input type="number" id="si-wind" value="0.9" step="0.1" min="0"></label>
+          <label>Solar <span>installed GW</span><input type="number" id="si-solar" value="0.5" step="0.1" min="0"></label>
+        </div>
+        <div class="input-row">
+          <label>Hydro run-of-river <span>% must-run</span><input type="number" id="si-ror" value="20" step="5" min="0" max="100"></label>
+          <label></label>
+        </div>
+      </div>
+
+      <div class="sim-section">
+        <h3>NI Dispatchables (MW)</h3>
+        <div class="input-row">
+          <label>Gas <span>MW capacity</span><input type="number" id="ni-gas" value="1678" step="100" min="0"></label>
+          <label>Coal <span>MW capacity</span><input type="number" id="ni-coal" value="3200" step="100" min="0"></label>
+        </div>
+        <div class="input-row">
+          <label>Wood / Biomass <span>MW capacity</span><input type="number" id="ni-wood" value="500" step="50" min="0"></label>
+          <label>Diesel <span>MW capacity</span><input type="number" id="ni-diesel" value="200" step="50" min="0"></label>
+        </div>
+        <div class="input-row">
+          <label>Other <span>MW capacity</span><input type="number" id="ni-other" value="3200" step="100" min="0"></label>
+          <label></label>
+        </div>
+      </div>
+
+      <div class="sim-section">
+        <h3>HVDC &amp; Hydro Reservoirs</h3>
+        <div class="input-row">
+          <label>HVDC NI→SI <span>MW cap</span><input type="number" id="hvdc-ni-si" value="1200" step="100" min="0"></label>
+          <label>HVDC SI→NI <span>MW cap</span><input type="number" id="hvdc-si-ni" value="1200" step="100" min="0"></label>
+        </div>
+        <div class="input-row">
+          <label>NI reservoir max <span>GWh</span><input type="number" id="ni-res-max" value="500" step="50" min="0"></label>
+          <label>SI reservoir max <span>GWh</span><input type="number" id="si-res-max" value="4500" step="100" min="0"></label>
+        </div>
+        <div class="input-row">
+          <label>NI reservoir start <span>% of max</span><input type="number" id="ni-res-start" value="25" step="5" min="0" max="100"></label>
+          <label>SI reservoir start <span>% of max</span><input type="number" id="si-res-start" value="25" step="5" min="0" max="100"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="run-bar">
+      <button class="btn-run" id="btn-run" onclick="runSim()">Run Simulation</button>
+      <span id="sim-status">Load data first — click Run.</span>
+    </div>
+
+    <!-- ── Results ── -->
+    <div id="results" hidden>
+
+      <div class="stat-row" id="stat-row"></div>
+
+      <div class="island-grid">
+        <div>
+          <h2 style="font-size:1.1rem;font-weight:600;margin-bottom:10px;">North Island — annual generation</h2>
+          <table class="itbl" id="tbl-ni"></table>
+        </div>
+        <div>
+          <h2 style="font-size:1.1rem;font-weight:600;margin-bottom:10px;">South Island — annual generation</h2>
+          <table class="itbl" id="tbl-si"></table>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-box"><h3>NI — monthly generation mix (GWh)</h3><canvas id="chart-ni"></canvas></div>
+        <div class="chart-box"><h3>SI — monthly generation mix (GWh)</h3><canvas id="chart-si"></canvas></div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-box"><h3>Hydro reservoir levels (GWh)</h3><canvas id="chart-res"></canvas></div>
+        <div class="chart-box"><h3>Monthly unserved energy &amp; curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
+      </div>
+
+    </div><!-- /results -->
+  </main>
+  <div id="sidebar-placeholder"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
+
+// Carbon factors gCO2/kWh (from original model)
+const CF = { hydro:24, geo:46, wind:12, solar:45, wood:230, gas:490, coal:820, diesel:800, other:230, storage:24 };
+
+// Fuel colours matching live page palette
+const COLOURS = {
+  Hydro:'#3b82f6', Geothermal:'#ef4444', Wind:'#0d9e6e', Solar:'#f59e0b',
+  Wood:'#824e1a', Gas:'#6b7280', Coal:'#111827', Diesel:'#9ca3af',
+  Storage:'#a855f7', Other:'#cbd5e1', Unserved:'#fee2e2', Curtailed:'#d1fae5',
+  HVDC:'#e0f2fe',
+};
+
+// ─────────────────────────────────────────────
+// DATA FETCHING
+// ─────────────────────────────────────────────
+async function fetchGviz(sheet, query) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&tq=${encodeURIComponent(query)}`;
+  const txt = await (await fetch(url)).text();
+  return JSON.parse(txt.slice(txt.indexOf('(') + 1, txt.lastIndexOf(')')));
+}
+
+function v(cell) { return (cell && cell.v != null) ? cell.v : 0; }
+
+async function loadCapacity() {
+  const json = await fetchGviz('capacity_perIsland', 'SELECT *');
+  const rows = json.table.rows || [];
+  if (!rows.length) throw new Error('capacity_perIsland is empty — run buildCapacitySheet() first.');
+  const caps = {};
+  for (const row of rows) {
+    const fuel = row.c[0]?.v;
+    if (fuel) caps[fuel] = { NI: v(row.c[1]), SI: v(row.c[2]) };
+  }
+  return caps;
+}
+
+async function loadIslandData() {
+  // data_perIsland ISLAND_HEADERS column order (0-indexed):
+  // 0:DateTime 1:Date 2:TP
+  // 3:NI_Hydro 4:NI_Geo 5:NI_Gas 6:NI_Wind 7:NI_Solar 8:NI_Wood 9:NI_Coal 10:NI_Diesel 11:NI_Other 12:NI_Total
+  // 13:SI_Hydro 14:SI_Geo 15:SI_Gas 16:SI_Wind 17:SI_Solar 18:SI_Wood 19:SI_Coal 20:SI_Diesel 21:SI_Other 22:SI_Total
+  // 23:NI_Demand 24:SI_Demand 25:HVDC_NI_to_SI 26:HVDC_SI_to_NI
+  const json = await fetchGviz('data_perIsland', 'SELECT * WHERE A IS NOT NULL ORDER BY A');
+  const rows = json.table.rows || [];
+  if (!rows.length) throw new Error('data_perIsland is empty — run importIslandDataLast5Years() first.');
+
+  return rows.map(r => {
+    const c = r.c;
+    // gviz returns datetime as "Date(year,month0,day,h,m,s)" where month is 0-indexed
+    const dtv = c[0]?.v || '';
+    const dtm = String(dtv).match(/Date\(\d+,(\d+)/);
+    const month = dtm ? parseInt(dtm[1], 10) : 0;
+    return {
+      month,
+      NI_Hydro:  v(c[3]),  NI_Geo:   v(c[4]),
+      NI_Wind:   v(c[6]),  NI_Solar: v(c[7]),
+      SI_Hydro:  v(c[13]), SI_Geo:   v(c[14]),
+      SI_Wind:   v(c[16]), SI_Solar: v(c[17]),
+      NI_Demand: v(c[23]), SI_Demand: v(c[24]),
+    };
+  });
+}
+
+// ─────────────────────────────────────────────
+// SIMULATION
+// ─────────────────────────────────────────────
+function simulate(data, caps, p) {
+  // Scale factors: new GW / historical installed GW (from capacity sheet)
+  const niWindSc  = (p.niWindGW  * 1000) / Math.max(caps['Wind']?.NI  || 1, 1);
+  const siWindSc  = (p.siWindGW  * 1000) / Math.max(caps['Wind']?.SI  || 1, 1);
+  const niSolarSc = (p.niSolarGW * 1000) / Math.max(caps['Solar']?.NI || 1, 1);
+  const siSolarSc = (p.siSolarGW * 1000) / Math.max(caps['Solar']?.SI || 1, 1);
+
+  // State (MWh)
+  let niSoC   = p.battCap * p.battSoC0;
+  let niRes   = p.niResMax * p.niRes0;
+  let siRes   = p.siResMax * p.siRes0;
+
+  const niRoR = p.niRoR / 100;
+  const siRoR = p.siRoR / 100;
+
+  // Monthly accumulators (12 months, GWh = MW × 0.5h / 1000)
+  const K = 0.5 / 1000; // half-period energy conversion factor MW→GWh
+  const mo = Array.from({length: 12}, () => ({
+    niDemand:0, siDemand:0,
+    niGeo:0, niWind:0, niSolar:0, niHydro:0, niStorage:0,
+    niWood:0, niGas:0, niCoal:0, niDiesel:0, niOther:0,
+    siGeo:0, siWind:0, siSolar:0, siHydro:0,
+    hvdcNiSi:0, hvdcSiNi:0,
+    niCurtail:0, siCurtail:0,
+    niUnserved:0, siUnserved:0,
+    niRes:0, siRes:0, niResCnt:0,
+  }));
+
+  for (const row of data) {
+    const m = row.month;
+
+    // ── Phase 1: low-carbon generation per island ──
+
+    // NI
+    const niGeo  = row.NI_Geo;
+    const niWind = row.NI_Wind  * niWindSc;
+    const niSol  = row.NI_Solar * niSolarSc;
+    const niHist = row.NI_Hydro;
+    const niRoRmw  = niHist * niRoR;          // must-run fraction
+    const niFlex   = niHist * (1 - niRoR);    // can route to/from reservoir
+
+    // Dispatch flexible hydro to fill gap after geo+wind+solar+RoR
+    const niBase  = niGeo + niWind + niSol + niRoRmw;
+    const niGap1  = Math.max(row.NI_Demand - niBase, 0);
+    const niFlexD = Math.min(niGap1, niFlex);      // flex hydro dispatched
+    const niUnused = niFlex - niFlexD;             // goes to reservoir
+
+    // Extra from reservoir to cover remaining gap
+    const niGap2  = Math.max(row.NI_Demand - niBase - niFlexD, 0);
+    const niExMWh = Math.min(niGap2 * 0.5, niRes); // MWh from reservoir
+    const niExMW  = niExMWh / 0.5;
+
+    // Update NI reservoir: + unused inflow − loss − extra discharge
+    niRes = Math.min(Math.max(niRes + niUnused * 0.5 - p.niLoss - niExMWh, 0), p.niResMax);
+
+    let niSurp = Math.max(niBase + niFlexD + niExMW - row.NI_Demand, 0);
+    let niDef  = Math.max(row.NI_Demand - niBase - niFlexD - niExMW, 0);
+
+    // SI
+    const siGeo  = row.SI_Geo;
+    const siWind = row.SI_Wind  * siWindSc;
+    const siSol  = row.SI_Solar * siSolarSc;
+    const siHist = row.SI_Hydro;
+    const siRoRmw  = siHist * siRoR;
+    const siFlex   = siHist * (1 - siRoR);
+
+    const siBase  = siGeo + siWind + siSol + siRoRmw;
+    const siGap1  = Math.max(row.SI_Demand - siBase, 0);
+    const siFlexD = Math.min(siGap1, siFlex);
+    const siUnused = siFlex - siFlexD;
+
+    const siGap2  = Math.max(row.SI_Demand - siBase - siFlexD, 0);
+    const siExMWh = Math.min(siGap2 * 0.5, siRes);
+    const siExMW  = siExMWh / 0.5;
+
+    siRes = Math.min(Math.max(siRes + siUnused * 0.5 - p.siLoss - siExMWh, 0), p.siResMax);
+
+    let siSurp = Math.max(siBase + siFlexD + siExMW - row.SI_Demand, 0);
+    let siDef  = Math.max(row.SI_Demand - siBase - siFlexD - siExMW, 0);
+
+    // ── Phase 2: HVDC (low-carbon surplus, before storage) ──
+    let hvdcNiSi = 0, hvdcSiNi = 0;
+
+    if (niSurp > 0 && siDef > 0) {
+      const xfer = Math.min(niSurp, siDef, p.hvdcNiSi);
+      niSurp -= xfer; siDef -= xfer; hvdcNiSi += xfer;
+    } else if (siSurp > 0 && niDef > 0) {
+      const xfer = Math.min(siSurp, niDef, p.hvdcSiNi);
+      siSurp -= xfer; niDef -= xfer; hvdcSiNi += xfer;
+    }
+
+    // ── Phase 3: Storage (NI only) ──
+    let niCharge = 0, niDischarge = 0;
+
+    if (niSurp > 0) {
+      niCharge = Math.min(niSurp, p.battPower, p.battCap - niSoC);
+      niSoC   += niCharge;
+      niSurp  -= niCharge;
+      // remaining niSurp → curtailed below
+    } else if (niDef > 0) {
+      niDischarge = Math.min(niDef, p.battPower * p.battEff, niSoC * p.battEff);
+      niSoC  -= niDischarge / p.battEff;
+      niDef  -= niDischarge;
+    }
+    // SI surplus after phase 2 → curtailed (no SI battery)
+
+    // ── Phase 4 + 5: NI dispatchables cover NI deficit AND SI deficit via HVDC ──
+    const hvdcHeadroom = p.hvdcNiSi - hvdcNiSi;              // remaining NI→SI cap
+    const siCoverable  = Math.min(siDef, hvdcHeadroom);
+    let   needed       = niDef + siCoverable;
+
+    let dWood = 0, dGas = 0, dCoal = 0, dDiesel = 0, dOther = 0;
+    dWood   = Math.min(needed, p.niWood);   needed -= dWood;
+    dGas    = Math.min(needed, p.niGas);    needed -= dGas;
+    dDiesel = Math.min(needed, p.niDiesel); needed -= dDiesel;
+    dCoal   = Math.min(needed, p.niCoal);   needed -= dCoal;
+    dOther  = Math.min(needed, p.niOther);  needed -= dOther;
+
+    const dispTotal  = dWood + dGas + dDiesel + dCoal + dOther;
+    const forNi      = Math.min(niDef, dispTotal);
+    const forSi      = dispTotal - forNi;
+    hvdcNiSi        += forSi;
+    niDef            = Math.max(niDef - forNi,  0);
+    siDef            = Math.max(siDef - forSi,  0);
+
+    // ── Accumulate ──
+    const niHydroTotal = niRoRmw + niFlexD + niExMW;
+    const siHydroTotal = siRoRmw + siFlexD + siExMW;
+    const niCurtail    = niSurp;   // surplus after storage full
+    const siCurtail    = siSurp;
+
+    mo[m].niDemand   += row.NI_Demand * K;
+    mo[m].siDemand   += row.SI_Demand * K;
+    mo[m].niGeo      += niGeo         * K;
+    mo[m].niWind     += niWind        * K;
+    mo[m].niSolar    += niSol         * K;
+    mo[m].niHydro    += niHydroTotal  * K;
+    mo[m].niStorage  += niDischarge   * K;
+    mo[m].niWood     += dWood         * K;
+    mo[m].niGas      += dGas          * K;
+    mo[m].niCoal     += dCoal         * K;
+    mo[m].niDiesel    += dDiesel       * K;
+    mo[m].niOther    += dOther         * K;
+    mo[m].siGeo      += siGeo         * K;
+    mo[m].siWind     += siWind        * K;
+    mo[m].siSolar    += siSol         * K;
+    mo[m].siHydro    += siHydroTotal  * K;
+    mo[m].hvdcNiSi   += hvdcNiSi     * K;
+    mo[m].hvdcSiNi   += hvdcSiNi     * K;
+    mo[m].niCurtail  += niCurtail    * K;
+    mo[m].siCurtail  += siCurtail    * K;
+    mo[m].niUnserved += niDef        * K;
+    mo[m].siUnserved += siDef        * K;
+    mo[m].niRes      += niRes / 1000;    // GWh running total for average
+    mo[m].siRes      += siRes / 1000;
+    mo[m].niResCnt   += 1;
+  }
+
+  return mo;
+}
+
+// ─────────────────────────────────────────────
+// RENDERING
+// ─────────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function sumAll(mo, key) { return mo.reduce((s, m) => s + m[key], 0); }
+
+function renderStats(mo) {
+  const niDem  = sumAll(mo, 'niDemand');
+  const siDem  = sumAll(mo, 'siDemand');
+  const totDem = niDem + siDem;
+
+  const niRen  = sumAll(mo, 'niGeo') + sumAll(mo, 'niWind') + sumAll(mo, 'niSolar') + sumAll(mo, 'niHydro') + sumAll(mo, 'niStorage');
+  const siRen  = sumAll(mo, 'siGeo') + sumAll(mo, 'siWind') + sumAll(mo, 'siSolar') + sumAll(mo, 'siHydro');
+  const renPct = (niRen + siRen) / totDem * 100;
+
+  const niCarb = ['niGeo','niWind','niSolar','niHydro','niStorage','niWood','niGas','niCoal','niDiesel','niOther'];
+  const cFact  = [CF.geo, CF.wind, CF.solar, CF.hydro, CF.storage, CF.wood, CF.gas, CF.coal, CF.diesel, CF.other];
+  const siKeys = ['siGeo','siWind','siSolar','siHydro'];
+  const sFact  = [CF.geo, CF.wind, CF.solar, CF.hydro];
+  let carbGWh  = 0;
+  niCarb.forEach((k,i) => { carbGWh += sumAll(mo, k) * cFact[i]; });
+  siKeys.forEach((k,i) => { carbGWh += sumAll(mo, k) * sFact[i]; });
+  const carbInt = carbGWh / totDem;  // gCO2/kWh (GWh × gCO2/kWh / GWh = gCO2/kWh)
+
+  const unserved  = (sumAll(mo,'niUnserved') + sumAll(mo,'siUnserved'));
+  const curtailed = (sumAll(mo,'niCurtail')  + sumAll(mo,'siCurtail'));
+  const unsPct    = unserved / totDem * 100;
+
+  const stats = [
+    { label:'Demand', num: fmt(totDem / 1000, 1), unit:'TWh', cls: 'scard--good' },
+    { label:'Renewables', num: fmt(renPct, 1), unit:'%',   cls: renPct > 95 ? 'scard--good' : renPct > 80 ? 'scard--warn' : 'scard--bad' },
+    { label:'Carbon Intensity', num: fmt(carbInt, 1), unit:'gCO₂/kWh', cls: carbInt < 30 ? 'scard--good' : carbInt < 100 ? 'scard--warn' : 'scard--bad' },
+    { label:'Unserved Energy', num: unsPct < 0.01 ? '<0.01' : fmt(unsPct, 2), unit:'%', cls: unsPct < 0.01 ? 'scard--good' : unsPct < 0.1 ? 'scard--warn' : 'scard--bad' },
+    { label:'Curtailment', num: fmt(curtailed, 0), unit:'GWh', cls: 'scard--good' },
+  ];
+
+  document.getElementById('stat-row').innerHTML = stats.map(s =>
+    `<div class="scard ${s.cls}"><div class="scard-label">${s.label}</div><div class="scard-num">${s.num}<span class="scard-unit">${s.unit}</span></div></div>`
+  ).join('');
+}
+
+function renderTable(id, rows) {
+  const tbl = document.getElementById(id);
+  tbl.innerHTML = `<tr><th>Fuel</th><th>GWh</th><th>% demand</th></tr>` +
+    rows.map(([name, gwh, dot, cls]) => {
+      const pct = (gwh / rows.find(r => r[0] === 'Demand')?.[1] * 100) || 0;
+      const isTotal = name === 'Demand';
+      return `<tr class="${isTotal ? 'row-total' : ''}"><td><span class="fuel-dot" style="background:${dot||'transparent'}"></span>${name}</td><td>${fmt(gwh, 0)}</td><td>${isTotal ? '' : fmt(pct, 1) + '%'}</td></tr>`;
+    }).join('');
+}
+
+function renderTables(mo) {
+  const niDem = sumAll(mo, 'niDemand');
+  const siDem = sumAll(mo, 'siDemand');
+
+  renderTable('tbl-ni', [
+    ['Demand',      niDem,                     '#000'],
+    ['Geothermal',  sumAll(mo,'niGeo'),         COLOURS.Geothermal],
+    ['Hydro',       sumAll(mo,'niHydro'),       COLOURS.Hydro],
+    ['Wind',        sumAll(mo,'niWind'),        COLOURS.Wind],
+    ['Solar',       sumAll(mo,'niSolar'),       COLOURS.Solar],
+    ['Storage',     sumAll(mo,'niStorage'),     COLOURS.Storage],
+    ['Wood',        sumAll(mo,'niWood'),        COLOURS.Wood],
+    ['Gas',         sumAll(mo,'niGas'),         COLOURS.Gas],
+    ['Coal',        sumAll(mo,'niCoal'),        COLOURS.Coal],
+    ['Diesel',      sumAll(mo,'niDiesel'),      COLOURS.Diesel],
+    ['Other',       sumAll(mo,'niOther'),       COLOURS.Other],
+    ['→ SI via HVDC', sumAll(mo,'hvdcNiSi'),   COLOURS.HVDC],
+    ['Unserved',    sumAll(mo,'niUnserved'),    COLOURS.Unserved],
+  ]);
+
+  renderTable('tbl-si', [
+    ['Demand',      siDem,                     '#000'],
+    ['Geothermal',  sumAll(mo,'siGeo'),         COLOURS.Geothermal],
+    ['Hydro',       sumAll(mo,'siHydro'),       COLOURS.Hydro],
+    ['Wind',        sumAll(mo,'siWind'),        COLOURS.Wind],
+    ['Solar',       sumAll(mo,'siSolar'),       COLOURS.Solar],
+    ['← NI via HVDC', sumAll(mo,'hvdcNiSi'),   COLOURS.HVDC],
+    ['→ NI via HVDC', sumAll(mo,'hvdcSiNi'),   COLOURS.HVDC],
+    ['Unserved',    sumAll(mo,'siUnserved'),    COLOURS.Unserved],
+  ]);
+}
+
+let niChart, siChart, resChart, unservedChart;
+
+function destroyCharts() {
+  [niChart, siChart, resChart, unservedChart].forEach(c => c?.destroy());
+}
+
+function renderCharts(mo) {
+  destroyCharts();
+  const labels = MONTHS;
+
+  const stackedCfg = (fuels) => ({
+    type: 'bar',
+    data: {
+      labels,
+      datasets: fuels.map(([key, label, colour]) => ({
+        label, data: mo.map(m => +m[key].toFixed(1)),
+        backgroundColor: colour, stack: 'stack',
+      })),
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'GWh' } } } },
+  });
+
+  niChart = new Chart(document.getElementById('chart-ni'), stackedCfg([
+    ['niGeo',     'Geothermal', COLOURS.Geothermal],
+    ['niHydro',   'Hydro',      COLOURS.Hydro],
+    ['niWind',    'Wind',       COLOURS.Wind],
+    ['niSolar',   'Solar',      COLOURS.Solar],
+    ['niStorage', 'Storage',    COLOURS.Storage],
+    ['niWood',    'Wood',       COLOURS.Wood],
+    ['niGas',     'Gas',        COLOURS.Gas],
+    ['niCoal',    'Coal',       COLOURS.Coal],
+    ['niDiesel',  'Diesel',     COLOURS.Diesel],
+    ['niOther',   'Other',      COLOURS.Other],
+  ]));
+
+  siChart = new Chart(document.getElementById('chart-si'), stackedCfg([
+    ['siGeo',   'Geothermal', COLOURS.Geothermal],
+    ['siHydro', 'Hydro',      COLOURS.Hydro],
+    ['siWind',  'Wind',       COLOURS.Wind],
+    ['siSolar', 'Solar',      COLOURS.Solar],
+    ['hvdcNiSi','← NI HVDC', COLOURS.HVDC],
+  ]));
+
+  resChart = new Chart(document.getElementById('chart-res'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'NI reservoir avg (GWh)', data: mo.map(m => m.niResCnt ? +(m.niRes / m.niResCnt).toFixed(1) : 0), borderColor: '#3b82f6', backgroundColor: '#bfdbfe', fill: true, tension: 0.3 },
+        { label: 'SI reservoir avg (GWh)', data: mo.map(m => m.niResCnt ? +(m.siRes / m.niResCnt).toFixed(1) : 0), borderColor: '#0d9e6e', backgroundColor: '#d1fae5', fill: true, tension: 0.3 },
+      ],
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { y: { title: { display: true, text: 'GWh' } } } },
+  });
+
+  unservedChart = new Chart(document.getElementById('chart-unserved'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'NI unserved (GWh)',    data: mo.map(m => +m.niUnserved.toFixed(2)),  backgroundColor: '#ef4444' },
+        { label: 'SI unserved (GWh)',    data: mo.map(m => +m.siUnserved.toFixed(2)),  backgroundColor: '#f87171' },
+        { label: 'NI curtailed (GWh)',   data: mo.map(m => +m.niCurtail.toFixed(1)),   backgroundColor: '#86efac' },
+        { label: 'SI curtailed (GWh)',   data: mo.map(m => +m.siCurtail.toFixed(1)),   backgroundColor: '#bbf7d0' },
+      ],
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { y: { title: { display: true, text: 'GWh' } } } },
+  });
+}
+
+// ─────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────
+function fmt(n, dp) { return n.toLocaleString('en-NZ', { minimumFractionDigits: dp, maximumFractionDigits: dp }); }
+
+function getParams() {
+  return {
+    niWindGW:  +document.getElementById('ni-wind').value,
+    siWindGW:  +document.getElementById('si-wind').value,
+    niSolarGW: +document.getElementById('ni-solar').value,
+    siSolarGW: +document.getElementById('si-solar').value,
+    battPower: +document.getElementById('batt-power').value,
+    battCap:   +document.getElementById('batt-cap').value,
+    battEff:   +document.getElementById('batt-eff').value / 100,
+    battSoC0:  0.50,
+    niGas:     +document.getElementById('ni-gas').value,
+    niCoal:    +document.getElementById('ni-coal').value,
+    niWood:    +document.getElementById('ni-wood').value,
+    niDiesel:  +document.getElementById('ni-diesel').value,
+    niOther:   +document.getElementById('ni-other').value,
+    hvdcNiSi:  +document.getElementById('hvdc-ni-si').value,
+    hvdcSiNi:  +document.getElementById('hvdc-si-ni').value,
+    niRoR:     +document.getElementById('ni-ror').value,
+    siRoR:     +document.getElementById('si-ror').value,
+    niResMax:  +document.getElementById('ni-res-max').value * 1000,   // GWh → MWh
+    siResMax:  +document.getElementById('si-res-max').value * 1000,
+    niRes0:    +document.getElementById('ni-res-start').value / 100,
+    siRes0:    +document.getElementById('si-res-start').value / 100,
+    niLoss:    0.5,   // 1 MW/hr × 0.5h period
+    siLoss:    4.5,   // 9 MW/hr × 0.5h period
+  };
+}
+
+async function runSim() {
+  const btn = document.getElementById('btn-run');
+  const status = document.getElementById('sim-status');
+  btn.disabled = true;
+  status.textContent = 'Fetching data…';
+
+  try {
+    const [caps, data] = await Promise.all([loadCapacity(), loadIslandData()]);
+    status.textContent = `${data.length.toLocaleString()} periods loaded. Running simulation…`;
+
+    // Yield to browser to paint status
+    await new Promise(r => setTimeout(r, 10));
+
+    const params = getParams();
+    const mo     = simulate(data, caps, params);
+
+    status.textContent = `Done — ${data.length.toLocaleString()} trading periods simulated.`;
+    renderStats(mo);
+    renderTables(mo);
+    renderCharts(mo);
+
+    document.getElementById('results').hidden = false;
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
