@@ -404,6 +404,8 @@
       <button class="filter-btn" data-hours="168">Last 7 days</button>
       <button class="filter-btn active" data-hours="672">Last 28 days</button>
       <button class="filter-btn" data-mode="monthly">Last 12 months</button>
+      <button id="ts-prev" class="filter-btn" style="margin-left:auto;" title="Earlier period">&#8592;</button>
+      <button id="ts-next" class="filter-btn" title="Later period">&#8594;</button>
     </div>
     <div style="position:relative; height:420px;">
       <div class="chart-spinner"></div>
@@ -884,31 +886,60 @@
       tsChart = new Chart(document.getElementById('timeseries-chart'), { type, data: { labels, datasets }, options: opts });
     }
 
-    const initHours = window.innerWidth < 768 ? 168 : 672;
-    document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
-      b.classList.toggle('active', !!b.dataset.hours && parseInt(b.dataset.hours) === initHours);
-    });
-    const initRows   = allRows.slice(-initHours);
-    const initLabels = initRows.map(rowDateLabel);
-    const initShowAt = buildShowLabelAt(initLabels, initHours);
-    makeTsChart('line', initLabels, buildDatasets(initRows), (_, idx) => initShowAt.has(idx) ? initLabels[idx] : '');
+    // ── Prev / next state ────────────────────────────────────────
+    let currentHours  = window.innerWidth < 768 ? 168 : 672;
+    let currentOffset = 0; // rows from the end of allRows
 
+    const prevBtn = document.getElementById('ts-prev');
+    const nextBtn = document.getElementById('ts-next');
+
+    function syncNavButtons() {
+      prevBtn.disabled = currentOffset + currentHours >= allRows.length;
+      nextBtn.disabled = currentOffset <= 0;
+    }
+
+    function showHourly(hours, offset) {
+      currentHours  = hours;
+      currentOffset = offset;
+      const end   = allRows.length - offset;
+      const rows  = allRows.slice(Math.max(0, end - hours), end);
+      const lbls  = rows.map(rowDateLabel);
+      const showAt = buildShowLabelAt(lbls, hours);
+      makeTsChart('line', lbls, buildDatasets(rows), (_, idx) => showAt.has(idx) ? lbls[idx] : '');
+      prevBtn.style.visibility = '';
+      nextBtn.style.visibility = '';
+      syncNavButtons();
+    }
+
+    // Initial render
+    document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
+      b.classList.toggle('active', !!b.dataset.hours && parseInt(b.dataset.hours) === currentHours);
+    });
+    showHourly(currentHours, 0);
+
+    // Period filter buttons
     document.getElementById('ts-filter').addEventListener('click', e => {
       const btn = e.target.closest('.filter-btn');
-      if (!btn) return;
-      document.querySelectorAll('#ts-filter .filter-btn').forEach(b => b.classList.remove('active'));
+      if (!btn || btn.id === 'ts-prev' || btn.id === 'ts-next') return;
+      document.querySelectorAll('#ts-filter .filter-btn:not(#ts-prev):not(#ts-next)').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
       if (btn.dataset.mode === 'monthly') {
         const { rows: mRows, labels: mLabels } = aggregateMonthly(allRows);
         makeTsChart('bar', mLabels, buildBarDatasets(mRows), (_, idx) => mLabels[idx]);
+        prevBtn.style.visibility = 'hidden';
+        nextBtn.style.visibility = 'hidden';
       } else {
-        const hours  = parseInt(btn.dataset.hours, 10);
-        const rows   = allRows.slice(-hours);
-        const lbls   = rows.map(rowDateLabel);
-        const showAt = buildShowLabelAt(lbls, hours);
-        makeTsChart('line', lbls, buildDatasets(rows), (_, idx) => showAt.has(idx) ? lbls[idx] : '');
+        showHourly(parseInt(btn.dataset.hours, 10), 0);
       }
+    });
+
+    // Prev / next navigation
+    prevBtn.addEventListener('click', () => {
+      showHourly(currentHours, Math.min(currentOffset + currentHours, allRows.length - currentHours));
+    });
+    nextBtn.addEventListener('click', () => {
+      showHourly(currentHours, Math.max(0, currentOffset - currentHours));
     });
   }
 
