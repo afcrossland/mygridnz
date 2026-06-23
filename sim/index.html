@@ -107,7 +107,8 @@
     #reservoirs-section > summary::-webkit-details-marker, #reservoirs-section > summary::marker,
     #dom-energy-section > summary::-webkit-details-marker, #dom-energy-section > summary::marker,
     #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker,
-    #curtailment-section > summary::-webkit-details-marker, #curtailment-section > summary::marker { display:none; }
+    #curtailment-section > summary::-webkit-details-marker, #curtailment-section > summary::marker,
+    #island-detail-section > summary::-webkit-details-marker, #island-detail-section > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
     .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
     .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
@@ -365,29 +366,39 @@
       </div>
     </div>
 
-    <!-- ── Island tables ── -->
-    <div class="island-grid">
-      <div>
-        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:8px;">North Island — annual generation</h2>
-        <table class="itbl" id="tbl-ni"></table>
+    <!-- ── Per-island and monthly dispatch detail (collapsed) ── -->
+    <details class="ts-section" id="island-detail-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="island-detail-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Per Island and Monthly Dispatch Detail</span>
+        <span style="font-size:11px;color:var(--muted);">— NI and SI simulated independently, connected by HVDC</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:14px;">
+        <p>This simulator runs NZ as two separate islands — North Island and South Island — each with their own generation fleet, demand and storage. The Cook Strait HVDC link (up to 1,200 MW each way) transfers surplus between islands before flexible hydro or dispatchables are called on. Island-level simulation matters: a wet year in the South Island fills SI reservoirs but doesn't automatically fix NI gas dependence unless HVDC capacity allows export north.</p>
       </div>
-      <div>
-        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:8px;">South Island — annual generation</h2>
-        <table class="itbl" id="tbl-si"></table>
+      <div class="island-grid">
+        <div>
+          <h3 style="font-size:.85rem;font-weight:600;margin-bottom:8px;">North Island — annual generation</h3>
+          <table class="itbl" id="tbl-ni"></table>
+        </div>
+        <div>
+          <h3 style="font-size:.85rem;font-weight:600;margin-bottom:8px;">South Island — annual generation</h3>
+          <table class="itbl" id="tbl-si"></table>
+        </div>
       </div>
-    </div>
-
-    <!-- ── Annual generation mix ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>Annual generation mix</h3>
-        <p>Monthly GWh by fuel type for each island over the simulated year.</p>
+      <div class="ts-section-hd" style="margin:16px 0 10px;">
+        <h3>Monthly generation mix by island (GWh)</h3>
       </div>
       <div class="ts-charts">
-        <div class="chart-box"><h3>North Island (GWh)</h3><canvas id="chart-ni"></canvas></div>
-        <div class="chart-box"><h3>South Island (GWh)</h3><canvas id="chart-si"></canvas></div>
+        <div class="chart-box"><h3>North Island</h3><canvas id="chart-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island</h3><canvas id="chart-si"></canvas></div>
       </div>
-    </div>
+    </details>
+    <script>
+      document.getElementById('island-detail-section').addEventListener('toggle', function() {
+        document.getElementById('island-detail-arrow').textContent = this.open ? '▼' : '▶';
+      });
+    </script>
 
     <!-- ── Timeseries nav ── -->
     <div class="ts-header">
@@ -429,6 +440,8 @@
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island — per home (kW)</h3><canvas id="ts-dom-ni"></canvas></div>
         <div class="chart-box"><h3>South Island — per home (kW)</h3><canvas id="ts-dom-si"></canvas></div>
+        <div class="chart-box"><h3>North Island — home battery SoC (kWh)</h3><canvas id="ts-dom-soc-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island — home battery SoC (kWh)</h3><canvas id="ts-dom-soc-si"></canvas></div>
       </div>
     </details>
     <script>
@@ -853,9 +866,10 @@ function simulate(data, caps, p) {
     const niHomeSurp_kW   = niHomeSolar_kW - niHomeSelf_kW;  // excess → charges battery
     const niHomeDef_kW    = niHomeLoad_kW  - niHomeSelf_kW;  // shortfall → from battery
 
+    let niHomeChargeKW = 0;
     if (niHomeSurp_kW > 0 && p.domBattKWh > 0) {
-      const cr = Math.min(niHomeSurp_kW, HOME_BATT_KW, (p.domBattKWh - niHomeSoC) / 0.5);
-      niHomeSoC = Math.min(niHomeSoC + cr * 0.5, p.domBattKWh);
+      niHomeChargeKW = Math.min(niHomeSurp_kW, HOME_BATT_KW, (p.domBattKWh - niHomeSoC) / 0.5);
+      niHomeSoC = Math.min(niHomeSoC + niHomeChargeKW * 0.5, p.domBattKWh);
     }
     let niHomeBattDisch_kW = 0;
     if (canDomDischarge && niHomeDef_kW > 0 && niHomeSoC > 0) {
@@ -872,9 +886,10 @@ function simulate(data, caps, p) {
     const siHomeSurp_kW   = siHomeSolar_kW - siHomeSelf_kW;
     const siHomeDef_kW    = siHomeLoad_kW  - siHomeSelf_kW;
 
+    let siHomeChargeKW = 0;
     if (siHomeSurp_kW > 0 && p.domBattKWh > 0) {
-      const cr = Math.min(siHomeSurp_kW, HOME_BATT_KW, (p.domBattKWh - siHomeSoC) / 0.5);
-      siHomeSoC = Math.min(siHomeSoC + cr * 0.5, p.domBattKWh);
+      siHomeChargeKW = Math.min(siHomeSurp_kW, HOME_BATT_KW, (p.domBattKWh - siHomeSoC) / 0.5);
+      siHomeSoC = Math.min(siHomeSoC + siHomeChargeKW * 0.5, p.domBattKWh);
     }
     let siHomeBattDisch_kW = 0;
     if (canDomDischarge && siHomeDef_kW > 0 && siHomeSoC > 0) {
@@ -1050,12 +1065,16 @@ function simulate(data, caps, p) {
       })(),
       niUnserved: niDef, siUnserved: siDef,
       // Per-home domestic values in kW (only meaningful when domSolarEnabled)
-      niHomeLoadKW:   +niHomeLoad_kW.toFixed(3),
-      niHomeSolarKW:  +niHomeSolar_kW.toFixed(3),
-      niHomeBattKW:   +niHomeBattDisch_kW.toFixed(3),
-      siHomeLoadKW:   +siHomeLoad_kW.toFixed(3),
-      siHomeSolarKW:  +siHomeSolar_kW.toFixed(3),
-      siHomeBattKW:   +siHomeBattDisch_kW.toFixed(3),
+      niHomeLoadKW:  +niHomeLoad_kW.toFixed(3),
+      niHomeSelfKW:  +niHomeSelf_kW.toFixed(3),    // solar dispatched direct to load
+      niHomeChgKW:   +niHomeChargeKW.toFixed(3),   // solar dispatched to charge battery
+      niHomeBattKW:  +niHomeBattDisch_kW.toFixed(3),
+      niHomeSoCkWh:  +niHomeSoC.toFixed(3),
+      siHomeLoadKW:  +siHomeLoad_kW.toFixed(3),
+      siHomeSelfKW:  +siHomeSelf_kW.toFixed(3),
+      siHomeChgKW:   +siHomeChargeKW.toFixed(3),
+      siHomeBattKW:  +siHomeBattDisch_kW.toFixed(3),
+      siHomeSoCkWh:  +siHomeSoC.toFixed(3),
       niSoC, siSoC, niResMWh: niRes, siResMWh: siRes,
       niSoCpct:   p.battCap    > 0 ? +(niSoC / p.battCap    * 100).toFixed(1) : 0,
       siBattPct:  p.siBattCap  > 0 ? +(siSoC / p.siBattCap  * 100).toFixed(1) : 0,
@@ -1387,16 +1406,27 @@ function tsSlice() {
   return tsData.slice(tsOffset, tsOffset + tsWindow());
 }
 
+const MONS3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDtFull(dt) {
+  return `${+dt.slice(8,10)} ${MONS3[+dt.slice(5,7)-1]} ${dt.slice(11,16)}`;
+}
+function fmtDtDay(dt) {
+  return `${+dt.slice(8,10)} ${MONS3[+dt.slice(5,7)-1]}`;
+}
+
 function tsXLabels() {
   const s = tsSlice();
-  if (tsWindowDays <= 7) return s.map(p => p.dt.slice(11, 16));
-  return s.map((p, i) => i % 48 === 0 ? p.dt.slice(5, 10) : '');
+  if (tsWindowDays <= 7) return s.map(p => fmtDtFull(p.dt));
+  return s.map((p, i) => i % 48 === 0 ? fmtDtDay(p.dt) : '');
 }
 
 function tsLabel(slice) {
   if (!slice.length) return '';
-  if (tsWindowDays === 30) return (tsData[tsOffset]?.dt || '').slice(0, 7);
-  return `${slice[0].dt.slice(0, 10)} — ${slice[slice.length-1].dt.slice(0, 10)}`;
+  if (tsWindowDays === 30) {
+    const dt = tsData[tsOffset]?.dt || '';
+    return `${MONS3[+dt.slice(5,7)-1]} ${dt.slice(0,4)}`;
+  }
+  return `${fmtDtDay(slice[0].dt)} — ${fmtDtDay(slice[slice.length-1].dt)}`;
 }
 
 function setTsView(days) {
@@ -1578,31 +1608,56 @@ function renderTsCharts() {
   });
 
   // Domestic energy supply — per-home kW, same x-axis as dispatch
-  ['ts-dom-ni','ts-dom-si'].forEach(id => charts[id]?.destroy());
+  ['ts-dom-ni','ts-dom-si','ts-dom-soc-ni','ts-dom-soc-si'].forEach(id => charts[id]?.destroy());
   if (gParams.domSolarEnabled) {
+    const lbl = tsXLabels();
     const domOpts = { responsive:true, animation:false,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ min:0, title:{ display:true, text:'kW per home' } } } };
-    charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'), {
-      data:{ labels:tsXLabels(), datasets:[
-        { type:'line', label:'Solar',            data:slice.map(p=>p.niHomeSolarKW),
-          borderColor:C.Solar,   backgroundColor:C.Solar+'33',   fill:true, borderWidth:1, pointRadius:0, tension:.1 },
-        { type:'line', label:'Battery discharge', data:slice.map(p=>p.niHomeBattKW),
-          borderColor:C.Storage, backgroundColor:C.Storage+'33', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
-        { type:'line', label:'Home load',         data:slice.map(p=>p.niHomeLoadKW),
+        y:{ min:0, title:{ display:true, text:'kW' } } } };
+    const socOpts = { responsive:true, animation:false,
+      plugins:{ legend:{ display:false },
+        tooltip:{ mode:'index', intersect:false }},
+      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ min:0, title:{ display:true, text:'kWh' } } } };
+    // Colours: solar=yellow, battery discharge=green, grid import=grey
+    const DOM_SOL  = '#f59e0b';  // amber/yellow
+    const DOM_BATT = '#16a34a';  // green
+    const DOM_GRID = '#94a3b8';  // slate grey
+    const DOM_CHG  = '#84cc16';  // lime (solar going to battery)
+    const mkDomDs = (selfKey, chgKey, battKey, loadKey) => {
+      const gridImport = slice.map(p => {
+        const served = p[selfKey] + p[battKey];
+        return +Math.max(0, p[loadKey] - served).toFixed(3);
+      });
+      return [
+        { type:'line', label:'Solar → home',    data:slice.map(p=>p[selfKey]),
+          borderColor:DOM_SOL,  backgroundColor:DOM_SOL+'44',  fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Solar → battery', data:slice.map(p=>p[chgKey]),
+          borderColor:DOM_CHG,  backgroundColor:DOM_CHG+'44',  fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Battery → home',  data:slice.map(p=>p[battKey]),
+          borderColor:DOM_BATT, backgroundColor:DOM_BATT+'44', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Grid import',     data:gridImport,
+          borderColor:DOM_GRID, backgroundColor:DOM_GRID+'44', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Home load',       data:slice.map(p=>p[loadKey]),
           borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
-      ]}, options:domOpts });
-    charts['ts-dom-si'] = new Chart(document.getElementById('ts-dom-si'), {
-      data:{ labels:tsXLabels(), datasets:[
-        { type:'line', label:'Solar',            data:slice.map(p=>p.siHomeSolarKW),
-          borderColor:C.Solar,   backgroundColor:C.Solar+'33',   fill:true, borderWidth:1, pointRadius:0, tension:.1 },
-        { type:'line', label:'Battery discharge', data:slice.map(p=>p.siHomeBattKW),
-          borderColor:C.Storage, backgroundColor:C.Storage+'33', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
-        { type:'line', label:'Home load',         data:slice.map(p=>p.siHomeLoadKW),
-          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
-      ]}, options:domOpts });
+      ];
+    };
+    charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'),
+      { data:{ labels:lbl, datasets: mkDomDs('niHomeSelfKW','niHomeChgKW','niHomeBattKW','niHomeLoadKW') }, options:domOpts });
+    charts['ts-dom-si'] = new Chart(document.getElementById('ts-dom-si'),
+      { data:{ labels:lbl, datasets: mkDomDs('siHomeSelfKW','siHomeChgKW','siHomeBattKW','siHomeLoadKW') }, options:domOpts });
+    charts['ts-dom-soc-ni'] = new Chart(document.getElementById('ts-dom-soc-ni'), {
+      data:{ labels:lbl, datasets:[
+        { type:'line', label:'Home battery SoC', data:slice.map(p=>p.niHomeSoCkWh),
+          borderColor:C.Storage, backgroundColor:C.Storage+'22', fill:true, borderWidth:1.5, pointRadius:0, tension:.2 },
+      ]}, options:socOpts });
+    charts['ts-dom-soc-si'] = new Chart(document.getElementById('ts-dom-soc-si'), {
+      data:{ labels:lbl, datasets:[
+        { type:'line', label:'Home battery SoC', data:slice.map(p=>p.siHomeSoCkWh),
+          borderColor:C.Storage, backgroundColor:C.Storage+'22', fill:true, borderWidth:1.5, pointRadius:0, tension:.2 },
+      ]}, options:socOpts });
   }
 
   // HVDC
@@ -1774,7 +1829,7 @@ async function runSim() {
   try {
     const year = +document.getElementById('sim-year').value;
     if (!year) throw new Error('Select a data year in Simulation Settings first.');
-    status.textContent = `Fetching ${year} data…`;
+    status.textContent = `Loading data…`;
 
     const [caps, rawData] = await Promise.all([loadCapacity(), loadIslandData(year)]);
 
