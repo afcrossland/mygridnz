@@ -160,6 +160,28 @@
     .scard{ min-width:0; overflow:hidden; }
     .scard-main{ font-size:clamp(.95rem,4vw,1.4rem); }
     .scard-label{ font-size:clamp(7px,2vw,9px); }
+
+    /* ── Print / PDF report ──────────────────────── */
+    @media screen { #rpt { display:none; } }
+    @media print {
+      #site-header, .page-wrap { display:none !important; }
+      #rpt { display:block !important; }
+      @page { size:A4 portrait; margin:0; }
+      .rpt-pg { page-break-after:always; width:210mm; min-height:297mm;
+        box-sizing:border-box; position:relative; overflow:hidden; font-family:system-ui,Helvetica,sans-serif; }
+      .rpt-pg:last-child { page-break-after:avoid; }
+    }
+    /* Shared report styles (also visible in screen preview) */
+    .rpt-hd { background:#1a4d7a; color:#fff; padding:14px 20px 12px; }
+    .rpt-hd-brand { font-size:11px; font-weight:700; letter-spacing:.04em; opacity:.65; margin-bottom:2px; }
+    .rpt-hd-title { font-size:17px; font-weight:700; margin:0; line-height:1.2; }
+    .rpt-hd-sub { font-size:9.5px; opacity:.7; margin-top:3px; }
+    .rpt-body { padding:14px 20px 36px; }
+    .rpt-footer { position:absolute; bottom:0; left:0; right:0; padding:6px 20px;
+      border-top:1px solid #e2e8f0; display:flex; justify-content:space-between;
+      font-size:8px; color:#94a3b8; background:#fff; }
+    .rpt-label { font-size:9.5px; font-weight:700; color:#0f172a; margin:10px 0 4px; }
+    .rpt-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   </style>
 </head>
 <body>
@@ -578,6 +600,8 @@
 </main>
 <div id="sidebar-placeholder"></div>
 </div>
+
+<div id="rpt"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1387,7 +1411,7 @@ function renderTables(mo, pk) {
 
 let gCaps = {}, gParams = {};   // stashed after each run for use in renderTables
 let gTodayCaps = {};            // actual 2025 installed capacity, set on init
-let gStats = {}, gNatFuels = [], gYear = null;  // stored for PDF report
+let gStats = {}, gNatFuels = [], gYear = null, gMo = [];  // stored for report
 
 let charts = {};
 function killCharts() { Object.values(charts).forEach(c => c?.destroy()); charts = {}; }
@@ -1952,6 +1976,7 @@ async function runSim() {
     const juneIdx = pp.findIndex(p => p.dt.slice(5, 7) === '06');
     tsOffset = juneIdx > 48 ? Math.max(0, juneIdx - 7 * 48) : mayIdx >= 0 ? mayIdx : 0;
     killCharts();
+    gMo = moUser;
     renderStats(moBase, moUser, caps, pBase, pUser);
     renderTables(moUser, pk);
     renderAnnualCharts(moUser);
@@ -2036,357 +2061,357 @@ function getScenarioDesc() {
   return a?.querySelector('.sc-desc')?.textContent?.trim() || '';
 }
 
+let rptCharts = [];
+
 async function generateReport() {
-  if (!window.jspdf) { alert('PDF library not loaded — please wait and try again.'); return; }
   const btn = document.getElementById('btn-report');
   btn.disabled = true;
-  btn.textContent = 'Generating…';
+  btn.textContent = 'Building report…';
 
   try {
-    const { jsPDF } = window.jspdf;
+    const rpt = document.getElementById('rpt');
+    rpt.innerHTML = '';
+    rptCharts.forEach(c => c.destroy()); rptCharts = [];
 
-    // ── Save & open sections so canvases get real dimensions ─
-    const savedOffset = tsOffset, savedDays = tsWindowDays;
-    const islandSec       = document.getElementById('island-dispatch-section');
-    const islandDetailSec = document.getElementById('island-detail-section');
-    const battSec         = document.getElementById('battery-section');
-    const opSec           = document.getElementById('operability-section');
-    const wasIsland       = islandSec?.open, wasIslandDetail = islandDetailSec?.open;
-    const wasBatt         = battSec?.open,   wasOp           = opSec?.open;
-    if (islandSec)       islandSec.open       = true;
-    if (islandDetailSec) islandDetailSec.open = true;
-    if (battSec)         battSec.open         = true;
-    if (opSec)           opSec.open           = true;
-
-    // Wait for two rAF cycles so the browser lays out the newly-opened sections
-    // before Chart.js tries to read canvas dimensions.
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    // Safe image capture — skip blank/corrupt canvases (< 2 KB base64 ≈ empty canvas)
-    const validImg = img => (img && img.length > 2000) ? img : null;
-
-    // ── Capture charts at a given day offset ─────────────
-    const captureAt = async (dayOff) => {
-      tsWindowDays = 7;
-      tsOffset = Math.min(dayOff * 48, Math.max(0, tsData.length - 7 * 48));
-      renderTsCharts();
-      // Wait for Chart.js animation to complete
-      await new Promise(r => setTimeout(r, 450));
-      const g = k => validImg(charts[k]?.toBase64Image('image/png', 1.0));
-      return { nat: g('ts-nat'), ni: g('ts-ni'), si: g('ts-si'),
-               hvdc: g('ts-hvdc'), resNI: g('ts-reserves-ni'), resSI: g('ts-reserves-si'),
-               inertia: g('ts-inertia'), battNI: g('ts-batt-ni'), battSI: g('ts-batt-si') };
-    };
-
-    const summer = await captureAt(7);    // ~Jan 8 — NZ summer
-    const winter = await captureAt(181);  // ~Jul 1 — NZ winter
-
-    const pieImg   = validImg(charts.natPie?.toBase64Image('image/png', 1.0));
-    const niMixImg = validImg(charts['chart-ni']?.toBase64Image('image/png', 1.0));
-    const siMixImg = validImg(charts['chart-si']?.toBase64Image('image/png', 1.0));
-
-    // ── Restore ───────────────────────────────────────────
-    tsWindowDays = savedDays; tsOffset = savedOffset; renderTsCharts();
-    if (!wasIsland       && islandSec)       islandSec.open       = false;
-    if (!wasIslandDetail && islandDetailSec) islandDetailSec.open = false;
-    if (!wasBatt         && battSec)         battSec.open         = false;
-    if (!wasOp           && opSec)           opSec.open           = false;
-
-    // ── PDF setup ─────────────────────────────────────────
-    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const W = 210, H = 297, M = 14, CW = W - 2 * M;
-    const HW = (CW - 6) / 2;   // half content width
-
-    const BRAND  = [26,  77, 122];
-    const BLTX   = [180, 210, 240];
-    const BLTBG  = [240, 247, 255];
-    const DARK   = [15,  23,  42];
-    const MUTED  = [100, 116, 139];
-    const GREEN  = [13,  158, 110];
-    const AMBER  = [217, 119,   6];
-    const RED    = [220,  38,  38];
-
-    const rgb = ([r,g,b]) => [r,g,b];
-    const setTxt  = c => doc.setTextColor(...rgb(c));
-    const setFill = c => doc.setFillColor(...rgb(c));
-    const setDraw = c => doc.setDrawColor(...rgb(c));
-    // jsPDF uses WinAnsi encoding — strip/replace characters outside Latin-1
-    const safe = s => String(s)
-      .replace(/₂/g, '2').replace(/→/g, '>').replace(/←/g, '<')
-      .replace(/[""]/g, '"').replace(/['']/g, "'")
-      .replace(/–/g, '-').replace(/—/g, '-')
-      .replace(/[^\x00-\xFF]/g, '?');
-
-    const dateStr = new Date().toLocaleDateString('en-NZ', { day:'numeric', month:'long', year:'numeric' });
     const scenName = getScenarioName();
     const scenDesc = getScenarioDesc();
-    const s = gStats;
-    const p = gParams;
+    const dateStr  = new Date().toLocaleDateString('en-NZ', { day:'numeric', month:'long', year:'numeric' });
+    const s = gStats, p = gParams;
+    const f1 = v => (+v).toFixed(1), f0 = v => Math.round(+v).toLocaleString();
 
-    const f1 = v => isNaN(v) ? '—' : (+v).toFixed(1);
-    const f0 = v => isNaN(v) ? '—' : Math.round(+v).toLocaleString();
-    const colorFor = (v, good, warn) => v >= good ? GREEN : v >= warn ? AMBER : RED;
-
-    function addFooter() {
-      doc.setFontSize(7); setTxt(MUTED);
-      doc.text('mygridnz.co.nz  -  Data: Transpower half-hourly metered generation & demand', M, H - 6);
-      doc.text(safe(scenName), W - M, H - 6, { align:'right' });
+    // ── Helpers ───────────────────────────────────────────
+    function pg(title, sub) {
+      const d = document.createElement('div');
+      d.className = 'rpt-pg';
+      d.innerHTML = `<div class="rpt-hd">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><div class="rpt-hd-brand">MyGridNZ — Electricity Grid Simulation</div>
+            <div class="rpt-hd-title">${title}</div>
+            ${sub ? `<div class="rpt-hd-sub">${sub}</div>` : ''}</div>
+          <div style="font-size:9px;opacity:.55;padding-top:3px;">${dateStr}</div>
+        </div></div>
+      <div class="rpt-body rpt-content"></div>
+      <div class="rpt-footer">
+        <span>mygridnz.co.nz — Simulation based on Transpower half-hourly metered data</span>
+        <span>${scenName}</span></div>`;
+      rpt.appendChild(d);
+      return d.querySelector('.rpt-content');
     }
 
-    function pageHeader(title, sub) {
-      setFill(BRAND); doc.rect(0, 0, W, 24, 'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(9); setTxt([255,255,255]);
-      doc.text('MyGridNZ', M, 9);
-      doc.setFont('helvetica','bold'); doc.setFontSize(13);
-      doc.text(title, M, 18);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); setTxt(BLTX);
-      if (sub) doc.text(sub, M, 22.5);
-      doc.setFontSize(8); doc.text(dateStr, W - M, 9, { align:'right' });
-      addFooter();
-      return 30;
+    function mkChart(parent, type, data, options, heightPx) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `height:${heightPx}px;position:relative;`;
+      const canvas = document.createElement('canvas');
+      wrap.appendChild(canvas);
+      parent.appendChild(wrap);
+      const ch = new Chart(canvas, { type, data,
+        options: { ...options, animation:false, responsive:true, maintainAspectRatio:false } });
+      rptCharts.push(ch);
+      return ch;
     }
 
-    function addChart(img, x, y, w, h) {
-      if (!img || img.length < 2000) {
-        // Placeholder box when chart unavailable
-        setFill([245,247,250]); setDraw([210,215,220]); doc.setLineWidth(0.2);
-        doc.roundedRect(x, y, w, h, 1.5, 1.5, 'FD');
-        doc.setFont('helvetica','normal'); doc.setFontSize(7); setTxt(MUTED);
-        doc.text('Chart not available', x + w/2, y + h/2, { align:'center' });
-        return;
-      }
-      try {
-        setDraw([215,215,215]); doc.setLineWidth(0.2);
-        doc.roundedRect(x, y, w, h, 1.5, 1.5, 'S');
-        doc.addImage(img, 'PNG', x + 0.5, y + 0.5, w - 1, h - 1);
-      } catch(e) {
-        // Silently skip corrupted image
-        setFill([245,247,250]); doc.rect(x, y, w, h, 'F');
-      }
-    }
+    const tsSliceAt = dayOff => {
+      const off = Math.min(dayOff * 48, Math.max(0, tsData.length - 7 * 48));
+      return tsData.slice(off, off + 7 * 48);
+    };
 
-    function metricBox(x, y, w, h, label, value, unit, accentRGB) {
-      setFill([248,250,252]); setDraw(accentRGB); doc.setLineWidth(0.3);
-      doc.roundedRect(x, y, w, h, 2, 2, 'FD');
-      setFill(accentRGB); doc.rect(x, y, 2.5, h, 'F');
-      doc.setFont('helvetica','normal'); doc.setFontSize(6.5); setTxt(MUTED);
-      doc.text(label.toUpperCase(), x + 5, y + 5.5);
-      doc.setFont('helvetica','bold'); doc.setFontSize(17); setTxt(DARK);
-      doc.text(String(value), x + 5, y + 15);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7); setTxt(MUTED);
-      doc.text(unit, x + 5, y + 20);
-    }
-
-    // ═════════════════════════════════════════════════════
-    // PAGE 1 — COVER
-    // ═════════════════════════════════════════════════════
-    setFill(BRAND); doc.rect(0, 0, W, 65, 'F');
-
-    doc.setFont('helvetica','bold'); doc.setFontSize(32); setTxt([255,255,255]);
-    doc.text('MyGridNZ', M, 28);
-
-    doc.setFont('helvetica','normal'); doc.setFontSize(14); setTxt(BLTX);
-    doc.text('Electricity Grid Simulation Report', M, 41);
-
-    doc.setFontSize(9); setTxt([140,180,220]);
-    doc.text('Aotearoa New Zealand', M, 52);
-    doc.text(dateStr, W - M, 52, { align:'right' });
-
-    // Scenario strip
-    setFill(BLTBG); doc.rect(0, 65, W, 24, 'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(14); setTxt(BRAND);
-    doc.text(safe(scenName), M, 78);
-    if (scenDesc) {
-      doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-      const descLines = doc.splitTextToSize(safe(scenDesc), CW);
-      doc.text(descLines[0], M, 84);
-    }
-
-    // Key metrics
-    let y = 97;
-    doc.setFont('helvetica','bold'); doc.setFontSize(9); setTxt(DARK);
-    doc.text('Key Results', M, y); y += 5;
-
-    const BW = (CW - 10) / 3, BH = 27, BG = 5;
-    metricBox(M,           y, BW, BH, 'Total Demand',     f1(s.totDemTWh), 'TWh',        BRAND);
-    metricBox(M+BW+BG,     y, BW, BH, 'Renewables',       f1(s.renPct),    '%',           colorFor(s.renPct, 95, 80));
-    metricBox(M+2*(BW+BG), y, BW, BH, 'Carbon Intensity', f0(s.carbInt),   'gCO2/kWh',  s.carbInt<30?GREEN:s.carbInt<100?AMBER:RED);
-    y += BH + BG;
-    metricBox(M,           y, BW, BH, 'System LCOE',      f0(s.lcoe),      'NZD/MWh',   s.lcoe<90?GREEN:s.lcoe<130?AMBER:RED);
-    metricBox(M+BW+BG,     y, BW, BH, 'Avg Marginal Cost',f0(s.marg),      'NZD/MWh',   BRAND);
-    metricBox(M+2*(BW+BG), y, BW, BH, 'Curtailment',      f0(s.curtailGWh),'GWh',        AMBER);
-    y += BH + 9;
-
-    // Intro
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); setTxt(DARK);
-    const intro = 'This report presents the results of an NZ electricity grid simulation using real half-hourly generation and demand data from Transpower. The model dispatches the North Island and South Island independently, linked via the 1,200 MW Cook Strait HVDC link, and evaluates grid performance across a full calendar year. Dispatch follows a merit order: geothermal and must-run hydro first, then variable renewables scaled to the target capacity, HVDC surplus transfer, utility battery storage, and finally dispatchable thermal plant.';
-    const introLines = doc.splitTextToSize(intro, CW);
-    doc.text(introLines, M, y);
-    y += introLines.length * 4.4 + 9;
-
-    // Parameters table
-    doc.setFont('helvetica','bold'); doc.setFontSize(9); setTxt(DARK);
-    doc.text('Scenario Parameters', M, y); y += 4;
-
-    const params = [
-      ['Data year',           gYear || '—'],
-      ['NI wind capacity',    (p.niWindGW||0).toFixed(1) + ' GW'],
-      ['SI wind capacity',    (p.siWindGW||0).toFixed(1) + ' GW'],
-      ['NI solar capacity',   (p.niSolarGW||0).toFixed(1) + ' GW'],
-      ['SI solar capacity',   (p.siSolarGW||0).toFixed(1) + ' GW'],
-      ['NI utility battery',  `${(p.battPower||0)} MW / ${(p.battCap||0).toLocaleString()} MWh`],
-      ['NI gas capacity',     `${(p.niGas||0)} MW`],
-      ['NI coal capacity',    `${(p.niCoal||0)} MW`],
-      ['HVDC',                `${p.hvdcNiSi||0} MW (NI>SI) / ${p.hvdcSiNi||0} MW (SI>NI)`],
-      ['Domestic solar',      p.domSolarEnabled ? `Enabled — NI ${p.niDomSolarPct}% / SI ${p.siDomSolarPct}% of homes` : 'Not modelled'],
-    ];
-
-    setFill([248,250,252]); doc.rect(M, y, CW, params.length * 6.5 + 2, 'F');
-    setDraw([220,225,230]); doc.setLineWidth(0.15);
-    doc.rect(M, y, CW, params.length * 6.5 + 2, 'S');
-
-    params.forEach(([label, val], i) => {
-      const ry = y + i * 6.5 + 5.5;
-      if (i % 2 === 0) { setFill([241,245,249]); doc.rect(M, y + i * 6.5, CW, 6.5, 'F'); }
-      doc.setFont('helvetica','normal'); doc.setFontSize(8); setTxt(MUTED);
-      doc.text(label, M + 3, ry);
-      doc.setFont('helvetica','bold'); setTxt(DARK);
-      doc.text(safe(val), M + 80, ry);
+    const tsLabels = slice => slice.map((p, i) => {
+      if (i % 48 !== 0) return '';
+      const dt = p.dt;
+      return `${+dt.slice(8,10)} ${MONS3[+dt.slice(5,7)-1]}`;
     });
 
-    addFooter();
+    const tsOpts = () => ({
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:8} } }, tooltip:{enabled:false} },
+      scales:{
+        x:{ stacked:true, ticks:{ maxTicksLimit:8, font:{size:7}, maxRotation:0,
+          callback:(v,i,arr) => { const lbl = arr[i]?.label; return lbl || null; } } },
+        y:{ stacked:true, title:{ display:true, text:'MW', font:{size:8} }, ticks:{font:{size:8}} }
+      }
+    });
 
-    // ═════════════════════════════════════════════════════
-    // PAGE 2 — NATIONAL GENERATION MIX
-    // ═════════════════════════════════════════════════════
-    doc.addPage(); y = pageHeader('National Generation Mix', 'Annual generation by fuel type — simulated year');
+    const dispDatasets = (slice, island) => {
+      const ni = island === 'NI', si = island === 'SI', nat = island === 'NAT';
+      const get = k => slice.map(p => +(p[k]||0));
+      const sum2 = (a, b) => slice.map(p => +((p[a]||0)+(p[b]||0)));
+      return [
+        ...(ni||nat ? [{ label:'Geothermal', data: nat?sum2('niGeo','siGeo'):get('niGeo'), backgroundColor:C.Geo+'cc', stack:'s' }] : []),
+        { label:'Dom. solar', data: nat?sum2('niDomSolar','siDomSolar'):get(ni?'niDomSolar':'siDomSolar'), backgroundColor:C.DomSolar+'cc', stack:'s' },
+        { label:'Solar',      data: nat?sum2('niSolar','siSolar'):get(ni?'niSolar':'siSolar'), backgroundColor:C.Solar+'cc', stack:'s' },
+        { label:'Wind',       data: nat?sum2('niWind','siWind'):get(ni?'niWind':'siWind'), backgroundColor:C.Wind+'cc', stack:'s' },
+        { label:'Hydro',      data: nat?sum2('niHydro','siHydro'):get(ni?'niHydro':'siHydro'), backgroundColor:C.Hydro+'cc', stack:'s' },
+        ...(ni||nat ? [{ label:'Storage', data: nat?sum2('niStorage','siStorage'):get('niStorage'), backgroundColor:C.Storage+'cc', stack:'s' }] : []),
+        ...(ni||nat ? [{ label:'Wood', data:get('niWood'), backgroundColor:C.Wood+'cc', stack:'s' }] : []),
+        ...(ni||nat ? [{ label:'Gas',  data:get('niGas'),  backgroundColor:C.Gas+'cc',  stack:'s' }] : []),
+        ...(si      ? [{ label:'HVDC imports', data:get('hvdcNiSi'), backgroundColor:C.HvdcNiSi+'cc', stack:'s' }] : []),
+        { label:'Demand', data: nat?sum2('niDemand','siDemand'):get(ni?'niDemand':'siDemand'),
+          type:'line', borderColor:C.Demand, borderWidth:1.5, pointRadius:0, fill:false, stack:undefined },
+      ].filter(d => d.data.some(v => v > 0) || d.label === 'Demand');
+    };
 
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-    doc.text(safe(`Annual demand: ${f1(s.totDemTWh)} TWh  ·  Renewables: ${f1(s.renPct)}%  ·  Carbon intensity: ${f0(s.carbInt)} gCO2/kWh`), M, y);
-    doc.text(safe(`System LCOE: NZD ${f0(s.lcoe)}/MWh  ·  Avg marginal: NZD ${f0(s.marg)}/MWh  ·  Curtailment: ${f0(s.curtailGWh)} GWh`), M, y + 5);
-    y += 13;
+    // ── PAGE 1: COVER ─────────────────────────────────────
+    const cover = document.createElement('div');
+    cover.className = 'rpt-pg';
+    cover.innerHTML = `
+      <div style="background:#1a4d7a;color:#fff;padding:40px 28px 30px;">
+        <div style="font-size:38px;font-weight:700;letter-spacing:-.02em;line-height:1;">MyGridNZ</div>
+        <div style="font-size:17px;margin-top:12px;opacity:.8;font-weight:300;">Electricity Grid Simulation Report</div>
+        <div style="font-size:10px;margin-top:8px;opacity:.5;">Aotearoa New Zealand &nbsp;·&nbsp; ${dateStr}</div>
+      </div>
+      <div style="background:#f0f6ff;padding:16px 28px 14px;border-bottom:2px solid #d6e7f6;">
+        <div style="font-size:20px;font-weight:700;color:#1a4d7a;">${scenName}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:5px;line-height:1.5;">${scenDesc}</div>
+      </div>
+      <div style="padding:20px 28px 0;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:10px;">Key Results</div>
+        <div id="rpt-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;"></div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:8px;">About This Simulation</div>
+        <div style="font-size:10.5px;color:#374151;line-height:1.75;margin-bottom:18px;">
+          This report presents the results of an NZ electricity grid simulation using real half-hourly generation and demand data from Transpower.
+          The model dispatches the North Island and South Island independently, connected via the 1,200 MW Cook Strait HVDC link, and evaluates
+          grid performance across a full calendar year. Dispatch follows a merit order: geothermal and must-run hydro first, then variable
+          renewables, HVDC surplus transfer, utility battery storage, and finally dispatchable thermal plant.
+        </div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:6px;">Scenario Parameters</div>
+        <table id="rpt-params" style="width:100%;border-collapse:collapse;font-size:10.5px;"></table>
+      </div>`;
+    rpt.appendChild(cover);
 
-    if (pieImg) {
-      const PW = 76;
-      addChart(pieImg, (W - PW) / 2, y, PW, PW);
-      y += PW + 7;
-    }
+    const metricAccent = { demand:'#1a4d7a', ren: s.renPct>=95?'#0d9e6e':s.renPct>=80?'#d97706':'#dc2626',
+      carb: s.carbInt<30?'#0d9e6e':s.carbInt<100?'#d97706':'#dc2626',
+      lcoe: s.lcoe<90?'#0d9e6e':s.lcoe<130?'#d97706':'#dc2626' };
+    [
+      ['Total Demand', f1(s.totDemTWh), 'TWh', metricAccent.demand],
+      ['Renewables', f1(s.renPct), '%', metricAccent.ren],
+      ['Carbon Intensity', f0(s.carbInt), 'gCO₂/kWh', metricAccent.carb],
+      ['System LCOE', f0(s.lcoe), 'NZD/MWh', metricAccent.lcoe],
+      ['Avg Marginal', f0(s.marg), 'NZD/MWh', '#1a4d7a'],
+      ['Curtailment', f0(s.curtailGWh), 'GWh', '#d97706'],
+    ].forEach(([label, val, unit, color]) => {
+      const el = document.createElement('div');
+      el.style.cssText = `border:1px solid #e2e8f0;border-left:3px solid ${color};border-radius:4px;padding:10px 12px;background:#f8fafc;`;
+      el.innerHTML = `<div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:3px;">${label}</div>
+        <div style="font-size:22px;font-weight:700;color:#0f172a;line-height:1;">${val}</div>
+        <div style="font-size:8.5px;color:#64748b;margin-top:2px;">${unit}</div>`;
+      cover.querySelector('#rpt-metrics').appendChild(el);
+    });
 
+    const paramsData = [
+      ['Data year', gYear||'—'], ['NI wind capacity', (p.niWindGW||0).toFixed(1)+' GW'],
+      ['SI wind capacity', (p.siWindGW||0).toFixed(1)+' GW'], ['NI solar capacity', (p.niSolarGW||0).toFixed(1)+' GW'],
+      ['SI solar capacity', (p.siSolarGW||0).toFixed(1)+' GW'],
+      ['NI utility battery', `${p.battPower||0} MW / ${(p.battCap||0).toLocaleString()} MWh`],
+      ['NI gas capacity', `${p.niGas||0} MW`], ['NI coal capacity', `${p.niCoal||0} MW`],
+      ['HVDC', `${p.hvdcNiSi||0} MW (NI→SI) / ${p.hvdcSiNi||0} MW (SI→NI)`],
+      ['Domestic solar', p.domSolarEnabled ? `Enabled — NI ${p.niDomSolarPct}% / SI ${p.siDomSolarPct}% of homes` : 'Not modelled'],
+    ];
+    const tbl = cover.querySelector('#rpt-params');
+    paramsData.forEach(([label, val], i) => {
+      const tr = tbl.insertRow();
+      tr.style.background = i%2===0 ? '#f8fafc' : '#fff';
+      tr.innerHTML = `<td style="padding:5px 8px;color:#64748b;width:145px;">${label}</td>
+        <td style="padding:5px 8px;font-weight:600;color:#0f172a;">${val}</td>`;
+    });
+
+    // ── PAGE 2: NATIONAL MIX ──────────────────────────────
+    const natBody = pg('National Generation Mix', 'Annual generation by fuel type — simulated year');
+    natBody.innerHTML = `<div style="font-size:10px;color:#64748b;margin-bottom:14px;">
+      Annual demand: <strong>${f1(s.totDemTWh)} TWh</strong> &nbsp;·&nbsp;
+      Renewables: <strong>${f1(s.renPct)}%</strong> &nbsp;·&nbsp;
+      Carbon intensity: <strong>${f0(s.carbInt)} gCO₂/kWh</strong> &nbsp;·&nbsp;
+      System LCOE: <strong>NZD ${f0(s.lcoe)}/MWh</strong> &nbsp;·&nbsp;
+      Curtailment: <strong>${f0(s.curtailGWh)} GWh</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:start;" id="nat-layout"></div>`;
+
+    const natLayout = natBody.querySelector('#nat-layout');
+    const pieWrap = document.createElement('div');
+    pieWrap.style.cssText = 'height:200px;position:relative;';
+    const pieCanvas = document.createElement('canvas');
+    pieWrap.appendChild(pieCanvas);
+    natLayout.appendChild(pieWrap);
     if (gNatFuels.length) {
-      const totalGWh = gNatFuels.reduce((s, f) => s + f.gwh, 0);
-      const C1 = M, C2 = M + 68, C3 = M + 100, C4 = M + 116;
-
-      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); setTxt(MUTED);
-      doc.text('Fuel', C1, y); doc.text('GWh', C2, y, {align:'right'});
-      doc.text('%', C3, y, {align:'right'}); y += 2.5;
-
-      setDraw([210,215,220]); doc.setLineWidth(0.2); doc.line(M, y, M+CW, y); y += 3.5;
-
-      gNatFuels.forEach(f => {
-        const pct = totalGWh > 0 ? f.gwh / totalGWh * 100 : 0;
-        const [r,g,b] = f.color.match(/\w\w/g).map(h => parseInt(h,16));
-        doc.setFillColor(r,g,b); doc.circle(C1 + 2, y - 1, 1.8, 'F');
-        doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(DARK);
-        doc.text(f.name, C1 + 6, y);
-        doc.text(Math.round(f.gwh).toLocaleString(), C2, y, {align:'right'});
-        doc.text(pct.toFixed(1) + '%', C3, y, {align:'right'});
-        setFill([228,232,237]); doc.rect(C4, y - 3, 66, 4, 'F');
-        doc.setFillColor(r,g,b); doc.rect(C4, y - 3, 66 * pct / 100, 4, 'F');
-        y += 7;
-      });
+      rptCharts.push(new Chart(pieCanvas, { type:'pie',
+        data:{ labels:gNatFuels.map(f=>f.name), datasets:[{ data:gNatFuels.map(f=>f.gwh), backgroundColor:gNatFuels.map(f=>f.color), borderColor:'#fff', borderWidth:2 }] },
+        options:{ animation:false, responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{enabled:false} } } }));
     }
 
-    // ═════════════════════════════════════════════════════
-    // PAGE 3 — PER ISLAND ANNUAL
-    // ═════════════════════════════════════════════════════
-    doc.addPage(); y = pageHeader('Per Island Annual Generation', 'Monthly generation by fuel type — North Island and South Island');
+    const fuelListEl = document.createElement('div');
+    natLayout.appendChild(fuelListEl);
+    const totalGWh = gNatFuels.reduce((s,f)=>s+f.gwh,0);
+    gNatFuels.forEach(f => {
+      const pct = totalGWh>0 ? f.gwh/totalGWh*100 : 0;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:12px 100px 58px 1fr 38px;gap:8px;align-items:center;margin-bottom:8px;font-size:11px;';
+      row.innerHTML = `<span style="width:11px;height:11px;border-radius:50%;background:${f.color};display:inline-block;"></span>
+        <span style="font-weight:500;color:#0f172a;">${f.name}</span>
+        <span style="color:#64748b;text-align:right;">${Math.round(f.gwh).toLocaleString()} GWh</span>
+        <div style="height:5px;background:#e2e8f0;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${f.color};border-radius:2px;"></div></div>
+        <span style="color:#64748b;font-size:10px;">${pct.toFixed(1)}%</span>`;
+      fuelListEl.appendChild(row);
+    });
 
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-    const islandNote = 'The simulation dispatches NI and SI independently. SI is dominated by large hydro storage (Waitaki, Manapouri); NI by geothermal baseload and dispatchable thermal. Surplus power transfers via HVDC — carrying SI hydro north in wet seasons, and NI thermal south in dry winters.';
-    doc.text(doc.splitTextToSize(islandNote, CW), M, y); y += 14;
+    // ── PAGE 3: PER ISLAND ────────────────────────────────
+    const islandBody = pg('Per Island Annual Generation', 'Monthly generation by fuel type — North Island and South Island');
+    const islandNote = document.createElement('p');
+    islandNote.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 12px;line-height:1.6;';
+    islandNote.textContent = 'The simulation dispatches NI and SI independently. SI is dominated by large hydro storage (Waitaki, Manapouri); NI by geothermal baseload and dispatchable thermal. Surplus power transfers via HVDC — carrying SI hydro north in wet seasons, and NI thermal south in dry winters.';
+    islandBody.appendChild(islandNote);
+    const islandGrid = document.createElement('div');
+    islandGrid.className = 'rpt-grid2';
+    islandBody.appendChild(islandGrid);
 
-    if (niMixImg) { doc.setFont('helvetica','bold'); doc.setFontSize(8); setTxt(DARK); doc.text('North Island', M, y); }
-    if (siMixImg) { doc.setFont('helvetica','bold'); doc.setFontSize(8); setTxt(DARK); doc.text('South Island', M + HW + 6, y); }
-    y += 3;
-    addChart(niMixImg, M, y, HW, 90);
-    addChart(siMixImg, M + HW + 6, y, HW, 90);
-    y += 96;
+    if (gMo.length) {
+      const annMax = Math.ceil(Math.max(...gMo.map(m=>m.niDemand+m.niCurtail), ...gMo.map(m=>m.siDemand+m.siCurtail)) / 500) * 500;
+      const annOpts = { plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} } },
+        scales:{ x:{stacked:true}, y:{stacked:true, max:annMax, title:{display:true,text:'GWh',font:{size:8}}, ticks:{font:{size:8}}} } };
 
-    // ═════════════════════════════════════════════════════
-    // PAGE 4 — SUMMER DISPATCH
-    // ═════════════════════════════════════════════════════
-    doc.addPage(); y = pageHeader('Summer Dispatch — January', 'NZ summer: high solar, low demand, hydro charging');
-
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-    doc.text('January is the peak solar period. Hydro lakes are typically filling after spring snowmelt. Wind generation remains significant. Curtailment may occur if VRE exceeds demand and storage is full.', M, y);
-    y += 8;
-
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); setTxt(DARK); doc.text('National', M, y); y += 3;
-    addChart(summer.nat, M, y, CW, 62); y += 68;
-    doc.text('North Island', M, y); doc.text('South Island', M + HW + 6, y); y += 3;
-    addChart(summer.ni, M, y, HW, 58);
-    addChart(summer.si, M + HW + 6, y, HW, 58);
-
-    // ═════════════════════════════════════════════════════
-    // PAGE 5 — WINTER DISPATCH
-    // ═════════════════════════════════════════════════════
-    doc.addPage(); y = pageHeader('Winter Dispatch — July', 'The dry-year stress period: low hydro, low solar, high demand');
-
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-    doc.text('July is the hardest month for NZ grid security. Hydro lakes may be low after a dry autumn. Heating demand peaks. Solar output is minimal. This is the period where thermal backup and HVDC transfers are most critical.', M, y);
-    y += 8;
-
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); setTxt(DARK); doc.text('National', M, y); y += 3;
-    addChart(winter.nat, M, y, CW, 62); y += 68;
-    doc.text('North Island', M, y); doc.text('South Island', M + HW + 6, y); y += 3;
-    addChart(winter.ni, M, y, HW, 58);
-    addChart(winter.si, M + HW + 6, y, HW, 58);
-
-    // ═════════════════════════════════════════════════════
-    // PAGE 6 — GRID OPERABILITY
-    // ═════════════════════════════════════════════════════
-    doc.addPage(); y = pageHeader('Grid Operability', 'HVDC flows, frequency reserves and system inertia — winter week');
-
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-    doc.text('Grid operability covers three areas: HVDC load flow between islands, frequency reserves (FIR 0–6 s and SIR 6–60 s) versus the contingency requirement, and synchronous inertia (MWs) available to resist frequency deviations after a fault.', M, y);
-    y += 9;
-
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); setTxt(DARK);
-    doc.text('HVDC Cook Strait Flows', M, y); y += 3;
-    addChart(winter.hvdc, M, y, CW, 48); y += 54;
-    doc.text('NI — Frequency Reserves', M, y); doc.text('SI — Frequency Reserves', M + HW + 6, y); y += 3;
-    addChart(winter.resNI, M, y, HW, 48);
-    addChart(winter.resSI, M + HW + 6, y, HW, 48); y += 54;
-    doc.text('System Inertia', M, y); y += 3;
-    addChart(winter.inertia, M, y, CW, 48);
-
-    // ═════════════════════════════════════════════════════
-    // PAGE 7 — BATTERY STORAGE
-    // ═════════════════════════════════════════════════════
-    doc.addPage(); y = pageHeader('Utility-Scale Battery Storage', 'Grid-connected batteries — charge, discharge and state of charge — winter week');
-
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-    doc.text('Utility-scale batteries (grid-connected only — domestic behind-the-meter storage is separate). Batteries charge from VRE surplus and discharge to cover evening demand peaks and low-hydro periods. The NI battery is the primary storage asset; SI battery modelled if capacity is set above zero.', M, y);
-    y += 9;
-
-    if (winter.battNI || winter.battSI) {
-      doc.setFont('helvetica','bold'); doc.setFontSize(8); setTxt(DARK);
-      doc.text('North Island Battery', M, y); doc.text('South Island Battery', M + HW + 6, y); y += 3;
-      addChart(winter.battNI, M, y, HW, 75);
-      addChart(winter.battSI, M + HW + 6, y, HW, 75);
+      for (const [title, datasets] of [
+        ['North Island', [
+          {label:'Geothermal',data:gMo.map(m=>+m.niGeo.toFixed(1)),backgroundColor:C.Geo,stack:'s'},
+          {label:'Hydro',data:gMo.map(m=>+m.niHydro.toFixed(1)),backgroundColor:C.Hydro,stack:'s'},
+          {label:'Solar',data:gMo.map(m=>+m.niSolar.toFixed(1)),backgroundColor:C.Solar,stack:'s'},
+          {label:'Wind',data:gMo.map(m=>+m.niWind.toFixed(1)),backgroundColor:C.Wind,stack:'s'},
+          {label:'Storage',data:gMo.map(m=>+m.niStorage.toFixed(1)),backgroundColor:C.Storage,stack:'s'},
+          {label:'Wood',data:gMo.map(m=>+m.niWood.toFixed(1)),backgroundColor:C.Wood,stack:'s'},
+          {label:'Gas',data:gMo.map(m=>+m.niGas.toFixed(1)),backgroundColor:C.Gas,stack:'s'},
+        ]],
+        ['South Island', [
+          {label:'Hydro',data:gMo.map(m=>+m.siHydro.toFixed(1)),backgroundColor:C.Hydro,stack:'s'},
+          {label:'Solar',data:gMo.map(m=>+m.siSolar.toFixed(1)),backgroundColor:C.Solar,stack:'s'},
+          {label:'Wind',data:gMo.map(m=>+m.siWind.toFixed(1)),backgroundColor:C.Wind,stack:'s'},
+          {label:'HVDC import',data:gMo.map(m=>+m.hvdcNiSi.toFixed(1)),backgroundColor:C.HvdcNiSi,stack:'s'},
+        ]],
+      ]) {
+        const col = document.createElement('div');
+        col.innerHTML = `<div class="rpt-label">${title}</div>`;
+        islandGrid.appendChild(col);
+        mkChart(col, 'bar', { labels:MONTHS, datasets }, annOpts, 260);
+      }
     }
 
-    // ═════════════════════════════════════════════════════
-    // SAVE
-    // ═════════════════════════════════════════════════════
-    const slug = scenName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    doc.save(`mygridnz-${slug}-${gYear || 'sim'}-report.pdf`);
+    // ── PAGES 4 & 5: SUMMER / WINTER DISPATCH ─────────────
+    for (const [dayOff, title, sub, note] of [
+      [7,   'Summer Dispatch — January', 'NZ summer: high solar, high hydro inflows, low demand',
+       'January is the peak solar period. Hydro lakes are typically filling after spring snowmelt. Wind remains significant year-round. Curtailment may occur where VRE exceeds demand and storage is full.'],
+      [181, 'Winter Dispatch — July',    'The dry-year stress period: low hydro, low solar, high demand',
+       'July is the hardest month for NZ grid security. Hydro lakes may be depleted after a dry autumn. Heating demand peaks. Solar output is minimal. This is the period where thermal backup and HVDC transfers are most critical.'],
+    ]) {
+      const body = pg(title, sub);
+      const noteEl = document.createElement('p');
+      noteEl.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 10px;line-height:1.6;';
+      noteEl.textContent = note;
+      body.appendChild(noteEl);
+
+      const slice = tsSliceAt(dayOff);
+      const labels = tsLabels(slice);
+
+      const natWrap = document.createElement('div');
+      natWrap.innerHTML = '<div class="rpt-label">National</div>';
+      body.appendChild(natWrap);
+      mkChart(natWrap, 'bar', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 155);
+
+      const isGrid = document.createElement('div');
+      isGrid.className = 'rpt-grid2'; isGrid.style.marginTop = '10px';
+      body.appendChild(isGrid);
+      for (const [islandTitle, island] of [['North Island','NI'],['South Island','SI']]) {
+        const col = document.createElement('div');
+        col.innerHTML = `<div class="rpt-label">${islandTitle}</div>`;
+        isGrid.appendChild(col);
+        mkChart(col, 'bar', { labels, datasets: dispDatasets(slice, island) }, tsOpts(), 130);
+      }
+    }
+
+    // ── PAGE 6: GRID OPERABILITY ──────────────────────────
+    const opBody = pg('Grid Operability', 'HVDC flows, frequency reserves and system inertia — winter week');
+    const opNote = document.createElement('p');
+    opNote.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 10px;line-height:1.6;';
+    opNote.textContent = 'HVDC load flow between islands (positive = NI surplus sent south), frequency reserves (FIR 0–6 s and SIR 6–60 s) versus the contingency requirement, and synchronous inertia (MWs).';
+    opBody.appendChild(opNote);
+    const wSlice = tsSliceAt(181), wLabels = tsLabels(wSlice);
+    const lineOpts = ylabel => ({
+      plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} }, tooltip:{enabled:false} },
+      scales:{ x:{ ticks:{ maxTicksLimit:8, font:{size:7}, maxRotation:0,
+        callback:(v,i,arr) => arr[i]?.label||null } },
+        y:{ title:{ display:true, text:ylabel, font:{size:8} }, ticks:{font:{size:8}} } }
+    });
+
+    const hvdcWrap = document.createElement('div');
+    hvdcWrap.innerHTML = '<div class="rpt-label">HVDC Cook Strait Flows</div>';
+    opBody.appendChild(hvdcWrap);
+    mkChart(hvdcWrap, 'line', { labels:wLabels, datasets:[
+      {label:'NI→SI',data:wSlice.map(p=>p.hvdcNiSi||0),borderColor:C.HvdcNiSi,backgroundColor:C.HvdcNiSi+'33',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
+      {label:'SI→NI',data:wSlice.map(p=>p.hvdcSiNi||0),borderColor:C.HvdcSiNi,backgroundColor:C.HvdcSiNi+'33',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
+    ]}, lineOpts('MW'), 110);
+
+    const resGrid = document.createElement('div');
+    resGrid.className = 'rpt-grid2'; resGrid.style.marginTop = '10px';
+    opBody.appendChild(resGrid);
+    for (const [label, firK, sirK, contK] of [
+      ['NI — Frequency Reserves','niFIR','niSIR','niContingency'],
+      ['SI — Frequency Reserves','siFIR','siSIR','siContingency'],
+    ]) {
+      const col = document.createElement('div');
+      col.innerHTML = `<div class="rpt-label">${label}</div>`;
+      resGrid.appendChild(col);
+      mkChart(col, 'line', { labels:wLabels, datasets:[
+        {label:'FIR (0-6s)',data:wSlice.map(p=>p[firK]||0),borderColor:'#22c55e',backgroundColor:'#22c55e33',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
+        {label:'SIR (6-60s)',data:wSlice.map(p=>p[sirK]||0),borderColor:'#3b82f6',backgroundColor:'#3b82f633',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
+        {label:'Contingency',data:wSlice.map(p=>p[contK]||0),borderColor:'#ef4444',borderDash:[4,3],pointRadius:0,borderWidth:1.5,fill:false},
+      ]}, lineOpts('MW'), 110);
+    }
+
+    const inertWrap = document.createElement('div');
+    inertWrap.innerHTML = '<div class="rpt-label" style="margin-top:10px;">System Inertia</div>';
+    opBody.appendChild(inertWrap);
+    mkChart(inertWrap, 'line', { labels:wLabels, datasets:[
+      {label:'NI inertia',data:wSlice.map(p=>p.niInertiaMWs||0),borderColor:C.Hydro,tension:.3,pointRadius:0,borderWidth:1.5},
+      {label:'SI inertia',data:wSlice.map(p=>p.siInertiaMWs||0),borderColor:C.Wind,borderDash:[4,3],tension:.3,pointRadius:0,borderWidth:1.5},
+    ]}, lineOpts('MWs'), 100);
+
+    // ── PAGE 7: BATTERY ───────────────────────────────────
+    const battBody = pg('Utility-Scale Battery Storage', 'Grid-connected batteries — charge, discharge and state of charge — winter week');
+    const battNote = document.createElement('p');
+    battNote.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 12px;line-height:1.6;';
+    battNote.textContent = 'Utility-scale grid-connected batteries only (domestic behind-the-meter storage is modelled separately). Batteries charge from VRE surplus and discharge to cover evening demand peaks and dry-hydro periods.';
+    battBody.appendChild(battNote);
+    const battGrid = document.createElement('div');
+    battGrid.className = 'rpt-grid2';
+    battBody.appendChild(battGrid);
+    for (const [label, socK, chgK, dischK] of [
+      ['North Island Battery','niSoCpct','niCharge','niStorage'],
+      ['South Island Battery','siBattPct','siCharge','siStorage'],
+    ]) {
+      const col = document.createElement('div');
+      col.innerHTML = `<div class="rpt-label">${label}</div>`;
+      battGrid.appendChild(col);
+      mkChart(col, 'bar', { labels:wLabels, datasets:[
+        {label:'SoC %',data:wSlice.map(p=>p[socK]||0),type:'line',borderColor:'#f97316',borderWidth:2,pointRadius:0,yAxisID:'y',fill:false},
+        {label:'Charging',data:wSlice.map(p=>-(p[chgK]||0)),backgroundColor:'#fbbf2488',stack:'s',yAxisID:'y2'},
+        {label:'Discharging',data:wSlice.map(p=>+(p[dischK]||0)),backgroundColor:'#34d39988',stack:'s',yAxisID:'y2'},
+      ]}, {
+        animation:false, responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'top',labels:{boxWidth:8,font:{size:8}}}, tooltip:{enabled:false} },
+        scales:{
+          x:{ ticks:{maxTicksLimit:8,font:{size:7},maxRotation:0, callback:(v,i,arr)=>arr[i]?.label||null} },
+          y:{type:'linear',position:'left',title:{display:true,text:'SoC %',font:{size:8}},min:0,max:100,ticks:{font:{size:8}}},
+          y2:{type:'linear',position:'right',title:{display:true,text:'MW',font:{size:8}},grid:{drawOnChartArea:false},ticks:{font:{size:8}}},
+        }
+      }, 200);
+    }
+
+    // ── Print ─────────────────────────────────────────────
+    await new Promise(r => setTimeout(r, 600));
+    window.addEventListener('afterprint', () => {
+      rptCharts.forEach(c => c.destroy()); rptCharts = [];
+      document.getElementById('rpt').innerHTML = '';
+    }, { once: true });
+    window.print();
 
   } catch(e) {
-    console.error('Report generation failed:', e);
-    alert('Could not generate PDF: ' + e.message);
+    console.error('Report error:', e);
+    alert('Could not build report: ' + e.message);
   } finally {
-    const btn = document.getElementById('btn-report');
     btn.disabled = false;
     btn.textContent = '⬇ PDF Report';
   }
