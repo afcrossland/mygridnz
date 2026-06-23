@@ -188,7 +188,7 @@
 <div class="page-wrap">
 <main>
   <h1 class="page-title">NZ Grid Simulator</h1>
-  <p class="page-intro">How much wind and solar does New Zealand need to get off fossil gas? What happens in a dry year when the lakes run low? This simulator lets you explore those questions using real half-hourly generation data from Transpower — the same measurements that describe the actual grid. It models how the North and South Islands balance supply and demand every 30 minutes through a full year, routing renewable surplus between islands via the Cook Strait HVDC link before drawing on flexible hydro, battery storage or gas.</p>
+  <p class="page-intro">How much wind and solar does New Zealand need to get off fossil gas? What happens in a dry year when the lakes run low? This simulator lets you explore those questions using real half-hourly metered generation data — the same measurements that describe the actual grid. It models how the North and South Islands balance supply and demand every 30 minutes through a full year, routing renewable surplus between islands via the Cook Strait HVDC link before drawing on flexible hydro, battery storage or gas.</p>
 
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:20px 0 28px;font-size:13px;line-height:1.75;">
     <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;">How to use</p>
@@ -614,7 +614,7 @@
       <h2 style="font-size:1.1rem;font-weight:700;color:var(--brand);margin:0 0 10px;">Overview</h2>
       <p style="margin:0 0 16px;color:var(--muted);font-size:14px;">
         The MyGridNZ simulator is a half-hourly chronological dispatch model of the New Zealand power system.
-        It uses <strong>real metered generation and demand data from Transpower</strong> as the base year,
+        It uses <strong>real metered generation and demand data</strong> as the base year,
         then replaces or scales individual fuel types to match your chosen scenario.
         The result is a full-year energy balance showing how each technology would have performed
         in that historical weather and demand pattern.
@@ -624,11 +624,11 @@
       <div style="border-left:3px solid var(--brand);padding:14px 20px;background:var(--surface);border-radius:0 8px 8px 0;margin-bottom:20px;">
         <h3 style="font-size:1rem;font-weight:700;margin:0 0 8px;color:var(--text);">Step 1 — Load historical data</h3>
         <p style="margin:0 0 10px;font-size:14px;color:var(--muted);">
-          On launch the simulator fetches two datasets from a Google Sheet via the Visualization API:
+          On launch the simulator fetches two datasets for the selected year:
         </p>
         <ul style="margin:0 0 10px;padding-left:20px;font-size:14px;color:var(--muted);">
-          <li><strong>data_perIsland</strong> — 17,520 half-hourly rows for the selected year, with separate columns for NI/SI metered generation by fuel, NI/SI grid demand, and HVDC flows. Source: Transpower Generation_MD and Grid_export datasets.</li>
-          <li><strong>capacity_perIsland</strong> — the actual installed capacity (MW) per fuel per island for that year, used to compute scaling factors when you change the slider values.</li>
+          <li><strong>Half-hourly generation and demand</strong> — 17,520 rows for the selected year, with separate columns for NI/SI metered generation by fuel type, NI/SI grid demand, and HVDC flows.</li>
+          <li><strong>Installed capacity</strong> — the actual installed capacity (MW) per fuel per island for that year, used to compute scaling factors when you change the slider values.</li>
         </ul>
         <p style="margin:0;font-size:14px;color:var(--muted);">
           Each row covers one 30-minute trading period. Timestamps are NZ Standard Time (UTC+12).
@@ -765,7 +765,7 @@
       </dl>
 
       <p style="margin:28px 0 0;font-size:13px;color:var(--muted);border-top:1px solid var(--border);padding-top:14px;">
-        Data source: Transpower New Zealand EMI database (Generation_MD, Grid_export). Carbon factors: IPCC AR6 lifecycle values. LCOE: MBIE New Zealand Energy Quarterly methodology, adapted for NZ conditions. Simulation code: MyGridNZ, open methodology — see <a href="https://mygridnz.co.nz" style="color:var(--brand);">mygridnz.co.nz</a>.
+        Data source: Electricity Authority EMI portal. Carbon factors: IPCC AR6 lifecycle values. LCOE: MBIE New Zealand Energy Quarterly methodology, adapted for NZ conditions. Simulation code: MyGridNZ, open methodology — see <a href="https://mygridnz.co.nz" style="color:var(--brand);">mygridnz.co.nz</a>.
       </p>
     </div>
   </details>
@@ -2268,7 +2268,7 @@ async function generateReport() {
         </div></div>
       <div class="rpt-body rpt-content"></div>
       <div class="rpt-footer">
-        <span>mygridnz.co.nz — Simulation based on Transpower half-hourly metered data</span>
+        <span>mygridnz.co.nz — Simulation based on New Zealand half-hourly metered data</span>
         <span>${scenName}</span></div>`;
       rpt.appendChild(d);
       return d.querySelector('.rpt-content');
@@ -2368,7 +2368,7 @@ async function generateReport() {
         <div id="rpt-metrics" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;"></div>
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:8px;">About This Simulation</div>
         <div style="font-size:10.5px;color:#374151;line-height:1.75;margin-bottom:18px;">
-          This report presents the results of an NZ electricity grid simulation using real half-hourly generation and demand data from Transpower.
+          This report presents the results of an NZ electricity grid simulation using real half-hourly generation and demand data.
           The model dispatches the North Island and South Island independently, connected via the 1,200 MW Cook Strait HVDC link, and evaluates
           grid performance across a full calendar year. Dispatch follows a merit order: geothermal and must-run hydro first, then variable
           renewables, HVDC surplus transfer, utility battery storage, and finally dispatchable thermal plant.
