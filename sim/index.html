@@ -81,6 +81,7 @@
     .island-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
     .nat-mix-layout { display:flex; gap:32px; align-items:start; margin-bottom:28px; }
     .nat-pie-section { display:grid; grid-template-columns:210px 1fr; gap:20px; align-items:start; flex:1; min-width:0; }
+    .nat-pie-wrap { width:210px; }
     .nat-fuel-row  { display:grid; grid-template-columns:10px auto auto 1fr 40px; align-items:center; gap:10px; font-size:13px; margin-bottom:9px; }
     .nat-fuel-gwh  { font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; }
     .nat-fuel-name { font-weight:500; color:var(--text); }
@@ -105,7 +106,8 @@
     #operability-section > summary::-webkit-details-marker, #operability-section > summary::marker,
     #reservoirs-section > summary::-webkit-details-marker, #reservoirs-section > summary::marker,
     #dom-energy-section > summary::-webkit-details-marker, #dom-energy-section > summary::marker,
-    #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker { display:none; }
+    #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker,
+    #curtailment-section > summary::-webkit-details-marker, #curtailment-section > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
     .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
     .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
@@ -113,8 +115,10 @@
     .ts-full { grid-column:span 2; }
 
     /* ── Timeseries ──────────────────────────── */
-    .ts-header { display:flex; align-items:center; gap:10px; margin:28px 0 20px; flex-wrap:wrap; }
-    .ts-header h2 { font-size:1rem; font-weight:600; margin:0; }
+    .ts-header { display:flex; align-items:center; gap:10px; margin:32px 0 16px; flex-wrap:wrap;
+      padding:12px 16px; background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; border-left:3px solid var(--brand); }
+    .ts-header h2 { font-size:1rem; font-weight:600; margin:0; color:var(--text); }
     .ts-view { display:flex; gap:4px; }
     .ts-nav { display:flex; align-items:center; gap:6px; margin-left:auto; }
     .btn-nav { background:var(--surface); border:1px solid var(--border); border-radius:5px;
@@ -353,7 +357,7 @@
       <div class="nat-mix-layout">
         <!-- Left: pie + fuel list with progress bars -->
         <div class="nat-pie-section">
-          <canvas id="nat-pie"></canvas>
+          <div class="nat-pie-wrap"><canvas id="nat-pie"></canvas></div>
           <div id="nat-fuel-list"></div>
         </div>
         <!-- Right: 6 stat tiles in 2×3 grid -->
@@ -387,7 +391,7 @@
 
     <!-- ── Timeseries nav ── -->
     <div class="ts-header">
-      <h2>Timeseries</h2>
+      <h2>Generation over Time</h2>
       <div class="ts-view">
         <button class="btn-nav btn-nav--on" id="btn-7d"  data-days="7"  onclick="setTsView(7)">7 days</button>
         <button class="btn-nav"             id="btn-30d" data-days="30" onclick="setTsView(30)">Month</button>
@@ -412,27 +416,6 @@
       </div>
     </div>
 
-    <!-- ── Battery storage (collapsed by default) ── -->
-    <details class="ts-section" id="battery-section">
-      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-size:12px;color:var(--muted);" id="battery-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Battery Storage</span>
-        <span style="font-size:11px;color:var(--muted);">— state of charge, charge and discharge power by island</span>
-      </summary>
-      <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge held above the 20% spinning reserve floor.</p>
-      </div>
-      <div class="ts-charts">
-        <div class="chart-box"><h3>North Island battery</h3><canvas id="ts-batt-ni"></canvas></div>
-        <div class="chart-box"><h3>South Island battery</h3><canvas id="ts-batt-si"></canvas></div>
-      </div>
-    </details>
-    <script>
-      document.getElementById('battery-section').addEventListener('toggle', function() {
-        document.getElementById('battery-arrow').textContent = this.open ? '▼' : '▶';
-      });
-    </script>
-
     <!-- ── Domestic Energy Supply (collapsed by default) ── -->
     <details class="ts-section" id="dom-energy-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -454,17 +437,47 @@
       });
     </script>
 
-    <!-- ── Curtailment ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>Curtailment by generation type</h3>
+    <!-- ── Battery storage (collapsed by default) ── -->
+    <details class="ts-section" id="battery-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="battery-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Battery Storage</span>
+        <span style="font-size:11px;color:var(--muted);">— state of charge, charge and discharge power by island</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p>State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge held above the 20% spinning reserve floor.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>North Island battery</h3><canvas id="ts-batt-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island battery</h3><canvas id="ts-batt-si"></canvas></div>
+      </div>
+    </details>
+    <script>
+      document.getElementById('battery-section').addEventListener('toggle', function() {
+        document.getElementById('battery-arrow').textContent = this.open ? '▼' : '▶';
+      });
+    </script>
+
+    <!-- ── Curtailment (collapsed by default) ── -->
+    <details class="ts-section" id="curtailment-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="curtailment-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Curtailment by generation type</span>
+        <span style="font-size:11px;color:var(--muted);">— surplus wind and solar that cannot be used or stored</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
         <p>Surplus generation that cannot be used locally, exported via HVDC, or stored. Attributed proportionally to each must-run source — wind and solar tend to dominate in high-VRE scenarios.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island (MW)</h3><canvas id="ts-curtail-ni"></canvas></div>
         <div class="chart-box"><h3>South Island (MW)</h3><canvas id="ts-curtail-si"></canvas></div>
       </div>
-    </div>
+    </details>
+    <script>
+      document.getElementById('curtailment-section').addEventListener('toggle', function() {
+        document.getElementById('curtailment-arrow').textContent = this.open ? '▼' : '▶';
+      });
+    </script>
 
     <!-- ── Reservoirs and system balance (collapsed by default) ── -->
     <details class="ts-section" id="reservoirs-section">
@@ -664,6 +677,10 @@ function preloadDomSolar() {
 
 function preloadUtilityVRE() {
   resetToToday();
+  setSlider('ni-solar', 2.5);
+  setSlider('si-solar', 0.5);
+  setSlider('ni-wind',  2.1);
+  setSlider('si-wind',  0.9);
   document.getElementById('sim-status').textContent = 'Utility Solar & Wind scenario loaded — click Run to simulate.';
 }
 
@@ -1340,6 +1357,29 @@ function renderAnnualCharts(mo) {
     ]}, options:{ responsive:true, plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } } },
       scales:{ y:{ title:{ display:true, text:'GWh' } } } },
   });
+
+  // Domestic energy supply — monthly totals (only meaningful when dom solar is enabled)
+  ['ts-dom-ni','ts-dom-si'].forEach(id => charts[id]?.destroy());
+  if (gParams.domSolarEnabled) {
+    const domOpts = { responsive:true, animation:false,
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false }},
+      scales:{ x:{}, y:{ min:0, title:{ display:true, text:'GWh' } } } };
+    charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'), {
+      data:{ labels:MONTHS, datasets:[
+        { type:'bar',  label:'Solar',            data:mo.map(m=>+m.niDomSolarGross.toFixed(1)), backgroundColor:C.Solar,   stack:'s' },
+        { type:'bar',  label:'Battery discharge', data:mo.map(m=>+m.niDomBattDisch.toFixed(1)),  backgroundColor:C.Storage, stack:'s' },
+        { type:'line', label:'Domestic load',     data:mo.map(m=>+m.niDomLoad.toFixed(1)),
+          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+      ]}, options:domOpts });
+    charts['ts-dom-si'] = new Chart(document.getElementById('ts-dom-si'), {
+      data:{ labels:MONTHS, datasets:[
+        { type:'bar',  label:'Solar',            data:mo.map(m=>+m.siDomSolarGross.toFixed(1)), backgroundColor:C.Solar,   stack:'s' },
+        { type:'bar',  label:'Battery discharge', data:mo.map(m=>+m.siDomBattDisch.toFixed(1)),  backgroundColor:C.Storage, stack:'s' },
+        { type:'line', label:'Domestic load',     data:mo.map(m=>+m.siDomLoad.toFixed(1)),
+          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+      ]}, options:domOpts });
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1547,30 +1587,6 @@ function renderTsCharts() {
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
   });
-
-  // Domestic energy supply charts
-  ['ts-dom-ni','ts-dom-si'].forEach(id => charts[id]?.destroy());
-  if (gParams.domSolarEnabled) {
-    const domOpts = { responsive:true, animation:false,
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false }},
-      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ min:0, title:{ display:true, text:'GWh' } } } };
-    charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'), {
-      data:{ labels:MONTHS, datasets:[
-        { type:'bar', label:'Solar', data:mo.map(m=>+m.niDomSolarGross.toFixed(1)), backgroundColor:C.Solar, stack:'s' },
-        { type:'bar', label:'Battery discharge', data:mo.map(m=>+m.niDomBattDisch.toFixed(1)), backgroundColor:C.Storage, stack:'s' },
-        { type:'line', label:'Domestic load', data:mo.map(m=>+m.niDomLoad.toFixed(1)),
-          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
-      ]}, options:domOpts });
-    charts['ts-dom-si'] = new Chart(document.getElementById('ts-dom-si'), {
-      data:{ labels:MONTHS, datasets:[
-        { type:'bar', label:'Solar', data:mo.map(m=>+m.siDomSolarGross.toFixed(1)), backgroundColor:C.Solar, stack:'s' },
-        { type:'bar', label:'Battery discharge', data:mo.map(m=>+m.siDomBattDisch.toFixed(1)), backgroundColor:C.Storage, stack:'s' },
-        { type:'line', label:'Domestic load', data:mo.map(m=>+m.siDomLoad.toFixed(1)),
-          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
-      ]}, options:domOpts });
-  }
 
   // HVDC
   charts['ts-hvdc']?.destroy();
