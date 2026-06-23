@@ -2047,13 +2047,16 @@ async function generateReport() {
 
     // ── Save & open sections so canvases get real dimensions ─
     const savedOffset = tsOffset, savedDays = tsWindowDays;
-    const islandSec = document.getElementById('island-dispatch-section');
-    const battSec   = document.getElementById('battery-section');
-    const opSec     = document.getElementById('operability-section');
-    const wasIsland = islandSec?.open, wasBatt = battSec?.open, wasOp = opSec?.open;
-    if (islandSec) islandSec.open = true;
-    if (battSec)   battSec.open   = true;
-    if (opSec)     opSec.open     = true;
+    const islandSec       = document.getElementById('island-dispatch-section');
+    const islandDetailSec = document.getElementById('island-detail-section');
+    const battSec         = document.getElementById('battery-section');
+    const opSec           = document.getElementById('operability-section');
+    const wasIsland       = islandSec?.open, wasIslandDetail = islandDetailSec?.open;
+    const wasBatt         = battSec?.open,   wasOp           = opSec?.open;
+    if (islandSec)       islandSec.open       = true;
+    if (islandDetailSec) islandDetailSec.open = true;
+    if (battSec)         battSec.open         = true;
+    if (opSec)           opSec.open           = true;
 
     // Wait for two rAF cycles so the browser lays out the newly-opened sections
     // before Chart.js tries to read canvas dimensions.
@@ -2084,9 +2087,10 @@ async function generateReport() {
 
     // ── Restore ───────────────────────────────────────────
     tsWindowDays = savedDays; tsOffset = savedOffset; renderTsCharts();
-    if (!wasIsland && islandSec) islandSec.open = false;
-    if (!wasBatt   && battSec)   battSec.open   = false;
-    if (!wasOp     && opSec)     opSec.open     = false;
+    if (!wasIsland       && islandSec)       islandSec.open       = false;
+    if (!wasIslandDetail && islandDetailSec) islandDetailSec.open = false;
+    if (!wasBatt         && battSec)         battSec.open         = false;
+    if (!wasOp           && opSec)           opSec.open           = false;
 
     // ── PDF setup ─────────────────────────────────────────
     const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
@@ -2106,6 +2110,12 @@ async function generateReport() {
     const setTxt  = c => doc.setTextColor(...rgb(c));
     const setFill = c => doc.setFillColor(...rgb(c));
     const setDraw = c => doc.setDrawColor(...rgb(c));
+    // jsPDF uses WinAnsi encoding — strip/replace characters outside Latin-1
+    const safe = s => String(s)
+      .replace(/₂/g, '2').replace(/→/g, '>').replace(/←/g, '<')
+      .replace(/[""]/g, '"').replace(/['']/g, "'")
+      .replace(/–/g, '-').replace(/—/g, '-')
+      .replace(/[^\x00-\xFF]/g, '?');
 
     const dateStr = new Date().toLocaleDateString('en-NZ', { day:'numeric', month:'long', year:'numeric' });
     const scenName = getScenarioName();
@@ -2119,8 +2129,8 @@ async function generateReport() {
 
     function addFooter() {
       doc.setFontSize(7); setTxt(MUTED);
-      doc.text('mygridnz.co.nz  ·  Data: Transpower half-hourly metered generation & demand', M, H - 6);
-      doc.text(scenName, W - M, H - 6, { align:'right' });
+      doc.text('mygridnz.co.nz  -  Data: Transpower half-hourly metered generation & demand', M, H - 6);
+      doc.text(safe(scenName), W - M, H - 6, { align:'right' });
     }
 
     function pageHeader(title, sub) {
@@ -2185,10 +2195,11 @@ async function generateReport() {
     // Scenario strip
     setFill(BLTBG); doc.rect(0, 65, W, 24, 'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(14); setTxt(BRAND);
-    doc.text(scenName, M, 78);
+    doc.text(safe(scenName), M, 78);
     if (scenDesc) {
       doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-      doc.text(doc.splitTextToSize(scenDesc, CW)[0], M, 84);
+      const descLines = doc.splitTextToSize(safe(scenDesc), CW);
+      doc.text(descLines[0], M, 84);
     }
 
     // Key metrics
@@ -2199,7 +2210,7 @@ async function generateReport() {
     const BW = (CW - 10) / 3, BH = 27, BG = 5;
     metricBox(M,           y, BW, BH, 'Total Demand',     f1(s.totDemTWh), 'TWh',        BRAND);
     metricBox(M+BW+BG,     y, BW, BH, 'Renewables',       f1(s.renPct),    '%',           colorFor(s.renPct, 95, 80));
-    metricBox(M+2*(BW+BG), y, BW, BH, 'Carbon Intensity', f0(s.carbInt),   'gCO₂/kWh',  s.carbInt<30?GREEN:s.carbInt<100?AMBER:RED);
+    metricBox(M+2*(BW+BG), y, BW, BH, 'Carbon Intensity', f0(s.carbInt),   'gCO2/kWh',  s.carbInt<30?GREEN:s.carbInt<100?AMBER:RED);
     y += BH + BG;
     metricBox(M,           y, BW, BH, 'System LCOE',      f0(s.lcoe),      'NZD/MWh',   s.lcoe<90?GREEN:s.lcoe<130?AMBER:RED);
     metricBox(M+BW+BG,     y, BW, BH, 'Avg Marginal Cost',f0(s.marg),      'NZD/MWh',   BRAND);
@@ -2226,7 +2237,7 @@ async function generateReport() {
       ['NI utility battery',  `${(p.battPower||0)} MW / ${(p.battCap||0).toLocaleString()} MWh`],
       ['NI gas capacity',     `${(p.niGas||0)} MW`],
       ['NI coal capacity',    `${(p.niCoal||0)} MW`],
-      ['HVDC',                `${p.hvdcNiSi||0} MW (NI→SI) / ${p.hvdcSiNi||0} MW (SI→NI)`],
+      ['HVDC',                `${p.hvdcNiSi||0} MW (NI>SI) / ${p.hvdcSiNi||0} MW (SI>NI)`],
       ['Domestic solar',      p.domSolarEnabled ? `Enabled — NI ${p.niDomSolarPct}% / SI ${p.siDomSolarPct}% of homes` : 'Not modelled'],
     ];
 
@@ -2240,7 +2251,7 @@ async function generateReport() {
       doc.setFont('helvetica','normal'); doc.setFontSize(8); setTxt(MUTED);
       doc.text(label, M + 3, ry);
       doc.setFont('helvetica','bold'); setTxt(DARK);
-      doc.text(String(val), M + 80, ry);
+      doc.text(safe(val), M + 80, ry);
     });
 
     addFooter();
@@ -2251,8 +2262,9 @@ async function generateReport() {
     doc.addPage(); y = pageHeader('National Generation Mix', 'Annual generation by fuel type — simulated year');
 
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setTxt(MUTED);
-    doc.text(`Annual demand: ${f1(s.totDemTWh)} TWh  ·  Renewables: ${f1(s.renPct)}%  ·  Carbon intensity: ${f0(s.carbInt)} gCO₂/kWh  ·  System LCOE: NZD ${f0(s.lcoe)}/MWh`, M, y);
-    y += 8;
+    doc.text(safe(`Annual demand: ${f1(s.totDemTWh)} TWh  ·  Renewables: ${f1(s.renPct)}%  ·  Carbon intensity: ${f0(s.carbInt)} gCO2/kWh`), M, y);
+    doc.text(safe(`System LCOE: NZD ${f0(s.lcoe)}/MWh  ·  Avg marginal: NZD ${f0(s.marg)}/MWh  ·  Curtailment: ${f0(s.curtailGWh)} GWh`), M, y + 5);
+    y += 13;
 
     if (pieImg) {
       const PW = 76;
