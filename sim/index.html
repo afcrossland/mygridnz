@@ -479,15 +479,15 @@
       </script>
     </div>
 
-    <!-- ── Domestic Energy Supply (collapsed by default) ── -->
+    <!-- ── Residential Energy Supply (collapsed by default) ── -->
     <details class="ts-section" id="dom-energy-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <span style="font-size:12px;color:var(--muted);" id="dom-energy-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Domestic Energy Supply</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Residential Energy Supply</span>
         <span style="font-size:11px;color:var(--muted);">— rooftop solar, battery discharge and household load</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>Monthly totals for domestic rooftop solar generation, home battery discharge, and total household load. The gap between the load line and the stacked bars is met from the grid.</p>
+        <p>Monthly totals for residential rooftop solar generation, home battery discharge, and total household load. The gap between the load line and the stacked bars is met from the grid.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island — per home (kW)</h3><canvas id="ts-dom-ni"></canvas></div>
@@ -510,7 +510,7 @@
         <span style="font-size:11px;color:var(--muted);">— grid-connected batteries, state of charge and power by island</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>Grid-connected utility-scale batteries only — not domestic home batteries (shown separately above). State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge is held above the 20% spinning reserve floor.</p>
+        <p>Grid-connected utility-scale batteries only — not residential home batteries (shown separately above). State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge is held above the 20% spinning reserve floor.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island battery</h3><canvas id="ts-batt-ni"></canvas></div>
@@ -659,17 +659,17 @@
 
       <!-- STEP 3: DOMESTIC -->
       <div style="border-left:3px solid #84cc16;padding:14px 20px;background:var(--surface);border-radius:0 8px 8px 0;margin-bottom:20px;">
-        <h3 style="font-size:1rem;font-weight:700;margin:0 0 8px;color:var(--text);">Step 3 — Model domestic solar and battery</h3>
+        <h3 style="font-size:1rem;font-weight:700;margin:0 0 8px;color:var(--text);">Step 3 — Model residential solar and battery</h3>
         <p style="margin:0 0 10px;font-size:14px;color:var(--muted);">
           Behind-the-meter (residential) solar and battery are modelled separately from grid-scale assets. For each half-hour:
         </p>
         <ol style="margin:0 0 10px;padding-left:20px;font-size:14px;color:var(--muted);">
-          <li style="margin-bottom:6px;"><strong>Domestic solar generation</strong> is estimated by scaling utility-scale solar output by the ratio of home panel capacity to grid capacity, multiplied by the number of homes with solar (set by the % slider × total dwellings per island — NI 1.57 M, SI 0.55 M).</li>
-          <li style="margin-bottom:6px;"><strong>Self-consumption</strong> — domestic solar first meets the household's own load (NI 38% / SI 25% of island demand by default, based on MBIE data; the SI share is lower because Tiwai Point aluminium smelter inflates industrial demand). Surplus is exported to the grid.</li>
-          <li style="margin-bottom:6px;"><strong>Home battery</strong> — if enabled, surplus domestic solar charges the home battery before export. The battery discharges during peak periods: in summer all day (24 h); in winter mornings and daytime only (06:00–21:00); in shoulder months from 05:00 onwards. The net effect of home batteries is that less domestic solar reaches the grid but grid demand in the evening is reduced.</li>
+          <li style="margin-bottom:6px;"><strong>Residential solar generation</strong> is estimated by scaling utility-scale solar output by the ratio of home panel capacity to grid capacity, multiplied by the number of homes with solar (set by the % slider × total dwellings per island — NI 1.57 M, SI 0.55 M).</li>
+          <li style="margin-bottom:6px;"><strong>Self-consumption</strong> — residential solar first meets the household's own load (NI 38% / SI 25% of island demand by default, based on MBIE data; the SI share is lower because Tiwai Point aluminium smelter inflates industrial demand). Surplus is exported to the grid.</li>
+          <li style="margin-bottom:6px;"><strong>Home battery</strong> — if enabled, surplus residential solar charges the home battery before export. The battery discharges during peak periods: in summer all day (24 h); in winter mornings and daytime only (06:00–21:00); in shoulder months from 05:00 onwards. The net effect of home batteries is that less residential solar reaches the grid but grid demand in the evening is reduced.</li>
         </ol>
         <p style="margin:0;font-size:14px;color:var(--muted);">
-          The domestic solar that reaches the grid is included in national and island generation totals as "Residential solar &amp; storage".
+          The residential solar that reaches the grid is included in national and island generation totals as "Residential solar &amp; storage".
         </p>
       </div>
 
@@ -681,7 +681,7 @@
         </p>
         <ol style="margin:0 0 10px;padding-left:20px;font-size:14px;color:var(--muted);">
           <li style="margin-bottom:8px;"><strong>Must-run baseload</strong> — geothermal (100% of metered output) and run-of-river hydro (NI 70%, SI 20% of metered hydro) are dispatched first at full output and cannot be curtailed.</li>
-          <li style="margin-bottom:8px;"><strong>Variable renewables</strong> — scaled wind and solar (including domestic net export) are added next. Output follows the historical shape and cannot be switched off, but surplus is curtailed if demand is fully met.</li>
+          <li style="margin-bottom:8px;"><strong>Variable renewables</strong> — scaled wind and solar (including residential net export) are added next. Output follows the historical shape and cannot be switched off, but surplus is curtailed if demand is fully met.</li>
           <li style="margin-bottom:8px;"><strong>Flexible hydro dispatch</strong> — remaining hydro (the reservoir portion) is held back initially. A virtual reservoir tracks accumulated inflow minus discharge. If the NI island has a deficit after wind/solar, flexible hydro is released up to the available reservoir level. SI hydro is managed similarly but with a much larger reservoir (Waitaki/Manapouri); SI reservoir losses (evaporation and spill) are proportionally higher. Reservoir is capped at configured maximum; overflow is spilled (curtailed).</li>
           <li style="margin-bottom:8px;"><strong>HVDC surplus transfer (first pass)</strong> — if one island has a surplus after renewables and flexible hydro, it sends power to the other island up to the HVDC capacity limit (default 1,200 MW each direction). Low-carbon surplus is transferred before thermal is committed on the receiving island.</li>
           <li style="margin-bottom:8px;"><strong>Grid-scale battery</strong> — the NI utility battery charges from any remaining NI surplus (up to power rating and remaining capacity), then discharges to cover any remaining NI deficit. A separate SI battery can be configured. Battery round-trip efficiency is 92%.</li>
@@ -722,7 +722,7 @@
           <li style="margin-bottom:6px;"><strong>Annual statistics</strong> — total demand (TWh), renewable share (%), carbon intensity (gCO₂/kWh), system LCOE (NZD/MWh), average marginal cost (NZD/MWh), curtailment (GWh), unserved energy (%),  and fossil share (%). Carbon factors and LCOE are applied per fuel type.</li>
           <li style="margin-bottom:6px;"><strong>Monthly generation tables</strong> — NI and SI generation by fuel type (GWh/month), with peak output and installed capacity shown.</li>
           <li style="margin-bottom:6px;"><strong>Half-hourly timeseries charts</strong> — scrollable 7-day or 30-day views of dispatch by fuel, HVDC flows, frequency reserves, system inertia, battery SoC and curtailment. The date window can be stepped forward/backward using the Prev/Next controls.</li>
-          <li><strong>Domestic energy section</strong> — separate breakdown of behind-the-meter solar generation, home battery charge/discharge, and the net load after domestic assets.</li>
+          <li><strong>Residential energy section</strong> — separate breakdown of behind-the-meter solar generation, home battery charge/discharge, and the net load after residential assets.</li>
         </ul>
       </div>
 
@@ -841,10 +841,10 @@ function setSlider(id, val) {
 // BLUEPRINT PRELOAD
 // ═══════════════════════════════════════════════════════
 function preloadBlueprint() {
-  // NZ 2030 Blueprint scenario: 3× wind, large solar, battery, phase out coal
-  setSlider('ni-wind',        3.0);
+  // NZ 2030 Blueprint scenario: 2GW NI wind, 1.5GW NI solar, battery, phase out coal
+  setSlider('ni-wind',        2.0);
   setSlider('si-wind',        1.5);
-  setSlider('ni-solar',       2.5);
+  setSlider('ni-solar',       1.5);
   setSlider('ni-solar-yield', 1200);
   setSlider('si-solar',       0.5);
   setSlider('si-solar-yield', 1100);
@@ -926,7 +926,7 @@ function preloadDomSolar() {
   // Open the domestic solar panel so settings are visible
   const summary = document.getElementById('dom-solar-panel');
   if (summary) summary.closest('details').open = true;
-  document.getElementById('sim-status').textContent = 'Domestic Solar Revolution loaded — click Run to simulate.';
+  document.getElementById('sim-status').textContent = 'Residential Solar Revolution loaded — click Run to simulate.';
 }
 
 function preloadUtilityVRE() {
@@ -2323,14 +2323,14 @@ async function generateReport() {
     // autoSkip:false so Chart.js visits every position. callback receives the tick index
     // (not the label string) on a category scale — use getLabelForValue() to get the string,
     // then return null for the empty positions (all non-midnight half-hours).
-    const tsTicks = { font:{size:9}, maxRotation:30, minRotation:30, autoSkip:false,
+    const tsTicks = { font:{size:10}, maxRotation:30, minRotation:30, autoSkip:false,
       callback: function(value) {
         const lbl = this.getLabelForValue(value);
         return (lbl && lbl !== '') ? lbl : null;
       } };
 
-    // Shared font sizes matching report body text
-    const RF = { legend:{ boxWidth:9, font:{size:10} }, tick:{font:{size:9}}, title:{font:{size:10}} };
+    // Shared font sizes — match report body text (~10-11px)
+    const RF = { legend:{ boxWidth:10, font:{size:11} }, tick:{font:{size:10}}, title:{font:{size:11}} };
 
     // Dispatch datasets — exact webapp style: line+fill:'stack' not bar
     function mkDs(label, data, colour) {
