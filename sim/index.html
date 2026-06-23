@@ -171,28 +171,28 @@
   <h2 style="font-size:1.4rem;font-weight:600;margin:32px 0 20px;color:var(--text);">Simulation Settings</h2>
   <h3 style="font-size:1rem;font-weight:600;margin:0 0 12px;color:var(--text);">Load preconfigured energy mix</h3>
   <div class="scenario-grid">
-    <div class="scenario-card" id="sc-blueprint" onclick="preloadBlueprint();setActiveScenario('sc-blueprint','#0d9e6e');runSim()">
+    <div class="scenario-card" id="sc-blueprint" onclick="preloadBlueprint();setActiveScenario('sc-blueprint','#0d9e6e')">
       <div class="sc-stripe" style="background:#0d9e6e;"></div>
       <div class="sc-body">
         <div class="sc-title">Blueprint 2030</div>
         <div class="sc-desc">NZ high-renewables future: triple wind, large solar, retire coal. Batteries handle short-term storage gaps.</div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-domsolar" onclick="preloadDomSolar();setActiveScenario('sc-domsolar','#d97706');runSim()">
+    <div class="scenario-card" id="sc-domsolar" onclick="preloadDomSolar();setActiveScenario('sc-domsolar','#d97706')">
       <div class="sc-stripe" style="background:#d97706;"></div>
       <div class="sc-body">
         <div class="sc-title">Domestic Solar Revolution</div>
         <div class="sc-desc">60% of homes with solar, 80% adding a home battery. Today's utility-scale generation unchanged.</div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-utilityre" onclick="preloadUtilityVRE();setActiveScenario('sc-utilityre','#2563eb');runSim()">
+    <div class="scenario-card" id="sc-utilityre" onclick="preloadUtilityVRE();setActiveScenario('sc-utilityre','#2563eb')">
       <div class="sc-stripe" style="background:#2563eb;"></div>
       <div class="sc-body">
         <div class="sc-title">Utility Solar &amp; Wind</div>
-        <div class="sc-desc">2.5 GW solar NI, 500 MW SI, 2.1 / 0.9 GW wind. Everything else at today's installed capacity.</div>
+        <div class="sc-desc">2.0 GW solar NI, 500 MW SI, 2.1 / 0.9 GW wind. Everything else at today's installed capacity.</div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-lng" onclick="preloadLNG();setActiveScenario('sc-lng','#dc2626');runSim()">
+    <div class="scenario-card" id="sc-lng" onclick="preloadLNG();setActiveScenario('sc-lng','#dc2626')">
       <div class="sc-stripe" style="background:#dc2626;"></div>
       <div class="sc-body">
         <div class="sc-title">LNG Import</div>
@@ -270,7 +270,7 @@
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Enable domestic solar &amp; storage</span>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="dom-solar-enabled" onchange="syncCheckbox('dom-solar-enabled');runSim()">
+            <input type="checkbox" id="dom-solar-enabled" onchange="syncCheckbox('dom-solar-enabled')">
             <span id="dom-solar-enabled-v" class="sl-val">Off</span>
           </label></div></div>
         <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — NI</span><span id="ni-dom-pct-v" class="sl-val">35%</span></div>
@@ -427,8 +427,8 @@
         <p>Monthly totals for domestic rooftop solar generation, home battery discharge, and total household load. The gap between the load line and the stacked bars is met from the grid.</p>
       </div>
       <div class="ts-charts">
-        <div class="chart-box"><h3>North Island (GWh)</h3><canvas id="ts-dom-ni"></canvas></div>
-        <div class="chart-box"><h3>South Island (GWh)</h3><canvas id="ts-dom-si"></canvas></div>
+        <div class="chart-box"><h3>North Island — per home (kW)</h3><canvas id="ts-dom-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island — per home (kW)</h3><canvas id="ts-dom-si"></canvas></div>
       </div>
     </details>
     <script>
@@ -613,6 +613,10 @@ function preloadBlueprint() {
   setSlider('ni-other',       135);
   setSlider('hvdc-ni-si',    1200);
   setSlider('hvdc-si-ni',    1200);
+  setCheck('dom-solar-enabled', true);
+  setSlider('ni-dom-solar-pct', 40);
+  setSlider('si-dom-solar-pct', 40);
+  setSlider('dom-storage-pct',  80);
   document.getElementById('sim-status').textContent = 'Blueprint scenario loaded — click Run to simulate.';
 }
 
@@ -677,7 +681,7 @@ function preloadDomSolar() {
 
 function preloadUtilityVRE() {
   resetToToday();
-  setSlider('ni-solar', 2.5);
+  setSlider('ni-solar', 2.0);
   setSlider('si-solar', 0.5);
   setSlider('ni-wind',  2.1);
   setSlider('si-wind',  0.9);
@@ -1045,6 +1049,13 @@ function simulate(data, caps, p) {
         };
       })(),
       niUnserved: niDef, siUnserved: siDef,
+      // Per-home domestic values in kW (only meaningful when domSolarEnabled)
+      niHomeLoadKW:   +niHomeLoad_kW.toFixed(3),
+      niHomeSolarKW:  +niHomeSolar_kW.toFixed(3),
+      niHomeBattKW:   +niHomeBattDisch_kW.toFixed(3),
+      siHomeLoadKW:   +siHomeLoad_kW.toFixed(3),
+      siHomeSolarKW:  +siHomeSolar_kW.toFixed(3),
+      siHomeBattKW:   +siHomeBattDisch_kW.toFixed(3),
       niSoC, siSoC, niResMWh: niRes, siResMWh: siRes,
       niSoCpct:   p.battCap    > 0 ? +(niSoC / p.battCap    * 100).toFixed(1) : 0,
       siBattPct:  p.siBattCap  > 0 ? +(siSoC / p.siBattCap  * 100).toFixed(1) : 0,
@@ -1358,28 +1369,6 @@ function renderAnnualCharts(mo) {
       scales:{ y:{ title:{ display:true, text:'GWh' } } } },
   });
 
-  // Domestic energy supply — monthly totals (only meaningful when dom solar is enabled)
-  ['ts-dom-ni','ts-dom-si'].forEach(id => charts[id]?.destroy());
-  if (gParams.domSolarEnabled) {
-    const domOpts = { responsive:true, animation:false,
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false }},
-      scales:{ x:{}, y:{ min:0, title:{ display:true, text:'GWh' } } } };
-    charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'), {
-      data:{ labels:MONTHS, datasets:[
-        { type:'bar',  label:'Solar',            data:mo.map(m=>+m.niDomSolarGross.toFixed(1)), backgroundColor:C.Solar,   stack:'s' },
-        { type:'bar',  label:'Battery discharge', data:mo.map(m=>+m.niDomBattDisch.toFixed(1)),  backgroundColor:C.Storage, stack:'s' },
-        { type:'line', label:'Domestic load',     data:mo.map(m=>+m.niDomLoad.toFixed(1)),
-          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
-      ]}, options:domOpts });
-    charts['ts-dom-si'] = new Chart(document.getElementById('ts-dom-si'), {
-      data:{ labels:MONTHS, datasets:[
-        { type:'bar',  label:'Solar',            data:mo.map(m=>+m.siDomSolarGross.toFixed(1)), backgroundColor:C.Solar,   stack:'s' },
-        { type:'bar',  label:'Battery discharge', data:mo.map(m=>+m.siDomBattDisch.toFixed(1)),  backgroundColor:C.Storage, stack:'s' },
-        { type:'line', label:'Domestic load',     data:mo.map(m=>+m.siDomLoad.toFixed(1)),
-          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
-      ]}, options:domOpts });
-  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1587,6 +1576,34 @@ function renderTsCharts() {
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
   });
+
+  // Domestic energy supply — per-home kW, same x-axis as dispatch
+  ['ts-dom-ni','ts-dom-si'].forEach(id => charts[id]?.destroy());
+  if (gParams.domSolarEnabled) {
+    const domOpts = { responsive:true, animation:false,
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false }},
+      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ min:0, title:{ display:true, text:'kW per home' } } } };
+    charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'), {
+      data:{ labels:tsXLabels(), datasets:[
+        { type:'line', label:'Solar',            data:slice.map(p=>p.niHomeSolarKW),
+          borderColor:C.Solar,   backgroundColor:C.Solar+'33',   fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Battery discharge', data:slice.map(p=>p.niHomeBattKW),
+          borderColor:C.Storage, backgroundColor:C.Storage+'33', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Home load',         data:slice.map(p=>p.niHomeLoadKW),
+          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+      ]}, options:domOpts });
+    charts['ts-dom-si'] = new Chart(document.getElementById('ts-dom-si'), {
+      data:{ labels:tsXLabels(), datasets:[
+        { type:'line', label:'Solar',            data:slice.map(p=>p.siHomeSolarKW),
+          borderColor:C.Solar,   backgroundColor:C.Solar+'33',   fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Battery discharge', data:slice.map(p=>p.siHomeBattKW),
+          borderColor:C.Storage, backgroundColor:C.Storage+'33', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+        { type:'line', label:'Home load',         data:slice.map(p=>p.siHomeLoadKW),
+          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+      ]}, options:domOpts });
+  }
 
   // HVDC
   charts['ts-hvdc']?.destroy();
@@ -1886,10 +1903,11 @@ async function runSim() {
 
     document.getElementById('btn-run').disabled = false;
 
-    // Default to Blueprint scenario on load
+    // Preload Blueprint settings by default — user clicks Run to simulate
     preloadBlueprint();
     setActiveScenario('sc-blueprint', '#0d9e6e');
-    runSim();
+    document.getElementById('sim-status').textContent =
+      'Blueprint 2030 preloaded — click ▶ Run Simulation to see results.';
   } catch(e) {
     document.getElementById('sim-status').textContent =
       'Could not load data — check the sheet is publicly accessible.';
