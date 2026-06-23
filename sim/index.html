@@ -2323,14 +2323,14 @@ async function generateReport() {
     // autoSkip:false so Chart.js visits every position. callback receives the tick index
     // (not the label string) on a category scale — use getLabelForValue() to get the string,
     // then return null for the empty positions (all non-midnight half-hours).
-    const tsTicks = { font:{size:10}, maxRotation:30, minRotation:30, autoSkip:false,
+    const tsTicks = { font:{size:13}, maxRotation:35, minRotation:35, autoSkip:false,
       callback: function(value) {
         const lbl = this.getLabelForValue(value);
         return (lbl && lbl !== '') ? lbl : null;
       } };
 
     // Shared font sizes — match report body text (~10-11px)
-    const RF = { legend:{ boxWidth:10, font:{size:11} }, tick:{font:{size:10}}, title:{font:{size:11}} };
+    const RF = { legend:{ boxWidth:12, font:{size:14} }, tick:{font:{size:13}}, title:{font:{size:14}} };
 
     // Dispatch datasets — exact webapp style: line+fill:'stack' not bar
     function mkDs(label, data, colour) {
