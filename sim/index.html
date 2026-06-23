@@ -32,6 +32,15 @@
     details.settings[open] summary::before { content:'▼ '; }
     details.settings .settings-body { padding:0 16px 16px; }
 
+    /* ── Collapsible ctrl-panel tiles ───────── */
+    details.ctrl-panel { padding:0; }
+    details.ctrl-panel > summary { padding:12px 16px; font-size:.7rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:.09em; cursor:pointer;
+      list-style:none; display:block; color:var(--muted); }
+    details.ctrl-panel > summary::before { content:'▶ '; font-size:.6rem; }
+    details.ctrl-panel[open] > summary::before { content:'▼ '; }
+    details.ctrl-panel > div { padding:0 16px 16px; }
+
     /* ── Run bar ─────────────────────────────── */
     .run-bar { display:flex; align-items:center; gap:12px; margin-bottom:28px; flex-wrap:wrap; }
     .btn-run { background:var(--brand); color:#fff; border:none; border-radius:6px;
@@ -118,20 +127,13 @@
   <p class="page-intro">Half-hourly per-island forward-pass simulation using actual metered generation data.
     Configure capacity, then run to see renewables share, carbon intensity, LCOE and system costs.</p>
 
-  <!-- Settings: demand/weather data year + HVDC caps -->
+  <!-- Settings: demand/weather data year -->
   <details class="settings">
-    <summary>Demand, weather and grid settings</summary>
+    <summary>Demand and weather data</summary>
     <div class="settings-body">
-      <div class="slider-row">
-        <div class="sl">
-          <div class="sl-hd"><span>Data year</span></div>
-          <select id="sim-year" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:4px;"></select>
-        </div>
-        <div></div>
-        <div class="sl"><div class="sl-hd"><span>HVDC NI→SI cap</span><span id="hvdc-ni-si-v" class="sl-val">1200 MW</span></div>
-          <input type="range" id="hvdc-ni-si" min="0" max="3000" step="100" value="1200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>HVDC SI→NI cap</span><span id="hvdc-si-ni-v" class="sl-val">1200 MW</span></div>
-          <input type="range" id="hvdc-si-ni" min="0" max="3000" step="100" value="1200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+      <div class="sl" style="max-width:260px;">
+        <div class="sl-hd"><span>Data year</span></div>
+        <select id="sim-year" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:4px;"></select>
       </div>
     </div>
   </details>
@@ -149,6 +151,8 @@
           <input type="range" id="ni-solar" min="0" max="12" step="0.1" value="2.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="ni-ror-v" class="sl-val">70%</span></div>
           <input type="range" id="ni-ror" min="0" max="100" step="5" value="70" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Solar yield factor</span><span id="ni-solar-corr-v" class="sl-val">1.5 ×</span></div>
+          <input type="range" id="ni-solar-corr" min="0.5" max="3" step="0.1" value="1.5" data-unit="×" data-dp="1" oninput="syncSlider(this)"></div>
       </div>
     </div>
 
@@ -161,11 +165,13 @@
           <input type="range" id="si-solar" min="0" max="6" step="0.1" value="0.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="si-ror-v" class="sl-val">20%</span></div>
           <input type="range" id="si-ror" min="0" max="100" step="5" value="20" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Solar yield factor</span><span id="si-solar-corr-v" class="sl-val">1.3 ×</span></div>
+          <input type="range" id="si-solar-corr" min="0.5" max="3" step="0.1" value="1.3" data-unit="×" data-dp="1" oninput="syncSlider(this)"></div>
       </div>
     </div>
 
-    <div class="ctrl-panel">
-      <h3>NI Battery Storage</h3>
+    <details class="ctrl-panel">
+      <summary>NI Battery Storage</summary>
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Power</span><span id="batt-power-v" class="sl-val">1000 MW</span></div>
           <input type="range" id="batt-power" min="0" max="5000" step="100" value="1000" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
@@ -174,10 +180,10 @@
         <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="batt-eff-v" class="sl-val">85%</span></div>
           <input type="range" id="batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
-    </div>
+    </details>
 
-    <div class="ctrl-panel">
-      <h3>SI Battery Storage</h3>
+    <details class="ctrl-panel">
+      <summary>SI Battery Storage</summary>
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Power</span><span id="si-batt-power-v" class="sl-val">0 MW</span></div>
           <input type="range" id="si-batt-power" min="0" max="5000" step="100" value="0" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
@@ -186,24 +192,10 @@
         <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="si-batt-eff-v" class="sl-val">85%</span></div>
           <input type="range" id="si-batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
-    </div>
+    </details>
 
-    <div class="ctrl-panel">
-      <h3>Hydro Storage</h3>
-      <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>NI reservoir max</span><span id="ni-res-max-v" class="sl-val">500 GWh</span></div>
-          <input type="range" id="ni-res-max" min="0" max="2000" step="50" value="500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>SI reservoir max</span><span id="si-res-max-v" class="sl-val">4500 GWh</span></div>
-          <input type="range" id="si-res-max" min="0" max="15000" step="100" value="4500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>NI reservoir start</span><span id="ni-res-start-v" class="sl-val">25%</span></div>
-          <input type="range" id="ni-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>SI reservoir start</span><span id="si-res-start-v" class="sl-val">25%</span></div>
-          <input type="range" id="si-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-      </div>
-    </div>
-
-    <div class="ctrl-panel">
-      <h3>NI Dispatchables (MW capacity)</h3>
+    <details class="ctrl-panel">
+      <summary>NI Dispatchables (MW capacity)</summary>
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Gas</span><span id="ni-gas-v" class="sl-val">1678 MW</span></div>
           <input type="range" id="ni-gas" min="0" max="4000" step="50" value="1678" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
@@ -216,7 +208,29 @@
         <div class="sl"><div class="sl-hd"><span>Other</span><span id="ni-other-v" class="sl-val">135 MW</span></div>
           <input type="range" id="ni-other" min="0" max="1000" step="25" value="135" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
-    </div>
+    </details>
+
+    <details class="ctrl-panel">
+      <summary>Grid Settings</summary>
+      <div class="slider-row">
+        <div class="sl"><div class="sl-hd"><span>HVDC NI→SI cap</span><span id="hvdc-ni-si-v" class="sl-val">1200 MW</span></div>
+          <input type="range" id="hvdc-ni-si" min="0" max="3000" step="100" value="1200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>HVDC SI→NI cap</span><span id="hvdc-si-ni-v" class="sl-val">1200 MW</span></div>
+          <input type="range" id="hvdc-si-ni" min="0" max="3000" step="100" value="1200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+        <div style="grid-column:span 2; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); padding:2px 0 6px;">
+          <input type="checkbox" id="hvdc-constrain-reserves" style="cursor:pointer;">
+          <label for="hvdc-constrain-reserves" style="cursor:pointer;">Constrain HVDC link based on reserves</label>
+        </div>
+        <div class="sl"><div class="sl-hd"><span>NI reservoir max</span><span id="ni-res-max-v" class="sl-val">500 GWh</span></div>
+          <input type="range" id="ni-res-max" min="0" max="2000" step="50" value="500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>SI reservoir max</span><span id="si-res-max-v" class="sl-val">4500 GWh</span></div>
+          <input type="range" id="si-res-max" min="0" max="15000" step="100" value="4500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>NI reservoir start</span><span id="ni-res-start-v" class="sl-val">25%</span></div>
+          <input type="range" id="ni-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>SI reservoir start</span><span id="si-res-start-v" class="sl-val">25%</span></div>
+          <input type="range" id="si-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+      </div>
+    </details>
 
   </div><!-- /ctrl-grid -->
 
@@ -314,6 +328,7 @@ const C = {
 
 // Carbon factors (gCO₂/kWh)
 const CF = { hydro:24, geo:46, wind:12, solar:45, wood:230, gas:490, coal:820, diesel:800, other:230, storage:24 };
+let gYears = [];
 
 // LCOE (NZD/MWh) — adapted from MyGridNZ Blueprint methodology
 const LCOE = { Geo:85, Hydro:40, Wind:95, Solar:90, Storage:160, Wood:150, Coal:260, Diesel:350 };
@@ -350,7 +365,9 @@ function preloadBlueprint() {
   setSlider('ni-wind',        3.0);
   setSlider('si-wind',        1.5);
   setSlider('ni-solar',       2.5);
+  setSlider('ni-solar-corr',  1.5);
   setSlider('si-solar',       0.5);
+  setSlider('si-solar-corr',  1.3);
   setSlider('ni-ror',          70);
   setSlider('si-ror',          20);
   setSlider('batt-power',    1000);
@@ -465,7 +482,7 @@ function simulate(data, caps, p) {
     // ── Phase 1: fixed (must-run) generation ──────────────────────────────
     const niGeo   = row.NI_Geo;
     const niWind  = row.NI_Wind  * niWindSc;
-    const niSolar = row.NI_Solar * niSolarSc;
+    const niSolar = row.NI_Solar * niSolarSc * p.niSolarCorr;
     const niHist  = row.NI_Hydro;
     const niRoRmw = niHist * (p.niRoR / 100);
     const niFlex  = niHist * (1 - p.niRoR / 100);
@@ -473,7 +490,7 @@ function simulate(data, caps, p) {
 
     const siGeo   = row.SI_Geo;
     const siWind  = row.SI_Wind  * siWindSc;
-    const siSolar = row.SI_Solar * siSolarSc;
+    const siSolar = row.SI_Solar * siSolarSc * p.siSolarCorr;
     const siHist  = row.SI_Hydro;
     const siRoRmw = siHist * (p.siRoR / 100);
     const siFlex  = siHist * (1 - p.siRoR / 100);
@@ -1172,6 +1189,7 @@ function getParams() {
   return {
     niWindGW:   g('ni-wind'),    siWindGW:   g('si-wind'),
     niSolarGW:  g('ni-solar'),   siSolarGW:  g('si-solar'),
+    niSolarCorr: g('ni-solar-corr'), siSolarCorr: g('si-solar-corr'),
     niRoR:      g('ni-ror'),     siRoR:      g('si-ror'),
     battPower:  g('batt-power'), battCap:    g('batt-cap'),
     battEff:    g('batt-eff')/100, battSoC0: 0.5,
@@ -1180,18 +1198,20 @@ function getParams() {
     niGas:  g('ni-gas'),   niCoal:  g('ni-coal'),
     niWood: g('ni-wood'),  niDiesel:g('ni-diesel'), niOther:g('ni-other'),
     hvdcNiSi: g('hvdc-ni-si'), hvdcSiNi: g('hvdc-si-ni'),
+    constrainHvdcByReserves: document.getElementById('hvdc-constrain-reserves').checked,
     niResMax: g('ni-res-max') * 1000, siResMax: g('si-res-max') * 1000,
     niRes0:   g('ni-res-start') / 100, siRes0:  g('si-res-start') / 100,
     niLoss: 0.5, siLoss: 4.5,
   };
 }
 
-function buildBaselineParams(caps) {
+function buildBaselineParams(caps, pUser) {
   return {
     niWindGW:  (caps['Wind']?.NI  ?? 1120) / 1000,
     siWindGW:  (caps['Wind']?.SI  ?? 137)  / 1000,
     niSolarGW: (caps['Solar']?.NI ?? 141)  / 1000,
     siSolarGW: (caps['Solar']?.SI ?? 47)   / 1000,
+    niSolarCorr: pUser.niSolarCorr, siSolarCorr: pUser.siSolarCorr,
     niRoR: 70, siRoR: 20,
     battPower:0, battCap:0, battEff:.85, battSoC0:.5,
     siBattPower:0, siBattCap:0, siBattEff:.85, siBattSoC0:.5,
@@ -1201,6 +1221,7 @@ function buildBaselineParams(caps) {
     niDiesel:caps['Diesel']?.NI ?? 156,
     niOther: caps['Other']?.NI  ?? 135,
     hvdcNiSi:1200, hvdcSiNi:1200,
+    constrainHvdcByReserves: false,
     niResMax:500000, siResMax:4500000, niRes0:.25, siRes0:.25,
     niLoss:0.5, siLoss:4.5,
   };
@@ -1215,12 +1236,31 @@ async function runSim() {
     if (!year) throw new Error('Select a data year in Simulation Settings first.');
     status.textContent = `Fetching ${year} data…`;
 
-    const [caps, data] = await Promise.all([loadCapacity(), loadIslandData(year)]);
+    const [caps, rawData] = await Promise.all([loadCapacity(), loadIslandData(year)]);
+
+    // Solar fallback: if the selected year has no solar data, substitute the nearest year that does
+    let data = rawData;
+    const hasSolar = rawData.some(r => r.NI_Solar > 0);
+    if (!hasSolar) {
+      const refYear = [...gYears].reverse().find(y => y !== year && y >= 2025) ?? [...gYears].reverse().find(y => y !== year);
+      if (refYear) {
+        status.textContent = `No solar data in ${year} — loading ${refYear} solar profile…`;
+        try {
+          const solarRef = await loadIslandData(refYear);
+          const refN = solarRef.length, mainN = rawData.length;
+          data = rawData.map((r, i) => {
+            const ref = solarRef[Math.min(Math.round(i * refN / mainN), refN - 1)];
+            return { ...r, NI_Solar: ref.NI_Solar, SI_Solar: ref.SI_Solar };
+          });
+        } catch(e) { console.warn('Solar fallback failed:', e); }
+      }
+    }
+
     status.textContent = `${data.length.toLocaleString()} periods. Running baseline + scenario…`;
     await new Promise(r => setTimeout(r, 10));
 
-    const pBase = buildBaselineParams(caps);
     const pUser = getParams();
+    const pBase = buildBaselineParams(caps, pUser);
     gCaps = caps; gParams = pUser;
     const { mo: moBase }            = simulate(data, caps, pBase);
     const { mo: moUser, pp, pk }    = simulate(data, caps, pUser);
@@ -1246,6 +1286,7 @@ async function runSim() {
 (async () => {
   try {
     const [years, caps] = await Promise.all([loadYears(), loadCapacity()]);
+    gYears = years;
     const sel = document.getElementById('sim-year');
     years.forEach(y => {
       const opt = document.createElement('option');
