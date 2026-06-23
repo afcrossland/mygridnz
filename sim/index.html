@@ -68,7 +68,12 @@
     .scard--bad  { border-color:#ef4444; } .scard--bad  .scard-main { color:#dc2626; }
 
     /* ── Island tables ───────────────────────── */
-    .island-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-bottom:24px; }
+    .island-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+    .nat-mix-layout { display:grid; grid-template-columns:210px 1fr; gap:28px; align-items:start; margin-bottom:28px; }
+    .nat-fuel-row { display:grid; grid-template-columns:10px 1fr auto 1fr 44px; align-items:center; gap:8px; font-size:13px; margin-bottom:7px; }
+    .nat-fuel-name { font-weight:500; color:var(--text); }
+    .nat-fuel-gwh  { font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; }
+    .nat-fuel-pct  { font-size:12px; font-weight:600; color:var(--muted); text-align:right; }
     .itbl { width:100%; border-collapse:collapse; font-size:12px; }
     .itbl th { text-align:left; padding:4px 6px; font-size:9px; font-weight:700;
       letter-spacing:.07em; color:var(--muted);
@@ -86,6 +91,7 @@
 
     /* ── Chart sections ──────────────────────── */
     .ts-section { margin-bottom:32px; }
+    #operability-section > summary::-webkit-details-marker, #operability-section > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
     .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
     .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
@@ -142,20 +148,8 @@
     </ol>
   </div>
 
-  <!-- Data year selector -->
-  <details class="settings">
-    <summary>Data year</summary>
-    <div class="settings-body">
-      <div class="sl" style="max-width:260px;">
-        <div class="sl-hd"><span>Select year</span></div>
-        <select id="sim-year" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:4px;"></select>
-      </div>
-      <p style="font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;">The chosen year sets the demand profile and all weather-driven inputs — wind, solar and hydro inflows. Try different years to stress-test your scenario: a dry year with low lakes is the hardest case for a renewables-heavy grid.</p>
-    </div>
-  </details>
-
-
   <!-- Controls -->
+  <h2 style="font-size:1rem;font-weight:600;margin:28px 0 12px;color:var(--text);">Simulation Settings</h2>
   <div class="ctrl-grid">
 
     <div class="ctrl-panel">
@@ -277,6 +271,18 @@
 
   </div><!-- /ctrl-grid -->
 
+  <!-- Data year selector — after scenario settings -->
+  <details class="settings" style="margin-top:12px;">
+    <summary>Data year</summary>
+    <div class="settings-body">
+      <div class="sl" style="max-width:260px;">
+        <div class="sl-hd"><span>Select year</span></div>
+        <select id="sim-year" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:4px;"></select>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;">The chosen year sets the demand profile and all weather-driven inputs — wind, solar and hydro inflows. Try different years to stress-test your scenario: a dry year with low lakes is the hardest case for a renewables-heavy grid.</p>
+    </div>
+  </details>
+
   <div class="run-bar">
     <button class="btn-run" id="btn-run" onclick="runSim()" disabled>▶ Run Simulation</button>
     <button class="btn-blueprint" onclick="preloadBlueprint()">⚡ Preload NZ Blueprint</button>
@@ -288,12 +294,17 @@
 
     <div class="stat-row" id="stat-row"></div>
 
-    <!-- ── Annual tables ── -->
-    <div class="island-grid">
-      <div>
-        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:8px;">National — annual generation</h2>
-        <table class="itbl" id="tbl-nat"></table>
+    <!-- ── National summary: pie + fuel breakdown ── -->
+    <div style="margin-bottom:28px;">
+      <h2 style="font-size:.95rem;font-weight:600;margin-bottom:14px;">National — annual generation mix</h2>
+      <div class="nat-mix-layout">
+        <div><canvas id="nat-pie"></canvas></div>
+        <div id="nat-fuel-list"></div>
       </div>
+    </div>
+
+    <!-- ── Island tables ── -->
+    <div class="island-grid">
       <div>
         <h2 style="font-size:.95rem;font-weight:600;margin-bottom:8px;">North Island — annual generation</h2>
         <table class="itbl" id="tbl-ni"></table>
@@ -313,6 +324,7 @@
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island (GWh)</h3><canvas id="chart-ni"></canvas></div>
         <div class="chart-box"><h3>South Island (GWh)</h3><canvas id="chart-si"></canvas></div>
+        <div class="chart-box"><h3>NI Dispatchables (GWh)</h3><canvas id="chart-ni-disp"></canvas></div>
       </div>
     </div>
 
@@ -379,29 +391,28 @@
       </div>
     </div>
 
-    <!-- ── HVDC ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>HVDC transfer</h3>
-        <p>Power flows between islands via the Cook Strait HVDC link. NI→SI when the North Island exports surplus south; SI→NI when South Island hydro powers the north.</p>
-      </div>
-      <div class="ts-charts">
-        <div class="chart-box ts-full"><h3>HVDC flows (MW)</h3><canvas id="ts-hvdc"></canvas></div>
-      </div>
-    </div>
-
-    <!-- ── Frequency reserves ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>Frequency reserves and system inertia</h3>
-        <p>Estimated Fast Instantaneous Reserve (FIR, 0–6 s) and Sustained Instantaneous Reserve (SIR, 6–60 s) versus the largest single contingency for each island. Batteries contribute full rated power to both FIR and SIR when sufficient charge is held above the reserve floor. System inertia is from synchronous generators only — wind, solar and batteries contribute none.</p>
+    <!-- ── Grid Operability (collapsed by default) ── -->
+    <details class="ts-section" id="operability-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Grid Operability</span>
+        <span style="font-size:11px;color:var(--muted);">— HVDC flows, frequency reserves and system inertia</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--muted);" id="operability-arrow">▼ expand</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p>Cook Strait HVDC flows (purple = NI exports south, blue = SI exports north). FIR (0–6 s) and SIR (6–60 s) reserves versus the largest single contingency per island. System inertia is from synchronous generators only — wind, solar and batteries contribute none.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island — FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves-ni"></canvas></div>
         <div class="chart-box"><h3>South Island — FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves-si"></canvas></div>
-        <div class="chart-box ts-full"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
+        <div class="chart-box"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
+        <div class="chart-box"><h3>HVDC flows (MW)</h3><canvas id="ts-hvdc"></canvas></div>
       </div>
-    </div>
+    </details>
+    <script>
+      document.getElementById('operability-section').addEventListener('toggle', function() {
+        document.getElementById('operability-arrow').textContent = this.open ? '▲ collapse' : '▼ expand';
+      });
+    </script>
 
     <!-- Demand simulation placeholder -->
     <div class="placeholder-box">
@@ -430,7 +441,7 @@ const C = {
   Geo:     '#dc2626', Hydro:   '#2563eb', Wind:    '#0d9e6e', Solar:   '#d97706',
   Storage: '#f97316', DomSolar:'#84cc16', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
   Diesel:  '#94a3b8', Other:   '#cbd5e1', Demand:  '#1a4d7a',
-  HvdcNiSi:'#7c3aed', HvdcSiNi:'#a78bfa',
+  HvdcNiSi:'#7c3aed', HvdcSiNi:'#0ea5e9',
   Charge:  '#fb923c', Curtail: '#34d399',
 };
 
@@ -1036,25 +1047,46 @@ function renderTables(mo, pk) {
   const niDem = sum(mo,'niDemand'), siDem = sum(mo,'siDemand');
   const natDem = niDem + siDem;
 
-  renderTable('tbl-nat', natDem, [
-    ['Demand',                                    natDem,                                          '#000',      pk.natDemand,                    null,                              true],
-    ['Geothermal',                                sum(mo,'niGeo')    + sum(mo,'siGeo'),            C.Geo,       pk.niGeo    + pk.siGeo,           niGeoGW   + siGeoGW],
-    ['Domestic solar & storage',                  sum(mo,'niDomSolar')+sum(mo,'siDomSolar'),       C.DomSolar,  pk.niDomSolar+pk.siDomSolar,      (pk.domSolCapNI+pk.domSolCapSI)||null],
-    ['Hydro',                                     sum(mo,'niHydro') + sum(mo,'siHydro'),           C.Hydro,     pk.niHydro  + pk.siHydro,         niHydroGW + siHydroGW],
-    [`Solar`,                                     niSolarGWh        + siSolarGWh,                  C.Solar,     pk.niSolar  + pk.siSolar,         p.niSolarGW + p.siSolarGW],
-    [`Wind`,                                      niWindGWh         + siWindGWh,                   C.Wind,      pk.niWind   + pk.siWind,          p.niWindGW  + p.siWindGW],
-    ['Battery storage',                           sum(mo,'niStorage')+ sum(mo,'siStorage'),        C.Storage,   pk.niStorage+ pk.siStorage,       (p.battPower + p.siBattPower)/1000],
-    ['Wood / biomass',                            sum(mo,'niWood'),                                C.Wood,      pk.niWood,                        p.niWood/1000],
-    ['Gas',                                       sum(mo,'niGas'),                                 C.Gas,       pk.niGas,                         p.niGas/1000],
-    ['Coal',                                      sum(mo,'niCoal'),                                C.Coal,      pk.niCoal,                        p.niCoal/1000],
-    ['Diesel',                                    sum(mo,'niDiesel'),                              C.Diesel,    pk.niDiesel,                      p.niDiesel/1000],
-    ['Unserved',                                  sum(mo,'niUnserved')+sum(mo,'siUnserved'),       '#fca5a5',   0,                                null],
-  ]);
+  // National mix pie + fuel list
+  const domEnabled = p.domSolarEnabled;
+  const natFuels = [
+    { name:'Geothermal',             gwh: sum(mo,'niGeo')    + sum(mo,'siGeo'),            color: C.Geo },
+    ...(domEnabled ? [{ name:'Dom. solar & storage', gwh: sum(mo,'niDomSolar')+sum(mo,'siDomSolar'), color: C.DomSolar }] : []),
+    { name:'Hydro',                  gwh: sum(mo,'niHydro')  + sum(mo,'siHydro'),           color: C.Hydro },
+    { name:'Solar',                  gwh: niSolarGWh         + siSolarGWh,                  color: C.Solar },
+    { name:'Wind',                   gwh: niWindGWh          + siWindGWh,                   color: C.Wind },
+    { name:'Battery storage',        gwh: sum(mo,'niStorage')+ sum(mo,'siStorage'),          color: C.Storage },
+    { name:'Wood / biomass',         gwh: sum(mo,'niWood'),                                  color: C.Wood },
+    { name:'Gas',                    gwh: sum(mo,'niGas'),                                   color: C.Gas },
+    { name:'Coal',                   gwh: sum(mo,'niCoal'),                                  color: C.Coal },
+    { name:'Diesel',                 gwh: sum(mo,'niDiesel'),                                color: C.Diesel },
+    { name:'Other',                  gwh: sum(mo,'niOther'),                                  color: C.Other },
+  ].filter(f => f.gwh > 0.5).sort((a,b) => b.gwh - a.gwh);
+
+  const totalGenGWh = natFuels.reduce((s,f) => s + f.gwh, 0);
+  document.getElementById('nat-fuel-list').innerHTML = natFuels.map(f => {
+    const pct = totalGenGWh > 0 ? (f.gwh / totalGenGWh * 100).toFixed(1) : '0';
+    const barW = totalGenGWh > 0 ? f.gwh / totalGenGWh * 100 : 0;
+    return `<div class="nat-fuel-row">
+      <span class="fuel-dot" style="background:${f.color}"></span>
+      <span class="nat-fuel-name">${f.name}</span>
+      <span class="nat-fuel-gwh">${fmt(f.gwh,0)} GWh</span>
+      <div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${barW}%;background:${f.color}"></div></div>
+      <span class="nat-fuel-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  charts.natPie?.destroy();
+  charts.natPie = new Chart(document.getElementById('nat-pie'), {
+    type:'pie',
+    data: { labels: natFuels.map(f=>f.name), datasets:[{ data: natFuels.map(f=>+f.gwh.toFixed(0)), backgroundColor: natFuels.map(f=>f.color), borderColor:'#fff', borderWidth:2, hoverOffset:6 }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${fmt(ctx.parsed,0)} GWh (${(ctx.parsed/totalGenGWh*100).toFixed(1)}%)` } } } }
+  });
 
   renderTable('tbl-ni', niDem, [
     ['Demand',                                    niDem,               '#000',     pk.niDemand, null,              true],
     ['Geothermal',                                sum(mo,'niGeo'),     C.Geo,      pk.niGeo,    niGeoGW],
-    ['Domestic solar & storage',                  sum(mo,'niDomSolar'),C.DomSolar, pk.niDomSolar, pk.domSolCapNI||null],
+    ...(domEnabled ? [['Domestic solar & storage', sum(mo,'niDomSolar'), C.DomSolar, pk.niDomSolar, pk.domSolCapNI||null]] : []),
     ['Hydro',                                     sum(mo,'niHydro'),   C.Hydro,    pk.niHydro,  niHydroGW],
     [`Solar (${niYield} kWh/kWp)`,                niSolarGWh,          C.Solar,    pk.niSolar,  p.niSolarGW],
     [`Wind (${niCF}% CF)`,                        niWindGWh,           C.Wind,     pk.niWind,   p.niWindGW],
@@ -1070,7 +1102,7 @@ function renderTables(mo, pk) {
   renderTable('tbl-si', siDem, [
     ['Demand',                                    siDem,               '#000',     pk.siDemand, null,              true],
     ['Geothermal',                                sum(mo,'siGeo'),     C.Geo,      pk.siGeo,    siGeoGW],
-    ['Domestic solar & storage',                  sum(mo,'siDomSolar'),C.DomSolar, pk.siDomSolar, pk.domSolCapSI||null],
+    ...(domEnabled ? [['Domestic solar & storage', sum(mo,'siDomSolar'), C.DomSolar, pk.siDomSolar, pk.domSolCapSI||null]] : []),
     ['Hydro',                                     sum(mo,'siHydro'),   C.Hydro,    pk.siHydro,  siHydroGW],
     [`Solar (${siYield} kWh/kWp)`,                siSolarGWh,          C.Solar,    pk.siSolar,  p.siSolarGW],
     [`Wind (${siCF}% CF)`,                        siWindGWh,           C.Wind,     pk.siWind,   p.siWindGW],
@@ -1117,6 +1149,14 @@ function renderAnnualCharts(mo) {
     { label:'Wind',       data:mo.map(m=>+m.siWind.toFixed(1)),    backgroundColor:C.Wind,    stack:'s' },
     { label:'HVDC import',data:mo.map(m=>+m.hvdcNiSi.toFixed(1)),  backgroundColor:C.HvdcNiSi,stack:'s' },
   ], annMax);
+  const dispPeak = Math.max(...mo.map(m => m.niWood + m.niGas + m.niCoal + m.niDiesel + m.niOther));
+  mkStacked('chart-ni-disp', [
+    { label:'Wood',   data:mo.map(m=>+m.niWood.toFixed(1)),   backgroundColor:C.Wood,   stack:'s' },
+    { label:'Gas',    data:mo.map(m=>+m.niGas.toFixed(1)),    backgroundColor:C.Gas,    stack:'s' },
+    { label:'Coal',   data:mo.map(m=>+m.niCoal.toFixed(1)),   backgroundColor:C.Coal,   stack:'s' },
+    { label:'Diesel', data:mo.map(m=>+m.niDiesel.toFixed(1)), backgroundColor:C.Diesel, stack:'s' },
+    { label:'Other',  data:mo.map(m=>+m.niOther.toFixed(1)),  backgroundColor:C.Other,  stack:'s' },
+  ], Math.ceil(Math.max(dispPeak, 100) / 100) * 100);
   charts['chart-res'] = new Chart(document.getElementById('chart-res'), {
     type:'line', data:{ labels:MONTHS, datasets:[
       { label:'NI (GWh)', data:mo.map(m=>m.cnt?+(m.niRes/m.cnt).toFixed(1):0),
