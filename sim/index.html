@@ -2118,19 +2118,23 @@ async function generateReport() {
       return ch;
     }
 
+    const RPT_DAYS = 30; // show a month of data
     const tsSliceAt = dayOff => {
-      const off = Math.min(dayOff * 48, Math.max(0, tsData.length - 7 * 48));
-      return tsData.slice(off, off + 7 * 48);
+      const off = Math.min(dayOff * 48, Math.max(0, tsData.length - RPT_DAYS * 48));
+      return tsData.slice(off, off + RPT_DAYS * 48);
     };
 
+    // Label every 7 days — gives ~4-5 tick marks across a month
     const tsLabels = slice => slice.map((p, i) => {
-      if (i % 48 !== 0) return '';
+      if (i % (7 * 48) !== 0) return '';
       const dt = p.dt;
       return `${+dt.slice(8,10)} ${MONS3[+dt.slice(5,7)-1]}`;
     });
 
-    // Shared x-axis tick config — mirrors webapp (maxTicksLimit auto-picks day boundaries)
-    const tsTicks = { font:{size:7}, maxRotation:0, autoSkipPadding:6 };
+    // autoSkip:false so callback is called for every position;
+    // callback hides empty-string labels so only the week-boundary dates show
+    const tsTicks = { font:{size:7}, maxRotation:0, autoSkip:false,
+      callback: v => (v && v !== '') ? v : null };
 
     // Dispatch datasets — exact webapp style: line+fill:'stack' not bar
     function mkDs(label, data, colour) {
@@ -2322,9 +2326,9 @@ async function generateReport() {
 
     // ── PAGES 4 & 5: SUMMER / WINTER DISPATCH ─────────────
     for (const [dayOff, title, sub, note] of [
-      [7,   'Summer Dispatch — January', 'NZ summer: high solar, high hydro inflows, low demand',
+      [7,   'Summer Dispatch — January', 'NZ summer: high solar, high hydro inflows, low demand — January month',
        'January is the peak solar period. Hydro lakes are typically filling after spring snowmelt. Wind remains significant year-round. Curtailment may occur where VRE exceeds demand and storage is full.'],
-      [181, 'Winter Dispatch — July',    'The dry-year stress period: low hydro, low solar, high demand',
+      [181, 'Winter Dispatch — July',    'The dry-year stress period: low hydro, low solar, high demand — July month',
        'July is the hardest month for NZ grid security. Hydro lakes may be depleted after a dry autumn. Heating demand peaks. Solar output is minimal. This is the period where thermal backup and HVDC transfers are most critical.'],
     ]) {
       const body = pg(title, sub);
@@ -2353,7 +2357,7 @@ async function generateReport() {
     }
 
     // ── PAGE 6: GRID OPERABILITY ──────────────────────────
-    const opBody = pg('Grid Operability', 'HVDC flows, frequency reserves and system inertia — winter week');
+    const opBody = pg('Grid Operability', 'HVDC flows, frequency reserves and system inertia — July month');
     const opNote = document.createElement('p');
     opNote.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 10px;line-height:1.6;';
     opNote.textContent = 'HVDC load flow between islands (positive = NI surplus sent south), frequency reserves (FIR 0–6 s and SIR 6–60 s) versus the contingency requirement, and synchronous inertia (MWs).';
@@ -2403,7 +2407,7 @@ async function generateReport() {
     ]}, lineOpts('MW·s'), 100);
 
     // ── PAGE 7: BATTERY ── exact webapp mkBattChart style ──
-    const battBody = pg('Utility-Scale Battery Storage', 'Grid-connected batteries — charge, discharge and state of charge — winter week');
+    const battBody = pg('Utility-Scale Battery Storage', 'Grid-connected batteries — charge, discharge and state of charge — July month');
     const battNote = document.createElement('p');
     battNote.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 12px;line-height:1.6;';
     battNote.textContent = 'Utility-scale grid-connected batteries only (domestic behind-the-meter storage is modelled separately). Batteries charge from VRE surplus and discharge to cover evening demand peaks and dry-hydro periods.';
