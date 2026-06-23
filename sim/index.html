@@ -229,7 +229,7 @@
       <div class="sc-stripe" style="background:#1e293b;"></div>
       <div class="sc-body">
         <div class="sc-title">LNG Import</div>
-        <div class="sc-desc">Expand gas to 3 GW via LNG imports for dry-year security. Keeps the lights on — but at high cost.</div>
+        <div class="sc-desc">Expand gas to 3 GW via LNG imports for dry-year security — at high cost.</div>
       </div>
     </div>
   </div>
@@ -237,7 +237,7 @@
   <!-- Controls -->
   <details id="detailed-settings">
   <summary style="cursor:pointer;list-style:none;font-size:1rem;font-weight:600;color:var(--text);margin:0 0 12px;display:flex;align-items:center;gap:8px;">
-    <span id="detailed-settings-arrow" style="font-size:.65rem;color:var(--muted);">▶</span>Detailed Settings
+    <span id="detailed-settings-arrow" style="font-size:.65rem;color:var(--muted);">▶</span>Customised Setup
   </summary>
   <div class="ctrl-grid">
 
@@ -510,7 +510,7 @@
         <span style="font-size:11px;color:var(--muted);">— grid-connected batteries, state of charge and power by island</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>Grid-connected utility-scale batteries only — not residential home batteries (shown separately above). State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge is held above the 20% spinning reserve floor.</p>
+        <p>Grid-connected utility-scale batteries only — not residential home batteries (shown separately above). State of charge (%) and charge / discharge power (MW) by island. Batteries contribute full rated power to FIR (60 s hold) whenever they hold at least 60 s of energy, and to SIR (30 min hold) whenever they hold at least 30 min of energy — in a reserve event they are allowed to discharge to 0%.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island battery</h3><canvas id="ts-batt-ni"></canvas></div>
@@ -1333,25 +1333,26 @@ function simulate(data, caps, p) {
       niContingency: +Math.max(hvdcSiNi, NI_UNIT_RISK).toFixed(0),
       siContingency: +Math.max(hvdcNiSi, SI_UNIT_RISK).toFixed(0),
       // ─── FIR available (respond 0–6 s, hold 60 s) ───────────────────────────
-      // Battery: full rated power if SoC holds 60 s at rated power above reserve floor
+      // Battery can discharge to 0% during a FIR event — only needs enough charge for 60 s at rated power.
       niFIR: +(
-          (p.battPower > 0 && niSoC > BATT_RESERVE * p.battCap + p.battPower * (60/3600) ? p.battPower : 0)
+          (p.battPower > 0 && niSoC > p.battPower * (60/3600) ? p.battPower : 0)
         + niFlexAvail * 0.25                                    // fast hydro governor (~25% of headroom)
         + Math.max(0, p.niGas - dGas) * 0.08                  // gas spinning fast response
       ).toFixed(0),
       siFIR: +(
-          (p.siBattPower > 0 && siSoC > BATT_RESERVE * p.siBattCap + p.siBattPower * (60/3600) ? p.siBattPower : 0)
+          (p.siBattPower > 0 && siSoC > p.siBattPower * (60/3600) ? p.siBattPower : 0)
         + siFlexAvail * 0.25
       ).toFixed(0),
-      // ─── SIR available (respond 6–60 s, hold 15 min) ────────────────────────
+      // ─── SIR available (respond 6–60 s, hold 30 min) ────────────────────────
+      // Battery can discharge to 0% during a SIR event — needs enough charge for 30 min at rated power.
       niSIR: +(
-          (p.battPower > 0 && niSoC > BATT_RESERVE * p.battCap + p.battPower * 0.25 ? p.battPower : 0)  // battery: 15 min hold
+          (p.battPower > 0 && niSoC > p.battPower * 0.5 ? p.battPower : 0)  // battery: 30 min hold
         + niFlexAvail * 0.75                                    // remaining flex hydro
         + Math.max(0, p.niGas  - dGas)  * 0.35               // gas hot standby
         + Math.max(0, p.niCoal - dCoal) * 0.20               // coal spinning reserve
       ).toFixed(0),
       siSIR: +(
-          (p.siBattPower > 0 && siSoC > BATT_RESERVE * p.siBattCap + p.siBattPower * 0.25 ? p.siBattPower : 0)  // battery: 15 min hold
+          (p.siBattPower > 0 && siSoC > p.siBattPower * 0.5 ? p.siBattPower : 0)  // battery: 30 min hold
         + siFlexAvail * 0.75
       ).toFixed(0),
     });
@@ -2283,9 +2284,12 @@ async function generateReport() {
       return d.querySelector('.rpt-content');
     }
 
-    // Render at 3× CSS size so charts are sharp when the browser rasterises to print.
-    // canvas.width/height = physical pixels; canvas.style constrains layout back to CSS size.
-    const RPT_DPR = 3;
+    // Use at least 2× DPR so the browser rasterises sharp print canvases.
+    // Do NOT pre-set canvas.width/height — let Chart.js call retinaScale() itself
+    // from the devicePixelRatio option, which applies ctx.setTransform correctly.
+    // Pre-setting canvas.width bypasses retinaScale() when responsive:false, causing
+    // Chart.js to draw raw pixels at 1:1 so fonts appear compressed to 1/DPR of their size.
+    const RPT_DPR = Math.max(2, window.devicePixelRatio || 2);
 
     function mkChart(parent, type, data, options, heightPx) {
       const wrap = document.createElement('div');
@@ -2294,8 +2298,7 @@ async function generateReport() {
       wrap.appendChild(canvas);
       parent.appendChild(wrap);
       const w = Math.max(wrap.offsetWidth, 300);
-      canvas.width  = w * RPT_DPR;
-      canvas.height = heightPx * RPT_DPR;
+      // Set CSS display size only — Chart.js reads these and sizes the canvas buffer
       canvas.style.width  = w + 'px';
       canvas.style.height = heightPx + 'px';
       // responsive:false prevents Chart.js ResizeObserver from clearing/redrawing during print CSS transitions
@@ -2454,7 +2457,6 @@ async function generateReport() {
     pieWrap.appendChild(pieCanvas);
     natLayout.appendChild(pieWrap);
     if (gNatFuels.length) {
-      pieCanvas.width = 200 * RPT_DPR; pieCanvas.height = 200 * RPT_DPR;
       pieCanvas.style.width = '200px'; pieCanvas.style.height = '200px';
       rptCharts.push(new Chart(pieCanvas, { type:'pie',
         data:{ labels:gNatFuels.map(f=>f.name), datasets:[{ data:gNatFuels.map(f=>f.gwh), backgroundColor:gNatFuels.map(f=>f.color), borderColor:'#fff', borderWidth:2 }] },
