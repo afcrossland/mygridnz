@@ -192,10 +192,10 @@
     <details class="ctrl-panel">
       <summary>SI Battery Storage</summary>
       <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>Power</span><span id="si-batt-power-v" class="sl-val">0 MW</span></div>
-          <input type="range" id="si-batt-power" min="0" max="5000" step="100" value="0" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="si-batt-cap-v" class="sl-val">0 MWh</span></div>
-          <input type="range" id="si-batt-cap" min="0" max="50000" step="500" value="0" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Power</span><span id="si-batt-power-v" class="sl-val">200 MW</span></div>
+          <input type="range" id="si-batt-power" min="0" max="5000" step="100" value="200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="si-batt-cap-v" class="sl-val">800 MWh</span></div>
+          <input type="range" id="si-batt-cap" min="0" max="50000" step="500" value="800" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="si-batt-eff-v" class="sl-val">85%</span></div>
           <input type="range" id="si-batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
@@ -435,8 +435,8 @@ function preloadBlueprint() {
   setSlider('batt-power',    1000);
   setSlider('batt-cap',      8000);
   setSlider('batt-eff',        85);
-  setSlider('si-batt-power',    0);
-  setSlider('si-batt-cap',      0);
+  setSlider('si-batt-power',  200);
+  setSlider('si-batt-cap',   800);
   setSlider('si-batt-eff',     85);
   setSlider('ni-gas',        1678);  // keep gas as backup/reserve
   setSlider('ni-coal',          0);  // retire coal
@@ -1098,30 +1098,30 @@ function renderTsCharts() {
   // Fixed shared y-axis for NI and SI generation dispatch charts
   const islandMax = 4500;
 
-  // NI — solar before wind; curtailment unlabelled band above demand
+  // NI — plot order: Geo → Solar → Wind → Hydro → Storage → HVDC → dispatchables
   mkTsChart('ts-ni', activeDs([
-    mkTsDs('Geothermal', 'niGeo',    C.Geo,      true),
-    mkTsDs('Hydro',      'niHydro',  C.Hydro,    true),
-    mkTsDs('Solar',      'niSolar',  C.Solar,    true),
-    mkTsDs('Wind',       'niWind',   C.Wind,     true),
-    mkTsDs('Storage',    'niStorage',C.Storage,  true),
-    mkTsDs('HVDC import', 'hvdcSiNi', C.HvdcSiNi, true),
-    mkTsDs('Wood',       'niWood',   C.Wood,     true),
-    mkTsDs('Gas',        'niGas',    C.Gas,      true),
-    mkTsDs('Coal',       'niCoal',   C.Coal,     true),
-    mkTsDs('To storage', 'niCharge', C.Charge,   true),
+    mkTsDs('Geothermal',  'niGeo',    C.Geo,       true),
+    mkTsDs('Solar',       'niSolar',  C.Solar,     true),
+    mkTsDs('Wind',        'niWind',   C.Wind,      true),
+    mkTsDs('Hydro',       'niHydro',  C.Hydro,     true),
+    mkTsDs('Storage',     'niStorage',C.Storage,   true),
+    mkTsDs('HVDC import', 'hvdcSiNi', C.HvdcSiNi,  true),
+    mkTsDs('Wood',        'niWood',   C.Wood,      true),
+    mkTsDs('Gas',         'niGas',    C.Gas,       true),
+    mkTsDs('Coal',        'niCoal',   C.Coal,      true),
+    mkTsDs('To storage',  'niCharge', C.Charge,    true),
     mkDemand('niDemand'),
   ]), xt, islandMax);
 
-  // SI
+  // SI — same order
   mkTsChart('ts-si', activeDs([
-    mkTsDs('Geothermal', 'siGeo',    C.Geo,      true),
-    mkTsDs('Hydro',      'siHydro',  C.Hydro,    true),
-    mkTsDs('Solar',      'siSolar',  C.Solar,    true),
-    mkTsDs('Wind',       'siWind',   C.Wind,     true),
-    mkTsDs('Storage',    'siStorage',C.Storage,  true),
-    mkTsDs('HVDC import','hvdcNiSi', C.HvdcNiSi, true),
-    mkTsDs('To storage', 'siCharge', C.Charge,   true),
+    mkTsDs('Geothermal',  'siGeo',    C.Geo,       true),
+    mkTsDs('Solar',       'siSolar',  C.Solar,     true),
+    mkTsDs('Wind',        'siWind',   C.Wind,      true),
+    mkTsDs('Hydro',       'siHydro',  C.Hydro,     true),
+    mkTsDs('Storage',     'siStorage',C.Storage,   true),
+    mkTsDs('HVDC import', 'hvdcNiSi', C.HvdcNiSi,  true),
+    mkTsDs('To storage',  'siCharge', C.Charge,    true),
     mkDemand('siDemand'),
   ]), xt, islandMax);
 
@@ -1147,9 +1147,9 @@ function renderTsCharts() {
   charts['ts-nat'] = new Chart(document.getElementById('ts-nat'), {
     data:{ labels:tsXLabels(), datasets: activeDs([
       nd('Geothermal','natGeo',     C.Geo,      true),
-      nd('Hydro',     'natHydro',   C.Hydro,    true),
       nd('Solar',     'natSolar',   C.Solar,    true),
       nd('Wind',      'natWind',    C.Wind,     true),
+      nd('Hydro',     'natHydro',   C.Hydro,    true),
       nd('Storage',   'natStorage', C.Storage,  true),
       nd('Wood',      'natWood',    C.Wood,     true),
       nd('Gas',       'natGas',     C.Gas,      true),
@@ -1162,7 +1162,7 @@ function renderTsCharts() {
       plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ stacked:true, title:{ display:true, text:'MW' } } } },
+        y:{ stacked:true, min:0, title:{ display:true, text:'MW' } } } },
   });
 
   // Curtailment by generation type — NI and SI
