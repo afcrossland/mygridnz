@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Island Simulation — MyGridNZ</title>
+  <title>NZ Grid Simulator — MyGridNZ</title>
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/nav.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -130,18 +130,27 @@
 <body>
 <div class="page-wrap">
 <main>
-  <h1 class="page-title">NI / SI Island Simulation</h1>
-  <p class="page-intro">Half-hourly per-island forward-pass simulation using actual metered generation data.
-    Configure capacity, then run to see renewables share, carbon intensity, LCOE and system costs.</p>
+  <h1 class="page-title">NZ Grid Simulator</h1>
+  <p class="page-intro">How much wind and solar does New Zealand need to get off fossil gas? What happens in a dry year when the lakes run low? This simulator lets you explore those questions using real half-hourly generation data from Transpower — the same measurements that describe the actual grid. It models how the North and South Islands balance supply and demand every 30 minutes through a full year, routing renewable surplus between islands via the Cook Strait HVDC link before drawing on flexible hydro, battery storage or gas.</p>
 
-  <!-- Settings: demand/weather data year -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:20px 0 28px;font-size:13px;line-height:1.75;">
+    <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;">How to use</p>
+    <ol style="margin:0;padding-left:18px;color:var(--text);">
+      <li style="margin-bottom:5px;"><strong>Choose a data year</strong> below — this sets the demand profile and the real weather year (wind speeds, sunshine hours, hydro inflows). A dry year like 2022 is a tough test; a wet year like 2021 is a best case.</li>
+      <li style="margin-bottom:5px;"><strong>Set your scenario</strong> using the sliders — installed capacity for wind, solar, storage and dispatchable generation on each island. The Blueprint button loads a ready-made high-renewables scenario.</li>
+      <li><strong>Click Run Simulation</strong> — results compare today's grid against your scenario: renewable share, carbon intensity, curtailment, unserved energy, frequency reserves and estimated system cost.</li>
+    </ol>
+  </div>
+
+  <!-- Data year selector -->
   <details class="settings">
-    <summary>Demand and weather data</summary>
+    <summary>Data year</summary>
     <div class="settings-body">
       <div class="sl" style="max-width:260px;">
-        <div class="sl-hd"><span>Data year</span></div>
+        <div class="sl-hd"><span>Select year</span></div>
         <select id="sim-year" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:4px;"></select>
       </div>
+      <p style="font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;">The chosen year sets the demand profile and all weather-driven inputs — wind, solar and hydro inflows. Try different years to stress-test your scenario: a dry year with low lakes is the hardest case for a renewables-heavy grid.</p>
     </div>
   </details>
 
@@ -217,12 +226,12 @@
           <input type="range" id="dom-panels" min="1" max="30" step="1" value="10" data-unit="" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Panel size</span><span id="dom-panel-watts-v" class="sl-val">500 W</span></div>
           <input type="range" id="dom-panel-watts" min="100" max="700" step="50" value="500" data-unit="W" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>NI homes with solar</span><span id="ni-dom-solar-pct-v" class="sl-val">5%</span></div>
-          <input type="range" id="ni-dom-solar-pct" min="0" max="100" step="1" value="5" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>SI homes with solar</span><span id="si-dom-solar-pct-v" class="sl-val">3%</span></div>
-          <input type="range" id="si-dom-solar-pct" min="0" max="100" step="1" value="3" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Solar homes with storage</span><span id="dom-storage-pct-v" class="sl-val">20%</span></div>
-          <input type="range" id="dom-storage-pct" min="0" max="100" step="1" value="20" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>NI homes with solar</span><span id="ni-dom-solar-pct-v" class="sl-val">40%</span></div>
+          <input type="range" id="ni-dom-solar-pct" min="0" max="100" step="1" value="40" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>SI homes with solar</span><span id="si-dom-solar-pct-v" class="sl-val">40%</span></div>
+          <input type="range" id="si-dom-solar-pct" min="0" max="100" step="1" value="40" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Solar homes with storage</span><span id="dom-storage-pct-v" class="sl-val">80%</span></div>
+          <input type="range" id="dom-storage-pct" min="0" max="100" step="1" value="80" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Home battery size</span><span id="dom-batt-kwh-v" class="sl-val">10 kWh</span></div>
           <input type="range" id="dom-batt-kwh" min="2" max="30" step="1" value="10" data-unit="kWh" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
@@ -562,36 +571,37 @@ function simulate(data, caps, p) {
   const K = 0.5 / 1000;        // MW × 0.5h → GWh
 
   // ── Domestic solar & storage pre-computation ──────────────────────────
-  // Historical demand is already net of existing rooftop solar, so this
-  // models ADDITIONAL new domestic installations on top of the current fleet.
+  // Simulates a SINGLE typical home with solar and storage, then scales by
+  // number of homes. This is critical: at aggregate level, solar rarely
+  // exceeds total domestic demand, so batteries never charge. Per-home, a
+  // 5 kWp system routinely exceeds a 0.5–0.8 kW home load at midday.
+  //
+  // Historical demand is net of existing rooftop solar, so this models
+  // ADDITIONAL new installations on top of the current fleet.
   const AVG_HOME_MWH_YEAR = 7.5;   // NZ average household consumption
-  const HOME_BATT_KW = 5;           // assumed inverter power per home (kW)
+  const HOME_BATT_KW = 5;           // inverter power per home (kW)
   const niDomEnabled = p.domSolarEnabled && p.niDomSolarPct > 0;
   const siDomEnabled = p.domSolarEnabled && p.siDomSolarPct > 0;
   const solarKWp = p.domPanels * p.domPanelWatts / 1000;  // kWp per home
 
   const niDomTotalGWh = data.reduce((s, r) => s + r.NI_Demand * (p.niDomPct / 100), 0) * K;
   const siDomTotalGWh = data.reduce((s, r) => s + r.SI_Demand * (p.siDomPct / 100), 0) * K;
-  const nHomesNI = niDomTotalGWh * 1000 / AVG_HOME_MWH_YEAR;
-  const nHomesSI = siDomTotalGWh * 1000 / AVG_HOME_MWH_YEAR;
+  const nHomesNI = Math.max(niDomTotalGWh * 1000 / AVG_HOME_MWH_YEAR, 1);
+  const nHomesSI = Math.max(siDomTotalGWh * 1000 / AVG_HOME_MWH_YEAR, 1);
 
   const solHomesNI = nHomesNI * (niDomEnabled ? p.niDomSolarPct / 100 : 0);
   const solHomesSI = nHomesSI * (siDomEnabled ? p.siDomSolarPct / 100 : 0);
   const stoHomesNI = solHomesNI * p.domStoragePct / 100;
   const stoHomesSI = solHomesSI * p.domStoragePct / 100;
 
-  const domSolCapNI = solHomesNI * solarKWp / 1e6;   // GW domestic solar NI
-  const domSolCapSI = solHomesSI * solarKWp / 1e6;   // GW domestic solar SI
-  const domSolScNI  = domSolCapNI * 1000 / Math.max(caps['Solar']?.NI || 1, 1);
-  const domSolScSI  = domSolCapSI * 1000 / Math.max(caps['Solar']?.SI || 1, 1);
+  const domSolCapNI = solHomesNI * solarKWp / 1e6;   // GW — for table display
+  const domSolCapSI = solHomesSI * solarKWp / 1e6;
+  const niSolCapMW  = Math.max(caps['Solar']?.NI || 1, 1);  // MW installed grid solar
+  const siSolCapMW  = Math.max(caps['Solar']?.SI || 1, 1);
 
-  const domBatCapNI = stoHomesNI * p.domBattKWh / 1e6;   // GWh total home batteries NI
-  const domBatCapSI = stoHomesSI * p.domBattKWh / 1e6;
-  const domBatPowNI = stoHomesNI * HOME_BATT_KW / 1e6;   // GW total home battery power NI
-  const domBatPowSI = stoHomesSI * HOME_BATT_KW / 1e6;
-
-  let niDomSoC = domBatCapNI * 0.5;
-  let siDomSoC = domBatCapSI * 0.5;
+  // Per-home SoC tracked in kWh (not aggregated — avoids the aggregate masking problem)
+  let niHomeSoC = p.domBattKWh * 0.5;   // kWh per home, start 50%
+  let siHomeSoC = p.domBattKWh * 0.5;
 
   const mo = Array.from({length:12}, () => ({
     niDemand:0, siDemand:0,
@@ -632,45 +642,50 @@ function simulate(data, caps, p) {
     const siFlex  = siHist * (1 - p.siRoR / 100);
 
     // ── Domestic solar & storage (dispatched after geo, before grid VRE) ──
-    // Uses same solar resource profile, scaled to domestic installed capacity.
-    // Zero-export model: solar meets home load first, surplus charges battery,
-    // battery discharges 06:00–22:00 only. Net effect = reduced domestic draw.
+    // Per-home simulation: capacity factor × solarKWp gives kW per home. This
+    // allows solar to exceed home load at midday, charging the battery properly.
+    // Domestic load per home = (domestic % × island demand) ÷ number of homes.
+    // Multiply per-home result by number of homes for total MW grid offset.
     const hour = parseInt(row.dt.slice(11, 13), 10);
     const canDomDischarge = hour >= 6 && hour < 22;
 
-    // NI domestic
-    const rawDomNI   = row.NI_Solar * domSolScNI * p.niSolarCorr;
-    const niDomDem   = row.NI_Demand * p.niDomPct / 100;
-    const niDomSelf  = Math.min(rawDomNI, niDomDem);
-    let   niDomSurp  = rawDomNI - niDomSelf;
-    let   niDomDef   = niDomDem - niDomSelf;
-    if (niDomSurp > 0 && domBatCapNI > 0) {
-      const cw = Math.min(niDomSurp, domBatPowNI * 1000, (domBatCapNI - niDomSoC) / K);
-      niDomSoC += cw * K;  niDomSurp -= cw;
-    }
-    let niDomBatt = 0;
-    if (canDomDischarge && niDomDef > 0 && niDomSoC > 0) {
-      const dw = Math.min(niDomDef, domBatPowNI * 1000, niDomSoC / K);
-      niDomBatt = dw;  niDomSoC -= dw * K;  niDomDef -= dw;
-    }
-    const niDomGen = niDomSelf + niDomBatt;  // MW virtual generation (demand offset)
+    // NI domestic — per solar home
+    const niHomeSolar_kW  = (row.NI_Solar / niSolCapMW) * solarKWp * p.niSolarCorr;
+    const niHomeLoad_kW   = (row.NI_Demand * p.niDomPct / 100 * 1000) / nHomesNI;
+    const niHomeSelf_kW   = Math.min(niHomeSolar_kW, niHomeLoad_kW);
+    const niHomeSurp_kW   = niHomeSolar_kW - niHomeSelf_kW;  // excess → charges battery
+    const niHomeDef_kW    = niHomeLoad_kW  - niHomeSelf_kW;  // shortfall → from battery
 
-    // SI domestic
-    const rawDomSI   = row.SI_Solar * domSolScSI * p.siSolarCorr;
-    const siDomDem   = row.SI_Demand * p.siDomPct / 100;
-    const siDomSelf  = Math.min(rawDomSI, siDomDem);
-    let   siDomSurp  = rawDomSI - siDomSelf;
-    let   siDomDef   = siDomDem - siDomSelf;
-    if (siDomSurp > 0 && domBatCapSI > 0) {
-      const cw = Math.min(siDomSurp, domBatPowSI * 1000, (domBatCapSI - siDomSoC) / K);
-      siDomSoC += cw * K;  siDomSurp -= cw;
+    if (niHomeSurp_kW > 0 && p.domBattKWh > 0) {
+      const cr = Math.min(niHomeSurp_kW, HOME_BATT_KW, (p.domBattKWh - niHomeSoC) / 0.5);
+      niHomeSoC = Math.min(niHomeSoC + cr * 0.5, p.domBattKWh);
     }
-    let siDomBatt = 0;
-    if (canDomDischarge && siDomDef > 0 && siDomSoC > 0) {
-      const dw = Math.min(siDomDef, domBatPowSI * 1000, siDomSoC / K);
-      siDomBatt = dw;  siDomSoC -= dw * K;  siDomDef -= dw;
+    let niHomeBattDisch_kW = 0;
+    if (canDomDischarge && niHomeDef_kW > 0 && niHomeSoC > 0) {
+      const dr = Math.min(niHomeDef_kW, HOME_BATT_KW, niHomeSoC / 0.5);
+      niHomeBattDisch_kW = dr;
+      niHomeSoC = Math.max(niHomeSoC - dr * 0.5, 0);
     }
-    const siDomGen = siDomSelf + siDomBatt;
+    const niDomGen = (niHomeSelf_kW * solHomesNI + niHomeBattDisch_kW * stoHomesNI) / 1000;  // MW
+
+    // SI domestic — per solar home
+    const siHomeSolar_kW  = (row.SI_Solar / siSolCapMW) * solarKWp * p.siSolarCorr;
+    const siHomeLoad_kW   = (row.SI_Demand * p.siDomPct / 100 * 1000) / nHomesSI;
+    const siHomeSelf_kW   = Math.min(siHomeSolar_kW, siHomeLoad_kW);
+    const siHomeSurp_kW   = siHomeSolar_kW - siHomeSelf_kW;
+    const siHomeDef_kW    = siHomeLoad_kW  - siHomeSelf_kW;
+
+    if (siHomeSurp_kW > 0 && p.domBattKWh > 0) {
+      const cr = Math.min(siHomeSurp_kW, HOME_BATT_KW, (p.domBattKWh - siHomeSoC) / 0.5);
+      siHomeSoC = Math.min(siHomeSoC + cr * 0.5, p.domBattKWh);
+    }
+    let siHomeBattDisch_kW = 0;
+    if (canDomDischarge && siHomeDef_kW > 0 && siHomeSoC > 0) {
+      const dr = Math.min(siHomeDef_kW, HOME_BATT_KW, siHomeSoC / 0.5);
+      siHomeBattDisch_kW = dr;
+      siHomeSoC = Math.max(siHomeSoC - dr * 0.5, 0);
+    }
+    const siDomGen = (siHomeSelf_kW * solHomesSI + siHomeBattDisch_kW * stoHomesSI) / 1000;  // MW
 
     const niFixed = niGeo + niDomGen + niWind + niSolar + niRoRmw;
     const siFixed = siGeo + siDomGen + siWind + siSolar + siRoRmw;
@@ -1488,7 +1503,7 @@ function buildBaselineParams(caps, pUser) {
     niLoss:0.5, siLoss:4.5,
     domSolarEnabled: false, niDomPct:35, siDomPct:30,
     domPanels:10, domPanelWatts:500,
-    niDomSolarPct:0, siDomSolarPct:0, domStoragePct:20, domBattKWh:10,
+    niDomSolarPct:0, siDomSolarPct:0, domStoragePct:80, domBattKWh:10,
   };
 }
 
