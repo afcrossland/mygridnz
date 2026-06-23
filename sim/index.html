@@ -105,7 +105,7 @@
     /* ── Charts ──────────────────────────────── */
     .chart-box { background:var(--surface); border:1px solid var(--border);
       border-radius:8px; padding:14px; min-width:0; overflow:hidden; }
-    .chart-box canvas { display:block; max-width:100%; }
+    .chart-box canvas { display:block; }
     .chart-box h3 { font-size:11px; font-weight:600; color:var(--text); margin-bottom:8px; }
 
     /* ── Chart sections ──────────────────────── */
@@ -214,7 +214,7 @@
     <div class="scenario-card" id="sc-domsolar" onclick="preloadDomSolar();setActiveScenario('sc-domsolar','#d97706')">
       <div class="sc-stripe" style="background:#d97706;"></div>
       <div class="sc-body">
-        <div class="sc-title">Domestic Solar Revolution</div>
+        <div class="sc-title">Residential Solar Revolution</div>
         <div class="sc-desc">60% of homes with solar, 80% adding a home battery. Today's utility-scale generation unchanged.</div>
       </div>
     </div>
@@ -304,14 +304,14 @@
     <details class="ctrl-panel">
       <summary id="dom-solar-panel">Domestic Solar &amp; Storage</summary>
       <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>Enable domestic solar &amp; storage</span>
+        <div class="sl"><div class="sl-hd"><span>Enable residential solar &amp; storage</span>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
             <input type="checkbox" id="dom-solar-enabled" onchange="syncCheckbox('dom-solar-enabled')">
             <span id="dom-solar-enabled-v" class="sl-val">Off</span>
           </label></div></div>
-        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — NI</span><span id="ni-dom-pct-v" class="sl-val">38%</span></div>
+        <div class="sl"><div class="sl-hd"><span>% of demand that is residential — North Island</span><span id="ni-dom-pct-v" class="sl-val">38%</span></div>
           <input type="range" id="ni-dom-pct" min="0" max="100" step="1" value="38" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — SI</span><span id="si-dom-pct-v" class="sl-val">25%</span></div>
+        <div class="sl"><div class="sl-hd"><span>% of demand that is residential — South Island</span><span id="si-dom-pct-v" class="sl-val">25%</span></div>
           <input type="range" id="si-dom-pct" min="0" max="100" step="1" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Panels per home</span><span id="dom-panels-v" class="sl-val">10</span></div>
           <input type="range" id="dom-panels" min="1" max="30" step="1" value="10" data-unit="" data-dp="0" oninput="syncSlider(this)"></div>
@@ -434,6 +434,7 @@
     <script>
       document.getElementById('island-detail-section').addEventListener('toggle', function() {
         document.getElementById('island-detail-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) { charts['chart-ni']?.resize(); charts['chart-si']?.resize(); }
       });
     </script>
 
@@ -558,6 +559,7 @@
     <script>
       document.getElementById('reservoirs-section').addEventListener('toggle', function() {
         document.getElementById('reservoirs-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) { charts['chart-res']?.resize(); charts['chart-unserved']?.resize(); }
       });
     </script>
 
@@ -667,7 +669,7 @@
           <li style="margin-bottom:6px;"><strong>Home battery</strong> — if enabled, surplus domestic solar charges the home battery before export. The battery discharges during peak periods: in summer all day (24 h); in winter mornings and daytime only (06:00–21:00); in shoulder months from 05:00 onwards. The net effect of home batteries is that less domestic solar reaches the grid but grid demand in the evening is reduced.</li>
         </ol>
         <p style="margin:0;font-size:14px;color:var(--muted);">
-          The domestic solar that reaches the grid is included in national and island generation totals as "Dom. solar &amp; storage".
+          The domestic solar that reaches the grid is included in national and island generation totals as "Residential solar &amp; storage".
         </p>
       </div>
 
@@ -781,6 +783,12 @@
 // ═══════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════
+
+// Ensure Chart.js always renders at the native device pixel ratio.
+// Without this, charts created inside collapsed <details> sections can end up
+// at 1× DPR because the canvas has zero dimensions at init time.
+Chart.defaults.devicePixelRatio = window.devicePixelRatio || 1;
+
 const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
 const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -1520,7 +1528,7 @@ function renderTables(mo, pk) {
   const domEnabled = p.domSolarEnabled;
   const natFuels = [
     { name:'Geothermal',             gwh: sum(mo,'niGeo')    + sum(mo,'siGeo'),            color: C.Geo },
-    ...(domEnabled ? [{ name:'Dom. solar & storage', gwh: sum(mo,'niDomSolar')+sum(mo,'siDomSolar'), color: C.DomSolar }] : []),
+    ...(domEnabled ? [{ name:'Residential solar & storage', gwh: sum(mo,'niDomSolar')+sum(mo,'siDomSolar'), color: C.DomSolar }] : []),
     { name:'Hydro',                  gwh: sum(mo,'niHydro')  + sum(mo,'siHydro'),           color: C.Hydro },
     { name:'Solar',                  gwh: niSolarGWh         + siSolarGWh,                  color: C.Solar },
     { name:'Wind',                   gwh: niWindGWh          + siWindGWh,                   color: C.Wind },
@@ -1759,7 +1767,7 @@ function renderTsCharts() {
   // NI — plot order: Geo → Domestic solar → Solar → Wind → Hydro → Storage → HVDC → dispatchables
   mkTsChart('ts-ni', activeDs([
     mkTsDs('Geothermal',  'niGeo',       C.Geo,       true),
-    mkTsDs('Dom. solar',  'niDomSolar',  C.DomSolar,  true),
+    mkTsDs('Residential solar',  'niDomSolar',  C.DomSolar,  true),
     mkTsDs('Solar',       'niSolar',     C.Solar,     true),
     mkTsDs('Wind',        'niWind',   C.Wind,      true),
     mkTsDs('Hydro',       'niHydro',  C.Hydro,     true),
@@ -1774,7 +1782,7 @@ function renderTsCharts() {
   // SI — same order
   mkTsChart('ts-si', activeDs([
     mkTsDs('Geothermal',  'siGeo',       C.Geo,       true),
-    mkTsDs('Dom. solar',  'siDomSolar',  C.DomSolar,  true),
+    mkTsDs('Residential solar',  'siDomSolar',  C.DomSolar,  true),
     mkTsDs('Solar',       'siSolar',     C.Solar,     true),
     mkTsDs('Wind',        'siWind',   C.Wind,      true),
     mkTsDs('Hydro',       'siHydro',  C.Hydro,     true),
@@ -1806,7 +1814,7 @@ function renderTsCharts() {
   charts['ts-nat'] = new Chart(document.getElementById('ts-nat'), {
     data:{ labels:tsXLabels(), datasets: activeDs([
       nd('Geothermal', 'natGeo',       C.Geo,       true),
-      nd('Dom. solar', 'natDomSolar',  C.DomSolar,  true),
+      nd('Residential solar', 'natDomSolar',  C.DomSolar,  true),
       nd('Solar',      'natSolar',     C.Solar,     true),
       nd('Wind',      'natWind',    C.Wind,     true),
       nd('Hydro',     'natHydro',   C.Hydro,    true),
@@ -2315,11 +2323,14 @@ async function generateReport() {
     // autoSkip:false so Chart.js visits every position. callback receives the tick index
     // (not the label string) on a category scale — use getLabelForValue() to get the string,
     // then return null for the empty positions (all non-midnight half-hours).
-    const tsTicks = { font:{size:6}, maxRotation:30, minRotation:30, autoSkip:false,
+    const tsTicks = { font:{size:9}, maxRotation:30, minRotation:30, autoSkip:false,
       callback: function(value) {
         const lbl = this.getLabelForValue(value);
         return (lbl && lbl !== '') ? lbl : null;
       } };
+
+    // Shared font sizes matching report body text
+    const RF = { legend:{ boxWidth:9, font:{size:10} }, tick:{font:{size:9}}, title:{font:{size:10}} };
 
     // Dispatch datasets — exact webapp style: line+fill:'stack' not bar
     function mkDs(label, data, colour) {
@@ -2333,12 +2344,12 @@ async function generateReport() {
         fill:false, pointRadius:0, tension:0.1 };
     }
     const tsOpts = (maxY) => ({
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:8},
+      plugins:{ legend:{ position:'top', labels:{ ...RF.legend,
         filter: item => item.text !== '' } }, tooltip:{enabled:false} },
       scales:{
         x:{ stacked:true, ticks: tsTicks },
-        y:{ stacked:true, min:0, title:{ display:true, text:'MW', font:{size:8} },
-            ticks:{font:{size:8}}, ...(maxY != null ? { max:maxY } : {}) }
+        y:{ stacked:true, min:0, title:{ display:true, text:'MW', ...RF.title },
+            ticks:RF.tick, ...(maxY != null ? { max:maxY } : {}) }
       }
     });
 
@@ -2348,7 +2359,7 @@ async function generateReport() {
       const sum2 = (a, b) => slice.map(p => +((p[a]||0)+(p[b]||0)).toFixed(1));
       return [
         ...(ni||nat ? [mkDs('Geothermal', nat?sum2('niGeo','siGeo'):get('niGeo'), C.Geo)] : []),
-        mkDs('Dom. solar', nat?sum2('niDomSolar','siDomSolar'):get(ni?'niDomSolar':'siDomSolar'), C.DomSolar),
+        mkDs('Residential solar', nat?sum2('niDomSolar','siDomSolar'):get(ni?'niDomSolar':'siDomSolar'), C.DomSolar),
         mkDs('Solar',      nat?sum2('niSolar','siSolar'):get(ni?'niSolar':'siSolar'), C.Solar),
         mkDs('Wind',       nat?sum2('niWind','siWind'):get(ni?'niWind':'siWind'), C.Wind),
         mkDs('Hydro',      nat?sum2('niHydro','siHydro'):get(ni?'niHydro':'siHydro'), C.Hydro),
@@ -2465,28 +2476,27 @@ async function generateReport() {
       fuelListEl.appendChild(row);
     });
 
-    // ── PAGE 3: PER ISLAND MONTHLY ────────────────────────
-    const islandBody = pg('Generation by Island', 'Monthly generation by fuel type — North Island and South Island');
-    const islandNote = document.createElement('p');
-    islandNote.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 12px;line-height:1.6;';
-    islandNote.textContent = 'The simulation dispatches the North Island and South Island independently. The South Island is dominated by large hydro storage (Waitaki, Manapouri); the North Island by geothermal baseload and dispatchable thermal. Surplus power transfers via the Cook Strait HVDC link.';
-    islandBody.appendChild(islandNote);
-    const islandGrid = document.createElement('div');
-    islandGrid.className = 'rpt-grid2';
-    islandBody.appendChild(islandGrid);
-
+    // ── Island monthly charts appended to page 2 (natBody) ─
     if (gMo.length) {
       const annMax = Math.ceil(Math.max(...gMo.map(m=>m.niDemand+m.niCurtail), ...gMo.map(m=>m.siDemand+m.siCurtail)) / 500) * 500;
-      const annOpts = { plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} } },
-        scales:{ x:{stacked:true, ticks:{font:{size:7},maxRotation:45}},
-          y:{stacked:true, max:annMax, title:{display:true,text:'GWh',font:{size:8}}, ticks:{font:{size:8}}} } };
+      const annOpts = { plugins:{ legend:{ position:'top', labels:RF.legend } },
+        scales:{ x:{stacked:true, ticks:{...RF.tick,maxRotation:45}},
+          y:{stacked:true, max:annMax, title:{display:true,text:'GWh',...RF.title}, ticks:RF.tick} } };
+
+      const islandSub = document.createElement('div');
+      islandSub.className = 'rpt-label'; islandSub.style.marginTop = '16px';
+      islandSub.textContent = 'Monthly Generation by Island';
+      natBody.appendChild(islandSub);
+      const islandGrid = document.createElement('div');
+      islandGrid.className = 'rpt-grid2';
+      natBody.appendChild(islandGrid);
 
       const domEnabled = gParams.domSolarEnabled && (gParams.niDomSolarPct > 0 || gParams.siDomSolarPct > 0);
       for (const [title, datasets] of [
         ['North Island', [
           {label:'Geothermal',data:gMo.map(m=>+m.niGeo.toFixed(1)),backgroundColor:C.Geo,stack:'s'},
           {label:'Hydro',data:gMo.map(m=>+m.niHydro.toFixed(1)),backgroundColor:C.Hydro,stack:'s'},
-          ...(domEnabled?[{label:'Dom. solar',data:gMo.map(m=>+m.niDomSolar.toFixed(1)),backgroundColor:C.DomSolar,stack:'s'}]:[]),
+          ...(domEnabled?[{label:'Residential solar',data:gMo.map(m=>+m.niDomSolar.toFixed(1)),backgroundColor:C.DomSolar,stack:'s'}]:[]),
           {label:'Solar',data:gMo.map(m=>+m.niSolar.toFixed(1)),backgroundColor:C.Solar,stack:'s'},
           {label:'Wind',data:gMo.map(m=>+m.niWind.toFixed(1)),backgroundColor:C.Wind,stack:'s'},
           {label:'Storage',data:gMo.map(m=>+m.niStorage.toFixed(1)),backgroundColor:C.Storage,stack:'s'},
@@ -2496,7 +2506,7 @@ async function generateReport() {
         ]],
         ['South Island', [
           {label:'Hydro',data:gMo.map(m=>+m.siHydro.toFixed(1)),backgroundColor:C.Hydro,stack:'s'},
-          ...(domEnabled?[{label:'Dom. solar',data:gMo.map(m=>+m.siDomSolar.toFixed(1)),backgroundColor:C.DomSolar,stack:'s'}]:[]),
+          ...(domEnabled?[{label:'Residential solar',data:gMo.map(m=>+m.siDomSolar.toFixed(1)),backgroundColor:C.DomSolar,stack:'s'}]:[]),
           {label:'Solar',data:gMo.map(m=>+m.siSolar.toFixed(1)),backgroundColor:C.Solar,stack:'s'},
           {label:'Wind',data:gMo.map(m=>+m.siWind.toFixed(1)),backgroundColor:C.Wind,stack:'s'},
           {label:'HVDC import',data:gMo.map(m=>+m.hvdcNiSi.toFixed(1)),backgroundColor:C.HvdcNiSi,stack:'s'},
@@ -2505,34 +2515,26 @@ async function generateReport() {
         const col = document.createElement('div');
         col.innerHTML = `<div class="rpt-label">${title}</div>`;
         islandGrid.appendChild(col);
-        mkChart(col, 'bar', { labels:MONTHS, datasets }, annOpts, 260);
+        mkChart(col, 'bar', { labels:MONTHS, datasets }, annOpts, 200);
       }
     }
 
-    // Shared helper: build an operability+battery page for a given time slice
-    function mkOpBattPage(pageTitle, pageSub, sl, lbl) {
+    // Helper: append operability+battery charts to an existing page body
+    function addOpBattCharts(body, sl, lbl) {
       const lineOpts = ylabel => ({
-        plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} }, tooltip:{enabled:false} },
+        plugins:{ legend:{ position:'top', labels:RF.legend }, tooltip:{enabled:false} },
         scales:{ x:{ ticks: tsTicks },
-          y:{ min:0, title:{ display:true, text:ylabel, font:{size:8} }, ticks:{font:{size:8}} } }
+          y:{ min:0, title:{ display:true, text:ylabel, ...RF.title }, ticks:RF.tick } }
       });
 
-      const body = pg(pageTitle, pageSub);
-      const note = document.createElement('p');
-      note.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 10px;line-height:1.6;';
-      note.textContent = 'HVDC load flow between islands, frequency reserves (FIR 0–6 s and SIR 6–60 s) versus the contingency requirement, synchronous inertia, and grid-scale battery state of charge.';
-      body.appendChild(note);
-
-      // HVDC
       const hvdcWrap = document.createElement('div');
-      hvdcWrap.innerHTML = '<div class="rpt-label">HVDC Cook Strait Flows</div>';
+      hvdcWrap.innerHTML = '<div class="rpt-label" style="margin-top:12px;">HVDC Cook Strait Flows</div>';
       body.appendChild(hvdcWrap);
       mkChart(hvdcWrap, 'line', { labels:lbl, datasets:[
         {label:'North Island → South Island',data:sl.map(p=>+(p.hvdcNiSi||0).toFixed(1)),borderColor:C.HvdcNiSi,backgroundColor:C.HvdcNiSi+'33',fill:true,tension:.1,pointRadius:0,borderWidth:1.5},
         {label:'South Island → North Island',data:sl.map(p=>+(p.hvdcSiNi||0).toFixed(1)),borderColor:C.HvdcSiNi,backgroundColor:C.HvdcSiNi+'33',fill:true,tension:.1,pointRadius:0,borderWidth:1.5},
-      ]}, lineOpts('MW'), 90);
+      ]}, lineOpts('MW'), 70);
 
-      // Frequency reserves — 2-col
       const resGrid = document.createElement('div');
       resGrid.className = 'rpt-grid2'; resGrid.style.marginTop = '10px';
       body.appendChild(resGrid);
@@ -2547,22 +2549,20 @@ async function generateReport() {
           {label:'FIR (0–6 s)',data:sl.map(p=>+(p[firK]??0)),borderColor:'#059669',backgroundColor:'#05966950',fill:'stack',borderWidth:0.5,pointRadius:0,tension:.1,stack:'r'},
           {label:'SIR (6–60 s)',data:sl.map(p=>+(p[sirK]??0)),borderColor:'#2563eb',backgroundColor:'#2563eb40',fill:'stack',borderWidth:0.5,pointRadius:0,tension:.1,stack:'r'},
           {label:'Contingency',data:sl.map(p=>+(p[contK]??0)),borderColor:contCol,borderDash:[5,3],fill:false,borderWidth:1.8,pointRadius:0,tension:0},
-        ]}, { plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} }, tooltip:{enabled:false} },
+        ]}, { plugins:{ legend:{ position:'top', labels:RF.legend }, tooltip:{enabled:false} },
           scales:{ x:{ stacked:true, ticks:tsTicks },
-            y:{ stacked:true, min:0, title:{ display:true, text:'MW', font:{size:8} }, ticks:{font:{size:8}} } }
-        }, 90);
+            y:{ stacked:true, min:0, title:{ display:true, text:'MW', ...RF.title }, ticks:RF.tick } }
+        }, 65);
       }
 
-      // Inertia
       const inertWrap = document.createElement('div');
       inertWrap.innerHTML = '<div class="rpt-label" style="margin-top:10px;">System Inertia</div>';
       body.appendChild(inertWrap);
       mkChart(inertWrap, 'line', { labels:lbl, datasets:[
         {label:'North Island inertia',data:sl.map(p=>+(p.niInertiaMWs??0)),borderColor:C.Hydro,fill:false,borderWidth:2,pointRadius:0,tension:.2},
         {label:'South Island inertia',data:sl.map(p=>+(p.siInertiaMWs??0)),borderColor:'#7dd3fc',borderDash:[4,3],fill:false,borderWidth:2,pointRadius:0,tension:.2},
-      ]}, lineOpts('MW·s'), 80);
+      ]}, lineOpts('MW·s'), 60);
 
-      // Battery — 2-col
       const battLabel = document.createElement('div');
       battLabel.className = 'rpt-label'; battLabel.style.marginTop = '10px';
       battLabel.textContent = 'Utility-Scale Battery Storage';
@@ -2578,37 +2578,37 @@ async function generateReport() {
         col.innerHTML = `<div class="rpt-label">${label}</div>`;
         battGrid.appendChild(col);
         mkChart(col, 'line', { labels:lbl, datasets:[
-          {label:'SoC %',type:'line',data:sl.map(p=>+(p[socK]??0).toFixed(1)),
+          {label:'SoC %',data:sl.map(p=>+(p[socK]??0).toFixed(1)),
             borderColor:C.Storage,backgroundColor:C.Storage+'25',fill:true,
             yAxisID:'ySoC',pointRadius:0,tension:.2,borderWidth:1.5},
-          {label:'Charging',type:'line',data:sl.map(p=>+(p[chgK]??0).toFixed(0)),
+          {label:'Charging',data:sl.map(p=>+(p[chgK]??0).toFixed(0)),
             borderColor:'#a78bfa',backgroundColor:'#a78bfa35',fill:true,
             yAxisID:'yMW',pointRadius:0,tension:.1,borderWidth:0.5},
-          {label:'Discharging',type:'line',data:sl.map(p=>+(p[dischK]??0).toFixed(0)),
+          {label:'Discharging',data:sl.map(p=>+(p[dischK]??0).toFixed(0)),
             borderColor:'#6d28d9',backgroundColor:'#6d28d935',fill:true,
             yAxisID:'yMW',pointRadius:0,tension:.1,borderWidth:0.5},
         ]}, {
           animation:false, responsive:false, maintainAspectRatio:false,
-          plugins:{ legend:{position:'top',labels:{boxWidth:8,font:{size:8}}}, tooltip:{enabled:false} },
+          plugins:{ legend:{position:'top',labels:RF.legend}, tooltip:{enabled:false} },
           scales:{
             x:{ ticks: tsTicks },
-            ySoC:{type:'linear',position:'left',min:0,max:100,title:{display:true,text:'SoC %',font:{size:8}},ticks:{font:{size:8}}},
-            yMW:{type:'linear',position:'right',title:{display:true,text:'MW',font:{size:8}},grid:{drawOnChartArea:false},ticks:{font:{size:8}}},
+            ySoC:{type:'linear',position:'left',min:0,max:100,title:{display:true,text:'SoC %',...RF.title},ticks:RF.tick},
+            yMW:{type:'linear',position:'right',title:{display:true,text:'MW',...RF.title},grid:{drawOnChartArea:false},ticks:RF.tick},
           }
-        }, 130);
+        }, 90);
       }
     }
 
-    // ── PAGES 4–7: SUMMER & WINTER DISPATCH ───────────────
-    for (const [dayOff, season, title, sub, note] of [
-      [7,   'Summer', 'Summer Dispatch — January', 'NZ summer: high solar, high hydro inflows, low demand',
+    // ── PAGES 3 & 4: SUMMER & WINTER DISPATCH + OPERABILITY ─
+    for (const [dayOff, title, sub, note] of [
+      [7,   'Summer Dispatch — January', 'NZ summer: high solar, high hydro inflows, low demand',
        'January is the peak solar period. Hydro lakes are typically filling after spring snowmelt. Wind remains significant year-round. Curtailment may occur where VRE exceeds demand and storage is full.'],
-      [181, 'Winter', 'Winter Dispatch — July',    'The dry-year stress period: low hydro, low solar, high demand',
+      [181, 'Winter Dispatch — July',    'The dry-year stress period: low hydro, low solar, high demand',
        'July is the hardest month for NZ grid security. Hydro lakes may be depleted after a dry autumn. Heating demand peaks. Solar output is minimal. This is the period where thermal backup and HVDC transfers are most critical.'],
     ]) {
       const body = pg(title, sub);
       const noteEl = document.createElement('p');
-      noteEl.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 10px;line-height:1.6;';
+      noteEl.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 8px;line-height:1.6;';
       noteEl.textContent = note;
       body.appendChild(noteEl);
 
@@ -2618,22 +2618,20 @@ async function generateReport() {
       const natWrap = document.createElement('div');
       natWrap.innerHTML = '<div class="rpt-label">National</div>';
       body.appendChild(natWrap);
-      mkChart(natWrap, 'line', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 140);
+      mkChart(natWrap, 'line', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 110);
 
       const isGrid = document.createElement('div');
-      isGrid.className = 'rpt-grid2'; isGrid.style.marginTop = '10px';
+      isGrid.className = 'rpt-grid2'; isGrid.style.marginTop = '8px';
       body.appendChild(isGrid);
       for (const [islandTitle, island] of [['North Island','NI'],['South Island','SI']]) {
         const col = document.createElement('div');
         col.innerHTML = `<div class="rpt-label">${islandTitle}</div>`;
         isGrid.appendChild(col);
-        mkChart(col, 'line', { labels, datasets: dispDatasets(slice, island) }, tsOpts(4500), 120);
+        mkChart(col, 'line', { labels, datasets: dispDatasets(slice, island) }, tsOpts(4500), 90);
       }
 
-      // Supplementary page: HVDC, reserves, inertia, battery for this season
-      mkOpBattPage(`${season} — Grid Operability & Storage`,
-        `HVDC flows, reserves, inertia and battery storage — ${title.split('—')[1].trim()}`,
-        slice, labels);
+      // Operability + battery on the same page
+      addOpBattCharts(body, slice, labels);
     }
 
     // ── Print ─────────────────────────────────────────────
