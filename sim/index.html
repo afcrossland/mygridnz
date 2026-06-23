@@ -69,11 +69,11 @@
 
     /* ── Island tables ───────────────────────── */
     .island-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
-    .nat-mix-layout { display:grid; grid-template-columns:210px 1fr; gap:28px; align-items:start; margin-bottom:28px; }
-    .nat-fuel-row { display:grid; grid-template-columns:10px 1fr auto 1fr 44px; align-items:center; gap:8px; font-size:13px; margin-bottom:7px; }
-    .nat-fuel-name { font-weight:500; color:var(--text); }
-    .nat-fuel-gwh  { font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; }
-    .nat-fuel-pct  { font-size:12px; font-weight:600; color:var(--muted); text-align:right; }
+    .nat-mix-layout { display:grid; grid-template-columns:280px 1fr; gap:32px; align-items:start; margin-bottom:28px; }
+    .nat-fuel-row { display:grid; grid-template-columns:10px auto 52px 1fr auto; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
+    .nat-fuel-name { font-weight:500; color:var(--text); white-space:nowrap; }
+    .nat-fuel-pct  { font-size:13px; font-weight:700; color:var(--text); text-align:right; }
+    .nat-fuel-gwh  { font-size:12px; color:var(--muted); white-space:nowrap; text-align:right; padding-left:8px; }
     .itbl { width:100%; border-collapse:collapse; font-size:12px; }
     .itbl th { text-align:left; padding:4px 6px; font-size:9px; font-weight:700;
       letter-spacing:.07em; color:var(--muted);
@@ -324,19 +324,6 @@
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island (GWh)</h3><canvas id="chart-ni"></canvas></div>
         <div class="chart-box"><h3>South Island (GWh)</h3><canvas id="chart-si"></canvas></div>
-        <div class="chart-box"><h3>NI Dispatchables (GWh)</h3><canvas id="chart-ni-disp"></canvas></div>
-      </div>
-    </div>
-
-    <!-- ── Reservoirs and system balance ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>Reservoirs and system balance</h3>
-        <p>Monthly average hydro reservoir levels, unserved energy, curtailment, and battery state of charge and charge/discharge by island.</p>
-      </div>
-      <div class="ts-charts">
-        <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
-        <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
       </div>
     </div>
 
@@ -360,10 +347,10 @@
         <h3>Generation dispatch</h3>
         <p>Half-hourly generation by fuel type. The dashed line is demand; the green band above it is generation curtailed in that period.</p>
       </div>
-      <div class="ts-charts">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="chart-box"><h3>National</h3><canvas id="ts-nat"></canvas></div>
         <div class="chart-box"><h3>North Island</h3><canvas id="ts-ni"></canvas></div>
         <div class="chart-box"><h3>South Island</h3><canvas id="ts-si"></canvas></div>
-        <div class="chart-box ts-full"><h3>National</h3><canvas id="ts-nat"></canvas></div>
       </div>
     </div>
 
@@ -391,12 +378,24 @@
       </div>
     </div>
 
+    <!-- ── Reservoirs and system balance ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Reservoirs and system balance</h3>
+        <p>Monthly average hydro reservoir levels and unserved energy / curtailment over the simulated year.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
+        <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
+      </div>
+    </div>
+
     <!-- ── Grid Operability (collapsed by default) ── -->
     <details class="ts-section" id="operability-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="operability-arrow">▶</span>
         <span style="font-size:.95rem;font-weight:600;color:var(--text);">Grid Operability</span>
         <span style="font-size:11px;color:var(--muted);">— HVDC flows, frequency reserves and system inertia</span>
-        <span style="margin-left:auto;font-size:12px;color:var(--muted);" id="operability-arrow">▼ expand</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
         <p>Cook Strait HVDC flows (purple = NI exports south, blue = SI exports north). FIR (0–6 s) and SIR (6–60 s) reserves versus the largest single contingency per island. System inertia is from synchronous generators only — wind, solar and batteries contribute none.</p>
@@ -410,7 +409,7 @@
     </details>
     <script>
       document.getElementById('operability-section').addEventListener('toggle', function() {
-        document.getElementById('operability-arrow').textContent = this.open ? '▲ collapse' : '▼ expand';
+        document.getElementById('operability-arrow').textContent = this.open ? '▼' : '▶';
       });
     </script>
 
@@ -1070,9 +1069,9 @@ function renderTables(mo, pk) {
     return `<div class="nat-fuel-row">
       <span class="fuel-dot" style="background:${f.color}"></span>
       <span class="nat-fuel-name">${f.name}</span>
-      <span class="nat-fuel-gwh">${fmt(f.gwh,0)} GWh</span>
-      <div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${barW}%;background:${f.color}"></div></div>
       <span class="nat-fuel-pct">${pct}%</span>
+      <div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${barW}%;background:${f.color}"></div></div>
+      <span class="nat-fuel-gwh">${fmt(f.gwh,0)} GWh</span>
     </div>`;
   }).join('');
 
@@ -1149,14 +1148,6 @@ function renderAnnualCharts(mo) {
     { label:'Wind',       data:mo.map(m=>+m.siWind.toFixed(1)),    backgroundColor:C.Wind,    stack:'s' },
     { label:'HVDC import',data:mo.map(m=>+m.hvdcNiSi.toFixed(1)),  backgroundColor:C.HvdcNiSi,stack:'s' },
   ], annMax);
-  const dispPeak = Math.max(...mo.map(m => m.niWood + m.niGas + m.niCoal + m.niDiesel + m.niOther));
-  mkStacked('chart-ni-disp', [
-    { label:'Wood',   data:mo.map(m=>+m.niWood.toFixed(1)),   backgroundColor:C.Wood,   stack:'s' },
-    { label:'Gas',    data:mo.map(m=>+m.niGas.toFixed(1)),    backgroundColor:C.Gas,    stack:'s' },
-    { label:'Coal',   data:mo.map(m=>+m.niCoal.toFixed(1)),   backgroundColor:C.Coal,   stack:'s' },
-    { label:'Diesel', data:mo.map(m=>+m.niDiesel.toFixed(1)), backgroundColor:C.Diesel, stack:'s' },
-    { label:'Other',  data:mo.map(m=>+m.niOther.toFixed(1)),  backgroundColor:C.Other,  stack:'s' },
-  ], Math.ceil(Math.max(dispPeak, 100) / 100) * 100);
   charts['chart-res'] = new Chart(document.getElementById('chart-res'), {
     type:'line', data:{ labels:MONTHS, datasets:[
       { label:'NI (GWh)', data:mo.map(m=>m.cnt?+(m.niRes/m.cnt).toFixed(1):0),
