@@ -63,7 +63,7 @@
     #sim-status { font-size:13px; color:var(--muted); }
 
     /* ── Before/After stat tiles ─────────────── */
-    .stat-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; margin-bottom:0; }
+    .stat-row { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; width:300px; flex-shrink:0; }
     .scard { border:1px solid var(--border); border-radius:8px; padding:10px 12px;
       text-align:center; background:var(--surface); }
     .scard-label { font-size:9px; font-weight:700; text-transform:uppercase;
@@ -79,11 +79,11 @@
 
     /* ── Island tables ───────────────────────── */
     .island-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
-    .nat-mix-layout { display:grid; grid-template-columns:280px 1fr; gap:32px; align-items:start; margin-bottom:28px; }
-    .nat-fuel-row { display:grid; grid-template-columns:10px auto 48px 1fr; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
-    .nat-fuel-name { font-weight:500; color:var(--text); white-space:nowrap; }
-    .nat-fuel-pct  { font-size:13px; font-weight:700; color:var(--text); text-align:right; }
-    .nat-fuel-gwh  { font-size:12px; color:var(--muted); white-space:nowrap; text-align:right; padding-left:8px; }
+    .nat-mix-layout { display:flex; gap:32px; align-items:start; margin-bottom:28px; }
+    .nat-pie-section { display:grid; grid-template-columns:210px 1fr; gap:20px; align-items:start; flex:1; min-width:0; }
+    .nat-fuel-row { display:grid; grid-template-columns:10px 1fr 1fr 40px; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
+    .nat-fuel-name { font-weight:500; color:var(--text); }
+    .nat-fuel-pct  { font-size:12px; font-weight:600; color:var(--muted); text-align:right; }
     .itbl { width:100%; border-collapse:collapse; font-size:12px; }
     .itbl th { text-align:left; padding:4px 6px; font-size:9px; font-weight:700;
       letter-spacing:.07em; color:var(--muted);
@@ -132,12 +132,13 @@
     @media(max-width:900px){
       .ctrl-grid,.island-grid,.ts-charts{grid-template-columns:1fr;}
       .ts-full{grid-column:span 1;}
-      .stat-row{grid-template-columns:repeat(4,1fr);}
       .slider-row{grid-template-columns:1fr;}
+      .nat-mix-layout{flex-direction:column;}
+      .nat-pie-section{grid-template-columns:1fr;}
     }
     @media(max-width:600px){
-      .stat-row{grid-template-columns:repeat(2,1fr);}
       .chart-box canvas{ min-height:260px; }
+      .stat-row{width:100%;}
     }
     .scard{ min-width:0; overflow:hidden; }
     .scard-main{ font-size:clamp(.95rem,4vw,1.4rem); }
@@ -334,15 +335,17 @@
   <!-- Results -->
   <div id="results" hidden>
 
-    <!-- ── National summary: pie + stat tiles + fuel list ── -->
+    <!-- ── National summary: pie + legend | stat tiles ── -->
     <div style="margin-bottom:28px;">
       <h2 style="font-size:.95rem;font-weight:600;margin-bottom:14px;">National — annual generation mix</h2>
       <div class="nat-mix-layout">
-        <div><canvas id="nat-pie"></canvas></div>
-        <div>
-          <div class="stat-row" id="stat-row" style="margin-bottom:16px;"></div>
+        <!-- Left: pie + fuel list with progress bars -->
+        <div class="nat-pie-section">
+          <canvas id="nat-pie"></canvas>
           <div id="nat-fuel-list"></div>
         </div>
+        <!-- Right: 6 stat tiles in 2×3 grid -->
+        <div class="stat-row" id="stat-row"></div>
       </div>
     </div>
 
@@ -1119,7 +1122,6 @@ function renderStats(moBase, moUser, capsRef, pBase, pUser) {
     mkCard('Carbon Intensity',carbB,        carbU,        'gCO₂/kWh', carbCls(carbU), 1, true) +
     mkCard('System LCOE',     lcoeB,        lcoeU,        'NZD/MWh', lcoeCls(lcoeU), 0, true) +
     mkCard('Avg Marginal',    margB,        margU,        'NZD/MWh', lcoeCls(margU), 0, true) +
-    mkCard('Unserved',        unsPctB,      unsPctU,      '%',   unsCls(unsPctU), 3, true) +
     mkCard('Curtailment',     curtailB,     curtailU,     'GWh', 'scard--good', 0);
 }
 
@@ -1187,8 +1189,8 @@ function renderTables(mo, pk) {
     return `<div class="nat-fuel-row">
       <span class="fuel-dot" style="background:${f.color}"></span>
       <span class="nat-fuel-name">${f.name}</span>
-      <span class="nat-fuel-pct">${pct}%</span>
       <div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${barW}%;background:${f.color}"></div></div>
+      <span class="nat-fuel-pct">${pct}%</span>
     </div>`;
   }).join('');
 
