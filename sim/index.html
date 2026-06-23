@@ -106,7 +106,8 @@
     /* ── Charts ──────────────────────────────── */
     .chart-box { background:var(--surface); border:1px solid var(--border);
       border-radius:8px; padding:14px; min-width:0; overflow:hidden; }
-    .chart-box canvas { display:block; }
+    .chart-box canvas { display:block; height:200px; }
+    .ts-full canvas   { height:260px; }
     .chart-box h3 { font-size:11px; font-weight:600; color:var(--text); margin-bottom:8px; }
 
     /* ── Chart sections ──────────────────────── */
@@ -156,7 +157,8 @@
       .nat-pie-section{grid-template-columns:1fr;}
     }
     @media(max-width:600px){
-      .chart-box canvas{ min-height:260px; }
+      .chart-box canvas{ height:180px; }
+      .ts-full canvas  { height:220px; }
       .stat-row{width:100%;}
     }
     .scard{ min-width:0; overflow:hidden; }
@@ -789,6 +791,7 @@
 // Without this, charts created inside collapsed <details> sections can end up
 // at 1× DPR because the canvas has zero dimensions at init time.
 Chart.defaults.devicePixelRatio = window.devicePixelRatio || 1;
+Chart.defaults.maintainAspectRatio = false;
 
 const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
 const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1827,7 +1830,7 @@ function renderTsCharts() {
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ])},
-    options:{ responsive:true, animation:false, aspectRatio:3,
+    options:{ responsive:true, animation:false,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
@@ -2603,26 +2606,27 @@ async function generateReport() {
       }
     }
 
-    // ── PAGES 3 & 4: SUMMER & WINTER DISPATCH + OPERABILITY ─
+    // ── PAGES 3–6: SUMMER & WINTER DISPATCH (one page) + OPERABILITY (one page each) ─
     for (const [dayOff, title, sub, note] of [
       [7,   'Summer Dispatch — January', 'NZ summer: high solar, high hydro inflows, low demand',
        'January is the peak solar period. Hydro lakes are typically filling after spring snowmelt. Wind remains significant year-round. Curtailment may occur where VRE exceeds demand and storage is full.'],
       [181, 'Winter Dispatch — July',    'The dry-year stress period: low hydro, low solar, high demand',
-       'July is the hardest month for NZ grid security. Hydro lakes may be depleted after a dry autumn. Heating demand peaks. Solar output is minimal. This is the period where thermal backup and HVDC transfers are most critical.'],
+       'Hydro lakes may be depleted after a dry autumn. Heating demand peaks. Solar output is minimal. This is the period where thermal backup and HVDC transfers are most critical.'],
     ]) {
+      const slice = tsSliceAt(dayOff);
+      const labels = tsLabels(slice);
+
+      // Dispatch page
       const body = pg(title, sub);
       const noteEl = document.createElement('p');
       noteEl.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 8px;line-height:1.6;';
       noteEl.textContent = note;
       body.appendChild(noteEl);
 
-      const slice = tsSliceAt(dayOff);
-      const labels = tsLabels(slice);
-
       const natWrap = document.createElement('div');
       natWrap.innerHTML = '<div class="rpt-label">National</div>';
       body.appendChild(natWrap);
-      mkChart(natWrap, 'line', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 110);
+      mkChart(natWrap, 'line', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 200);
 
       const isGrid = document.createElement('div');
       isGrid.className = 'rpt-grid2'; isGrid.style.marginTop = '8px';
@@ -2631,11 +2635,12 @@ async function generateReport() {
         const col = document.createElement('div');
         col.innerHTML = `<div class="rpt-label">${islandTitle}</div>`;
         isGrid.appendChild(col);
-        mkChart(col, 'line', { labels, datasets: dispDatasets(slice, island) }, tsOpts(4500), 90);
+        mkChart(col, 'line', { labels, datasets: dispDatasets(slice, island) }, tsOpts(4500), 200);
       }
 
-      // Operability + battery on the same page
-      addOpBattCharts(body, slice, labels);
+      // Operability on its own page
+      const opBody = pg(title.replace('Dispatch', 'Operability'), sub);
+      addOpBattCharts(opBody, slice, labels);
     }
 
     // ── Generate and download PDF ──────────────────────────
