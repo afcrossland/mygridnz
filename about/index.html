@@ -146,27 +146,30 @@
     <div class="about-section" id="lcoe-methodology">
       <h2>System Cost (LCOE) Methodology</h2>
       <p>The <a href="../2030grid/index.html">2030 Blueprint</a> page shows the average cost of generating one megawatt-hour of electricity delivered to consumers — a System Levelised Cost of Electricity (LCOE). This answers: if you had to pay for every asset in today's (or tomorrow's) grid, what would each delivered MWh cost on average?</p>
-      <p>LCOE figures are drawn from MBIE and international benchmarks, central estimates for a 2030 commissioning year in 2024 real prices.</p>
+      <p>LCOE figures are drawn from MBIE's <em>Interactive Levelised Cost of Electricity Comparison Tool (2021)</em> and UK DESNZ <em>Electricity Generation Costs 2025</em> benchmarks converted to NZD at the prevailing exchange rate, with adjustments for current NZ cost conditions. All figures are in 2024 NZD, central estimates for a 2030 commissioning year.</p>
       <table class="carbon-table">
         <thead>
           <tr>
             <th>Technology</th>
-            <th>LCOE ($/MWh)</th>
+            <th>LCOE (NZD/MWh)</th>
             <th>Source / Notes</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Wind (onshore/offshore blend)</td><td style="text-align:right">90</td><td>MBIE / international benchmarks; 2030 commissioning</td></tr>
-          <tr><td>Solar PV</td><td style="text-align:right">70</td><td>MBIE / international benchmarks; 2030 commissioning</td></tr>
-          <tr><td>Gas CCGT</td><td style="text-align:right">load-factor dependent</td><td>See formula below; capped at $300/MWh</td></tr>
-          <tr><td>Geothermal</td><td style="text-align:right">80</td><td>Existing and new-build geothermal estimate</td></tr>
-          <tr><td>Large Hydro</td><td style="text-align:right">50</td><td>Existing fleet estimate (largely amortised)</td></tr>
-          <tr><td>Battery storage</td><td style="text-align:right">100</td><td>Approximate BESS capital + O&amp;M, per MWh dispatched</td></tr>
+          <tr><td>Wind (onshore)</td><td style="text-align:right">170</td><td>UK DESNZ £80/MWh converted to NZD; consistent with MBIE upper range</td></tr>
+          <tr><td>Solar PV (utility)</td><td style="text-align:right">125</td><td>UK DESNZ £60/MWh converted to NZD; MBIE range 70–128 at conservative CF</td></tr>
+          <tr><td>Geothermal</td><td style="text-align:right">85</td><td>MBIE median 84 NZD/MWh; NZ-specific resource</td></tr>
+          <tr><td>Large hydro</td><td style="text-align:right">45</td><td>MBIE pondage median 45 NZD/MWh; existing fleet largely amortised</td></tr>
+          <tr><td>Battery storage (BESS)</td><td style="text-align:right">190</td><td>UK DESNZ £90/MWh converted to NZD; per MWh dispatched</td></tr>
+          <tr><td>Wood / biomass</td><td style="text-align:right">120</td><td>NZ-specific estimate; waste wood at existing mills (Kinleith, Norske Skog)</td></tr>
+          <tr><td>Coal</td><td style="text-align:right">130</td><td>MBIE median inflated ~15% for current costs</td></tr>
+          <tr><td>Diesel (reciprocating)</td><td style="text-align:right">475</td><td>MBIE median 474 NZD/MWh</td></tr>
+          <tr><td>Gas CCGT</td><td style="text-align:right">load-factor dependent</td><td>See formula below; capped at $400/MWh</td></tr>
         </tbody>
       </table>
-      <p><strong>Gas LCOE is load-factor dependent.</strong> A gas plant's fixed capital costs are spread over however many hours it runs — a plant running 5% of the time costs far more per MWh than one running at 90%. The formula is calibrated from international CCGT benchmarks for 2030 commissioning:</p>
-      <p style="font-family:monospace; background:var(--bg); padding:10px 14px; border-radius:6px; font-size:13px; border:1px solid var(--border);">LCOE<sub>gas</sub> = 18 / LF + 120 &nbsp;&nbsp;($/MWh, LF = load factor 0–1, capped at $300)</p>
-      <p>The variable component covers fuel, carbon costs and variable O&amp;M. The cap reflects that by 2030, battery storage and fuel flexibility will prevent purely theoretical scarcity pricing for rarely-used gas peakers.</p>
+      <p><strong>Gas LCOE is load-factor dependent.</strong> A gas plant's fixed capital costs are spread over however many hours it runs — a plant running at 10% of capacity costs far more per MWh than one running at 80%. The formula is calibrated from MBIE's CCGT and gas peaker data points, inflated ~25% for current NZ gas market conditions (declining Pohokura field, tighter supply):</p>
+      <p style="font-family:monospace; background:var(--bg); padding:10px 14px; border-radius:6px; font-size:13px; border:1px solid var(--border);">LCOE<sub>gas</sub> = 31 / LF + 62 &nbsp;&nbsp;(NZD/MWh, LF = load factor 0–1, capped at $400)</p>
+      <p>At 80% load factor this gives ~$100/MWh; at 20% (peaking) ~$217/MWh. The variable component covers NZ gas fuel costs, NZ ETS carbon costs, and variable O&amp;M. The cap reflects capacity market and storage effects limiting extreme scarcity pricing.</p>
       <p><strong>Curtailment cost.</strong> Under the Blueprint, some wind and solar generation is curtailed when output exceeds both demand and available storage capacity. Those turbines and panels still have to be built and financed, so the full generation cost is included even for curtailed MWh — spread across electricity actually delivered to consumers:</p>
       <p style="font-family:monospace; background:var(--bg); padding:10px 14px; border-radius:6px; font-size:13px; border:1px solid var(--border);">System LCOE = Σ(LCOE<sub>i</sub> × GWh<sub>generated,i</sub>) ÷ Σ(GWh<sub>delivered,i</sub>)</p>
       <p>The Blueprint simulation gives direct delivery figures for wind and solar. These are scaled up to total generated using the curtailment model (dividing by the direct-delivery fraction), so the cost numerator captures all generation including the curtailed portion.</p>

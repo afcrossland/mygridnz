@@ -214,8 +214,8 @@
         <div class="sc-desc">NZ high-renewables future: triple wind, large solar, retire coal. Batteries handle short-term storage gaps.</div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-domsolar" onclick="preloadDomSolar();setActiveScenario('sc-domsolar','#d97706')">
-      <div class="sc-stripe" style="background:#d97706;"></div>
+    <div class="scenario-card" id="sc-domsolar" onclick="preloadDomSolar();setActiveScenario('sc-domsolar','#f97316')">
+      <div class="sc-stripe" style="background:#f97316;"></div>
       <div class="sc-body">
         <div class="sc-title">Residential Solar Revolution</div>
         <div class="sc-desc">60% of homes with solar, 80% adding a home battery. Today's utility-scale generation unchanged.</div>
@@ -661,7 +661,7 @@
       </div>
 
       <!-- STEP 3: DOMESTIC -->
-      <div style="border-left:3px solid #84cc16;padding:14px 20px;background:var(--surface);border-radius:0 8px 8px 0;margin-bottom:20px;">
+      <div style="border-left:3px solid #f97316;padding:14px 20px;background:var(--surface);border-radius:0 8px 8px 0;margin-bottom:20px;">
         <h3 style="font-size:1rem;font-weight:700;margin:0 0 8px;color:var(--text);">Step 3 — Model residential solar and battery</h3>
         <p style="margin:0 0 10px;font-size:14px;color:var(--muted);">
           Behind-the-meter (residential) solar and battery are modelled separately from grid-scale assets. For each half-hour:
@@ -677,7 +677,7 @@
       </div>
 
       <!-- STEP 4: DISPATCH -->
-      <div style="border-left:3px solid #d97706;padding:14px 20px;background:var(--surface);border-radius:0 8px 8px 0;margin-bottom:20px;">
+      <div style="border-left:3px solid #facc15;padding:14px 20px;background:var(--surface);border-radius:0 8px 8px 0;margin-bottom:20px;">
         <h3 style="font-size:1rem;font-weight:700;margin:0 0 8px;color:var(--text);">Step 4 — Dispatch each half-hour (merit order)</h3>
         <p style="margin:0 0 10px;font-size:14px;color:var(--muted);">
           North Island and South Island are dispatched independently, then linked via the Cook Strait HVDC cable. Within each island, generation is allocated in strict merit order:
@@ -797,8 +797,8 @@ const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','N
 
 // Brand-aligned palette
 const C = {
-  Geo:     '#dc2626', Hydro:   '#2563eb', Wind:    '#0d9e6e', Solar:   '#d97706',
-  Storage: '#f97316', DomSolar:'#84cc16', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
+  Geo:     '#dc2626', Hydro:   '#2563eb', Wind:    '#0d9e6e', Solar:   '#facc15',
+  Storage: '#ea580c', DomSolar:'#f97316', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
   Diesel:  '#94a3b8', Other:   '#cbd5e1', Demand:  '#1a4d7a',
   HvdcNiSi:'#7c3aed', HvdcSiNi:'#0ea5e9',
   Charge:  '#fb923c', Curtail: '#34d399',
@@ -809,7 +809,7 @@ const CF = { hydro:24, geo:46, wind:12, solar:45, wood:230, gas:490, coal:820, d
 let gYears = [];
 
 // LCOE (NZD/MWh) — adapted from MyGridNZ Blueprint methodology
-const LCOE = { Geo:85, Hydro:40, Wind:95, Solar:90, Storage:160, Wood:150, Coal:260, Diesel:350 };
+const LCOE = { Geo:85, Hydro:45, Wind:170, Solar:125, Storage:190, Wood:120, Coal:130, Diesel:475 };
 // Marginal cost (NZD/MWh) — short-run variable cost; last dispatched sets wholesale price
 const MARG = { Solar:0, Wind:5, Hydro:5, Storage:20, Geo:25, Wood:100, Coal:90, Gas:140, Diesel:220 };
 // Inertia constants H (seconds) for synchronous generators; wind/solar/battery = 0 (inverter-based)
@@ -1372,7 +1372,7 @@ function calcSystemLCOE(mo, p) {
   const gasGWh = sum(mo, 'niGas');
   const gasCapGW = (p.niGas || 1) / 1000;
   const gaslf  = gasGWh > 0 ? Math.min(1, gasGWh / (gasCapGW * 8760)) : 0.01;
-  const gasRate = gasGWh > 0 ? Math.min(400, Math.round(20 / Math.max(0.01, gaslf) + 110)) : 200;
+  const gasRate = gasGWh > 0 ? Math.min(400, Math.round(31 / Math.max(0.01, gaslf) + 62)) : 160;
 
   const fuels = [
     { gwh: sum(mo,'niGeo')   + sum(mo,'siGeo'),   rate: LCOE.Geo },
@@ -1889,7 +1889,7 @@ function renderTsCharts() {
     const DOM_SOL  = '#f59e0b';  // amber/yellow
     const DOM_BATT = '#16a34a';  // green
     const DOM_GRID = '#94a3b8';  // slate grey
-    const DOM_CHG  = '#84cc16';  // lime (solar going to battery)
+    const DOM_CHG  = '#f97316';  // orange (solar going to battery)
     const mkDomDs = (selfKey, chgKey, battKey, loadKey) => {
       const gridImport = slice.map(p => {
         const served = p[selfKey] + p[battKey];
