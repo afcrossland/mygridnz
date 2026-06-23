@@ -164,8 +164,8 @@
     /* ── Print / PDF report ──────────────────────── */
     @media screen { #rpt { display:none; } }
     @media print {
-      #site-header, .page-wrap { display:none !important; }
-      #rpt { display:block !important; }
+      #site-header, #site-footer, .page-wrap { display:none !important; }
+      #rpt { display:block !important; position:static !important; left:auto !important; }
       @page { size:A4 portrait; margin:0; }
       .rpt-pg { page-break-after:always; width:210mm; min-height:297mm;
         box-sizing:border-box; position:relative; overflow:hidden; font-family:system-ui,Helvetica,sans-serif; }
@@ -2073,6 +2073,9 @@ async function generateReport() {
     rpt.innerHTML = '';
     rptCharts.forEach(c => c.destroy()); rptCharts = [];
 
+    // Position off-screen but visible so Chart.js canvases get real dimensions
+    rpt.style.cssText = 'display:block;position:fixed;left:-9999px;top:0;width:210mm;pointer-events:none;';
+
     const scenName = getScenarioName();
     const scenDesc = getScenarioDesc();
     const dateStr  = new Date().toLocaleDateString('en-NZ', { day:'numeric', month:'long', year:'numeric' });
@@ -2404,13 +2407,18 @@ async function generateReport() {
     await new Promise(r => setTimeout(r, 600));
     window.addEventListener('afterprint', () => {
       rptCharts.forEach(c => c.destroy()); rptCharts = [];
-      document.getElementById('rpt').innerHTML = '';
+      const r = document.getElementById('rpt');
+      r.innerHTML = '';
+      r.style.cssText = '';
     }, { once: true });
     window.print();
 
   } catch(e) {
     console.error('Report error:', e);
     alert('Could not build report: ' + e.message);
+    const r = document.getElementById('rpt');
+    r.innerHTML = ''; r.style.cssText = '';
+    rptCharts.forEach(c => c.destroy()); rptCharts = [];
   } finally {
     btn.disabled = false;
     btn.textContent = '⬇ PDF Report';
