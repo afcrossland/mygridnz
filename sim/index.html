@@ -384,7 +384,7 @@ const C = {
   Geo:     '#dc2626', Hydro:   '#2563eb', Wind:    '#0d9e6e', Solar:   '#d97706',
   Storage: '#7c3aed', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
   Diesel:  '#94a3b8', Other:   '#cbd5e1', Demand:  '#1a4d7a',
-  HvdcNiSi:'#0369a1', HvdcSiNi:'#c2410c',
+  HvdcNiSi:'#06b6d4', HvdcSiNi:'#f43f5e',
   Charge:  '#a78bfa', Curtail: '#34d399',
 };
 
@@ -947,7 +947,7 @@ function killCharts() { Object.values(charts).forEach(c => c?.destroy()); charts
 function mkStacked(id, datasets, maxY) {
   charts[id] = new Chart(document.getElementById(id), {
     type:'bar', data:{ labels:MONTHS, datasets },
-    options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } } },
+    options:{ responsive:true, plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } } },
       scales:{ x:{ stacked:true }, y:{ stacked:true, title:{ display:true, text:'GWh' },
         ...(maxY != null ? { min:0, max:maxY } : {}) } } },
   });
@@ -981,7 +981,7 @@ function renderAnnualCharts(mo) {
         borderColor:C.Hydro, backgroundColor:C.Hydro+'33', fill:true, tension:.3, pointRadius:2 },
       { label:'SI (GWh)', data:mo.map(m=>m.cnt?+(m.siRes/m.cnt).toFixed(1):0),
         borderColor:C.Wind,  backgroundColor:C.Wind+'33',  fill:true, tension:.3, pointRadius:2 },
-    ]}, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } } },
+    ]}, options:{ responsive:true, plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } } },
       scales:{ y:{ title:{ display:true, text:'GWh' } } } },
   });
   charts['chart-unserved'] = new Chart(document.getElementById('chart-unserved'), {
@@ -990,7 +990,7 @@ function renderAnnualCharts(mo) {
       { label:'SI unserved',  data:mo.map(m=>+m.siUnserved.toFixed(2)), backgroundColor:'#f87171' },
       { label:'NI curtailed', data:mo.map(m=>+m.niCurtail.toFixed(1)),  backgroundColor:C.Curtail+'88' },
       { label:'SI curtailed', data:mo.map(m=>+m.siCurtail.toFixed(1)),  backgroundColor:C.Curtail+'44' },
-    ]}, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } } },
+    ]}, options:{ responsive:true, plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } } },
       scales:{ y:{ title:{ display:true, text:'GWh' } } } },
   });
 }
@@ -1076,7 +1076,7 @@ function mkTsChart(id, datasets, xMaxTicks, maxY) {
   charts[id] = new Chart(document.getElementById(id), {
     data:{ labels: tsXLabels(), datasets },
     options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10},
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10},
           filter: item => item.text !== '' } },
         tooltip:{ mode:'index', intersect:false, callbacks:{
           label: ctx => ctx.dataset.label ? `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` : null
@@ -1105,7 +1105,7 @@ function renderTsCharts() {
     mkTsDs('Wind',        'niWind',   C.Wind,      true),
     mkTsDs('Hydro',       'niHydro',  C.Hydro,     true),
     mkTsDs('Storage',     'niStorage',C.Storage,   true),
-    mkTsDs('HVDC import', 'hvdcSiNi', C.HvdcSiNi,  true),
+    mkTsDs('HVDC transfers','hvdcSiNi', C.HvdcSiNi,  true),
     mkTsDs('Wood',        'niWood',   C.Wood,      true),
     mkTsDs('Gas',         'niGas',    C.Gas,       true),
     mkTsDs('Coal',        'niCoal',   C.Coal,      true),
@@ -1120,7 +1120,7 @@ function renderTsCharts() {
     mkTsDs('Wind',        'siWind',   C.Wind,      true),
     mkTsDs('Hydro',       'siHydro',  C.Hydro,     true),
     mkTsDs('Storage',     'siStorage',C.Storage,   true),
-    mkTsDs('HVDC import', 'hvdcNiSi', C.HvdcNiSi,  true),
+    mkTsDs('HVDC transfers','hvdcNiSi', C.HvdcNiSi,  true),
     mkTsDs('To storage',  'siCharge', C.Charge,    true),
     mkDemand('siDemand'),
   ]), xt, islandMax);
@@ -1159,7 +1159,7 @@ function renderTsCharts() {
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ])},
     options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ stacked:true, min:0, title:{ display:true, text:'MW' } } } },
@@ -1181,7 +1181,7 @@ function renderTsCharts() {
       mkCurtDs('Wind',   'niWindCurtail',  C.Wind),
     ])},
     options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false, callbacks:{
           label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
@@ -1195,7 +1195,7 @@ function renderTsCharts() {
       mkCurtDs('Wind',   'siWindCurtail',  C.Wind),
     ])},
     options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false, callbacks:{
           label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
@@ -1213,7 +1213,7 @@ function renderTsCharts() {
         borderColor:C.HvdcSiNi, backgroundColor:C.HvdcSiNi+'33', fill:true, borderWidth:1.5, pointRadius:0, tension:.1 },
     ]},
     options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ title:{ display:true, text:'MW' } } } },
@@ -1239,7 +1239,7 @@ function renderTsCharts() {
           fill:false, borderWidth:1.8, pointRadius:0, tension:.0 },
       ]},
       options:{ responsive:true, animation:false,
-        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+        plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
           tooltip:{ mode:'index', intersect:false,
             callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
         scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
@@ -1256,15 +1256,15 @@ function renderTsCharts() {
     data:{ labels:tsXLabels(), datasets:[
       { label:'NI inertia',
         data: slice.map(p=>+(p.niInertiaMWs??0)),
-        borderColor:C.Hydro, backgroundColor:C.Hydro+'30',
-        fill:true, borderWidth:1.5, pointRadius:0, tension:.2 },
+        borderColor:C.Hydro,
+        fill:false, borderWidth:2, pointRadius:0, tension:.2 },
       { label:'SI inertia',
         data: slice.map(p=>+(p.siInertiaMWs??0)),
         borderColor:'#7dd3fc', borderDash:[4,3],
-        fill:false, borderWidth:1.5, pointRadius:0, tension:.2 },
+        fill:false, borderWidth:2, pointRadius:0, tension:.2 },
     ]},
     options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false,
           callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW·s` }}},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
@@ -1290,7 +1290,7 @@ function renderTsCharts() {
           yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
       ]},
       options:{ responsive:true, animation:false,
-        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+        plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
           tooltip:{ mode:'index', intersect:false }},
         scales:{
           x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
