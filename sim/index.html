@@ -89,7 +89,7 @@
     .nat-mix-layout { display:flex; gap:32px; align-items:start; margin-bottom:28px; }
     .nat-pie-section { display:grid; grid-template-columns:210px 1fr; gap:20px; align-items:start; flex:1; min-width:0; }
     .nat-pie-wrap { width:210px; }
-    .nat-fuel-row  { display:grid; grid-template-columns:10px auto auto 1fr 40px; align-items:center; gap:10px; font-size:13px; margin-bottom:9px; }
+    .nat-fuel-row  { display:grid; grid-template-columns:12px 140px 88px 1fr 42px; align-items:center; gap:8px; font-size:13px; margin-bottom:9px; }
     .nat-fuel-gwh  { font-size:12px; color:var(--muted); text-align:left; white-space:nowrap; }
     .nat-fuel-name { font-weight:500; color:var(--text); text-align:left; }
     .nat-fuel-pct  { font-size:12px; font-weight:600; color:var(--muted); text-align:right; }
@@ -1551,8 +1551,8 @@ function renderTables(mo, pk) {
     const barW = totalGenGWh > 0 ? f.gwh / totalGenGWh * 100 : 0;
     return `<div class="nat-fuel-row">
       <span class="fuel-dot" style="background:${f.color}"></span>
-      <span class="nat-fuel-gwh">${Math.round(f.gwh).toLocaleString()} GWh</span>
       <span class="nat-fuel-name">${f.name}</span>
+      <span class="nat-fuel-gwh">${Math.round(f.gwh).toLocaleString()} GWh</span>
       <div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${barW}%;background:${f.color}"></div></div>
       <span class="nat-fuel-pct">${pct}%</span>
     </div>`;
@@ -2627,14 +2627,12 @@ async function generateReport() {
       body.appendChild(natWrap);
       mkChart(natWrap, 'line', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 200);
 
-      const isGrid = document.createElement('div');
-      isGrid.className = 'rpt-grid2'; isGrid.style.marginTop = '8px';
-      body.appendChild(isGrid);
       for (const [islandTitle, island] of [['North Island','NI'],['South Island','SI']]) {
-        const col = document.createElement('div');
-        col.innerHTML = `<div class="rpt-label">${islandTitle}</div>`;
-        isGrid.appendChild(col);
-        mkChart(col, 'line', { labels, datasets: dispDatasets(slice, island) }, tsOpts(4500), 200);
+        const wrap = document.createElement('div');
+        wrap.style.marginTop = '8px';
+        wrap.innerHTML = `<div class="rpt-label">${islandTitle}</div>`;
+        body.appendChild(wrap);
+        mkChart(wrap, 'line', { labels, datasets: dispDatasets(slice, island) }, tsOpts(4500), 200);
       }
 
       // Operability on its own page
