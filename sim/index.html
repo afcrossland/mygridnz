@@ -115,7 +115,8 @@
     #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker,
     #curtailment-section > summary::-webkit-details-marker, #curtailment-section > summary::marker,
     #island-detail-section > summary::-webkit-details-marker, #island-detail-section > summary::marker,
-    #island-dispatch-section > summary::-webkit-details-marker, #island-dispatch-section > summary::marker { display:none; }
+    #island-dispatch-section > summary::-webkit-details-marker, #island-dispatch-section > summary::marker,
+    #detailed-settings > summary::-webkit-details-marker, #detailed-settings > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
     .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
     .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
@@ -211,7 +212,10 @@
   </div>
 
   <!-- Controls -->
-  <h3 style="font-size:1rem;font-weight:600;margin:0 0 12px;color:var(--text);">Detailed Settings</h3>
+  <details id="detailed-settings">
+  <summary style="cursor:pointer;list-style:none;font-size:1rem;font-weight:600;color:var(--text);margin:0 0 12px;display:flex;align-items:center;gap:8px;">
+    <span id="detailed-settings-arrow" style="font-size:.65rem;color:var(--muted);">▶</span>Detailed Settings
+  </summary>
   <div class="ctrl-grid">
 
     <details class="ctrl-panel" style="grid-column:span 2">
@@ -351,6 +355,7 @@
     </details>
 
   </div><!-- /ctrl-grid -->
+  </details><!-- /detailed-settings -->
 
   <div class="run-bar">
     <button class="btn-run" id="btn-run" onclick="runSim()" disabled>▶ Run Simulation</button>
@@ -553,6 +558,9 @@
     <script>
       document.getElementById('operability-section').addEventListener('toggle', function() {
         document.getElementById('operability-arrow').textContent = this.open ? '▼' : '▶';
+      });
+      document.getElementById('detailed-settings').addEventListener('toggle', function() {
+        document.getElementById('detailed-settings-arrow').textContent = this.open ? '▼' : '▶';
       });
     </script>
 
@@ -2037,7 +2045,7 @@ async function generateReport() {
   try {
     const { jsPDF } = window.jspdf;
 
-    // ── Save & open sections ──────────────────────────────
+    // ── Save & open sections so canvases get real dimensions ─
     const savedOffset = tsOffset, savedDays = tsWindowDays;
     const islandSec = document.getElementById('island-dispatch-section');
     const battSec   = document.getElementById('battery-section');
@@ -2047,13 +2055,21 @@ async function generateReport() {
     if (battSec)   battSec.open   = true;
     if (opSec)     opSec.open     = true;
 
+    // Wait for two rAF cycles so the browser lays out the newly-opened sections
+    // before Chart.js tries to read canvas dimensions.
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    // Safe image capture — skip blank/corrupt canvases (< 2 KB base64 ≈ empty canvas)
+    const validImg = img => (img && img.length > 2000) ? img : null;
+
     // ── Capture charts at a given day offset ─────────────
     const captureAt = async (dayOff) => {
       tsWindowDays = 7;
       tsOffset = Math.min(dayOff * 48, Math.max(0, tsData.length - 7 * 48));
       renderTsCharts();
-      await new Promise(r => setTimeout(r, 280));
-      const g = k => charts[k]?.toBase64Image('image/png', 1.0) || null;
+      // Wait for Chart.js animation to complete
+      await new Promise(r => setTimeout(r, 450));
+      const g = k => validImg(charts[k]?.toBase64Image('image/png', 1.0));
       return { nat: g('ts-nat'), ni: g('ts-ni'), si: g('ts-si'),
                hvdc: g('ts-hvdc'), resNI: g('ts-reserves-ni'), resSI: g('ts-reserves-si'),
                inertia: g('ts-inertia'), battNI: g('ts-batt-ni'), battSI: g('ts-batt-si') };
@@ -2062,9 +2078,9 @@ async function generateReport() {
     const summer = await captureAt(7);    // ~Jan 8 — NZ summer
     const winter = await captureAt(181);  // ~Jul 1 — NZ winter
 
-    const pieImg   = charts.natPie?.toBase64Image('image/png', 1.0) || null;
-    const niMixImg = charts['chart-ni']?.toBase64Image('image/png', 1.0) || null;
-    const siMixImg = charts['chart-si']?.toBase64Image('image/png', 1.0) || null;
+    const pieImg   = validImg(charts.natPie?.toBase64Image('image/png', 1.0));
+    const niMixImg = validImg(charts['chart-ni']?.toBase64Image('image/png', 1.0));
+    const siMixImg = validImg(charts['chart-si']?.toBase64Image('image/png', 1.0));
 
     // ── Restore ───────────────────────────────────────────
     tsWindowDays = savedDays; tsOffset = savedOffset; renderTsCharts();
@@ -2121,10 +2137,22 @@ async function generateReport() {
     }
 
     function addChart(img, x, y, w, h) {
-      if (!img) return;
-      setDraw([215,215,215]); doc.setLineWidth(0.2);
-      doc.roundedRect(x, y, w, h, 1.5, 1.5, 'S');
-      doc.addImage(img, 'PNG', x + 0.5, y + 0.5, w - 1, h - 1);
+      if (!img || img.length < 2000) {
+        // Placeholder box when chart unavailable
+        setFill([245,247,250]); setDraw([210,215,220]); doc.setLineWidth(0.2);
+        doc.roundedRect(x, y, w, h, 1.5, 1.5, 'FD');
+        doc.setFont('helvetica','normal'); doc.setFontSize(7); setTxt(MUTED);
+        doc.text('Chart not available', x + w/2, y + h/2, { align:'center' });
+        return;
+      }
+      try {
+        setDraw([215,215,215]); doc.setLineWidth(0.2);
+        doc.roundedRect(x, y, w, h, 1.5, 1.5, 'S');
+        doc.addImage(img, 'PNG', x + 0.5, y + 0.5, w - 1, h - 1);
+      } catch(e) {
+        // Silently skip corrupted image
+        setFill([245,247,250]); doc.rect(x, y, w, h, 'F');
+      }
     }
 
     function metricBox(x, y, w, h, label, value, unit, accentRGB) {
