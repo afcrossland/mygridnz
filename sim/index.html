@@ -80,13 +80,20 @@
     .row-total td { font-weight:600; color:var(--text)!important; border-top:2px solid var(--border); }
 
     /* ── Charts ──────────────────────────────── */
-    .chart-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
     .chart-box { background:var(--surface); border:1px solid var(--border);
       border-radius:8px; padding:14px; }
     .chart-box h3 { font-size:11px; font-weight:600; color:var(--text); margin-bottom:8px; }
 
+    /* ── Chart sections ──────────────────────── */
+    .ts-section { margin-bottom:32px; }
+    .ts-section-hd { margin-bottom:12px; }
+    .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
+    .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
+    .ts-charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .ts-full { grid-column:span 2; }
+
     /* ── Timeseries ──────────────────────────── */
-    .ts-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+    .ts-header { display:flex; align-items:center; gap:10px; margin:28px 0 20px; flex-wrap:wrap; }
     .ts-header h2 { font-size:1rem; font-weight:600; margin:0; }
     .ts-view { display:flex; gap:4px; }
     .ts-nav { display:flex; align-items:center; gap:6px; margin-left:auto; }
@@ -96,7 +103,6 @@
     .btn-nav--on { background:var(--brand); color:#fff; border-color:var(--brand); }
     .btn-nav--on:hover { background:var(--brand-dark); }
     #ts-label { font-size:12px; color:var(--muted); min-width:180px; text-align:center; }
-    .ts-charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
 
     /* ── Demand placeholder ──────────────────── */
     .placeholder-box { border:2px dashed var(--border); border-radius:10px;
@@ -107,7 +113,8 @@
       border-radius:4px; padding:2px 8px; margin-left:8px; vertical-align:middle; }
 
     @media(max-width:900px){
-      .ctrl-grid,.island-grid,.chart-row,.ts-charts{grid-template-columns:1fr;}
+      .ctrl-grid,.island-grid,.ts-charts{grid-template-columns:1fr;}
+      .ts-full{grid-column:span 1;}
       .stat-row{grid-template-columns:repeat(4,1fr);}
       .slider-row{grid-template-columns:1fr;}
     }
@@ -245,6 +252,7 @@
 
     <div class="stat-row" id="stat-row"></div>
 
+    <!-- ── Annual tables ── -->
     <div class="island-grid">
       <div>
         <h2 style="font-size:.95rem;font-weight:600;margin-bottom:8px;">North Island — annual generation</h2>
@@ -256,16 +264,31 @@
       </div>
     </div>
 
-    <div class="chart-row">
-      <div class="chart-box"><h3>NI — monthly generation mix (GWh)</h3><canvas id="chart-ni"></canvas></div>
-      <div class="chart-box"><h3>SI — monthly generation mix (GWh)</h3><canvas id="chart-si"></canvas></div>
-    </div>
-    <div class="chart-row">
-      <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
-      <div class="chart-box"><h3>Monthly unserved energy &amp; curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
+    <!-- ── Annual generation mix ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Annual generation mix</h3>
+        <p>Monthly GWh by fuel type for each island over the simulated year.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>North Island (GWh)</h3><canvas id="chart-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island (GWh)</h3><canvas id="chart-si"></canvas></div>
+      </div>
     </div>
 
-    <!-- Timeseries -->
+    <!-- ── Reservoirs and system balance ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Reservoirs and system balance</h3>
+        <p>Monthly average hydro reservoir levels, unserved energy, and total curtailment by island.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
+        <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Timeseries nav ── -->
     <div class="ts-header">
       <h2>Timeseries</h2>
       <div class="ts-view">
@@ -278,21 +301,64 @@
         <button class="btn-nav" onclick="shiftTs(1)">Next ▶</button>
       </div>
     </div>
-    <div class="ts-charts">
-      <div class="chart-box"><h3>North Island — generation vs demand</h3><canvas id="ts-ni"></canvas></div>
-      <div class="chart-box"><h3>South Island — generation vs demand</h3><canvas id="ts-si"></canvas></div>
+
+    <!-- ── Generation dispatch ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Generation dispatch</h3>
+        <p>Half-hourly generation by fuel type. The dashed line is demand; the green band above it is generation curtailed in that period.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>North Island</h3><canvas id="ts-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island</h3><canvas id="ts-si"></canvas></div>
+        <div class="chart-box ts-full"><h3>National</h3><canvas id="ts-nat"></canvas></div>
+      </div>
     </div>
-    <div class="chart-row">
-      <div class="chart-box"><h3>National — generation vs demand</h3><canvas id="ts-nat"></canvas></div>
-      <div class="chart-box"><h3>HVDC flows (MW)</h3><canvas id="ts-hvdc"></canvas></div>
+
+    <!-- ── Curtailment ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Curtailment by generation type</h3>
+        <p>Surplus generation that cannot be used locally, exported via HVDC, or stored. Attributed proportionally to each must-run source — wind and solar tend to dominate in high-VRE scenarios.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>North Island (MW)</h3><canvas id="ts-curtail-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island (MW)</h3><canvas id="ts-curtail-si"></canvas></div>
+      </div>
     </div>
-    <div class="chart-row">
-      <div class="chart-box"><h3>FIR and SIR available vs contingency (MW)</h3><canvas id="ts-reserves"></canvas></div>
-      <div class="chart-box"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
+
+    <!-- ── HVDC ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>HVDC transfer</h3>
+        <p>Power flows between islands via the Cook Strait HVDC link. NI→SI when the North Island exports surplus south; SI→NI when South Island hydro powers the north.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box ts-full"><h3>HVDC flows (MW)</h3><canvas id="ts-hvdc"></canvas></div>
+      </div>
     </div>
-    <div class="chart-row">
-      <div class="chart-box"><h3>Battery — SoC &amp; charge / discharge rate</h3><canvas id="ts-batt"></canvas></div>
-      <div class="chart-box"></div>
+
+    <!-- ── Frequency reserves ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Frequency reserves and system inertia</h3>
+        <p>Estimated Fast Instantaneous Reserve (FIR, 0–6 s) and Sustained Instantaneous Reserve (SIR, 6–60 s) versus the largest single contingency. System inertia comes from synchronous generators only — wind, solar and batteries contribute none.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves"></canvas></div>
+        <div class="chart-box"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Battery ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Battery storage</h3>
+        <p>State of charge (%) and charge/discharge rate (MW). The 20% reserve floor is retained for frequency response.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box ts-full"><h3>SoC % and charge / discharge rate</h3><canvas id="ts-batt"></canvas></div>
+      </div>
     </div>
 
     <!-- Demand simulation placeholder -->
@@ -622,6 +688,23 @@ function simulate(data, caps, p) {
       siGeo, siHydro: siHydroTotal, siWind, siSolar, siStorage: siDischarge, siCharge,
       hvdcNiSi, hvdcSiNi,
       niCurtail: niSurp, siCurtail: siSurp,
+      // Curtailment attributed proportionally to each must-run source
+      ...(() => {
+        const niBase = niGeo + niWind + niSolar + niRoRmw;
+        const siBase = siGeo + siWind + siSolar + siRoRmw;
+        const niF = niBase > 0 && niSurp > 0 ? Math.min(niSurp / niBase, 1) : 0;
+        const siF = siBase > 0 && siSurp > 0 ? Math.min(siSurp / siBase, 1) : 0;
+        return {
+          niGeoCurtail:   +(niGeo    * niF).toFixed(1),
+          niWindCurtail:  +(niWind   * niF).toFixed(1),
+          niSolarCurtail: +(niSolar  * niF).toFixed(1),
+          niHydroCurtail: +(niRoRmw  * niF).toFixed(1),
+          siGeoCurtail:   +(siGeo    * siF).toFixed(1),
+          siWindCurtail:  +(siWind   * siF).toFixed(1),
+          siSolarCurtail: +(siSolar  * siF).toFixed(1),
+          siHydroCurtail: +(siRoRmw  * siF).toFixed(1),
+        };
+      })(),
       niUnserved: niDef, siUnserved: siDef,
       niSoC, siSoC, niResMWh: niRes, siResMWh: siRes,
       niSoCpct:   p.battCap    > 0 ? +(niSoC / p.battCap    * 100).toFixed(1) : 0,
@@ -964,6 +1047,11 @@ function mkDemand(key) {
   };
 }
 
+// Drop stacked layers where nothing was dispatched in this slice
+function activeDs(datasets) {
+  return datasets.filter(ds => ds.fill === false || ds.data.some(v => v > 0));
+}
+
 function mkTsChart(id, datasets, xMaxTicks, maxY) {
   charts[id]?.destroy();
   charts[id] = new Chart(document.getElementById(id), {
@@ -994,7 +1082,7 @@ function renderTsCharts() {
   const islandMax = Math.ceil(Math.max(niPeak, siPeak) / 500) * 500;
 
   // NI — solar before wind; curtailment unlabelled band above demand
-  mkTsChart('ts-ni', [
+  mkTsChart('ts-ni', activeDs([
     mkTsDs('Geothermal', 'niGeo',    C.Geo,      true),
     mkTsDs('Hydro',      'niHydro',  C.Hydro,    true),
     mkTsDs('Solar',      'niSolar',  C.Solar,    true),
@@ -1007,10 +1095,10 @@ function renderTsCharts() {
     mkTsDs('To storage', 'niCharge', C.Charge,   true),
     mkTsDs('',           'niCurtail',C.Curtail,  true),
     mkDemand('niDemand'),
-  ], xt, islandMax);
+  ]), xt, islandMax);
 
   // SI
-  mkTsChart('ts-si', [
+  mkTsChart('ts-si', activeDs([
     mkTsDs('Geothermal', 'siGeo',    C.Geo,      true),
     mkTsDs('Hydro',      'siHydro',  C.Hydro,    true),
     mkTsDs('Solar',      'siSolar',  C.Solar,    true),
@@ -1020,7 +1108,7 @@ function renderTsCharts() {
     mkTsDs('To storage', 'siCharge', C.Charge,   true),
     mkTsDs('',           'siCurtail',C.Curtail,  true),
     mkDemand('siDemand'),
-  ], xt, islandMax);
+  ]), xt, islandMax);
 
   // National combined
   const nat = slice.map(p => ({
@@ -1042,7 +1130,7 @@ function renderTsCharts() {
   }
   charts['ts-nat']?.destroy();
   charts['ts-nat'] = new Chart(document.getElementById('ts-nat'), {
-    data:{ labels:tsXLabels(), datasets:[
+    data:{ labels:tsXLabels(), datasets: activeDs([
       nd('Geothermal','natGeo',     C.Geo,      true),
       nd('Hydro',     'natHydro',   C.Hydro,    true),
       nd('Solar',     'natSolar',   C.Solar,    true),
@@ -1055,12 +1143,51 @@ function renderTsCharts() {
       nd('',          'natCurtail', C.Curtail,  true),
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
-    ]},
+    ])},
     options:{ responsive:true, animation:false,
       plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ stacked:true, title:{ display:true, text:'MW' } } } },
+  });
+
+  // Curtailment by generation type — NI and SI
+  function mkCurtDs(label, key, colour) {
+    return { label, type:'line',
+      data: slice.map(p => +(p[key] ?? 0).toFixed(1)),
+      borderColor:colour, backgroundColor:colour+'40',
+      fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'c' };
+  }
+  ['ts-curtail-ni','ts-curtail-si'].forEach(id => charts[id]?.destroy());
+  charts['ts-curtail-ni'] = new Chart(document.getElementById('ts-curtail-ni'), {
+    type:'line',
+    data:{ labels:tsXLabels(), datasets: activeDs([
+      mkCurtDs('Geothermal', 'niGeoCurtail',   C.Geo),
+      mkCurtDs('Hydro',      'niHydroCurtail', C.Hydro),
+      mkCurtDs('Solar',      'niSolarCurtail', C.Solar),
+      mkCurtDs('Wind',       'niWindCurtail',  C.Wind),
+    ])},
+    options:{ responsive:true, animation:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false, callbacks:{
+          label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
+      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
+  });
+  charts['ts-curtail-si'] = new Chart(document.getElementById('ts-curtail-si'), {
+    type:'line',
+    data:{ labels:tsXLabels(), datasets: activeDs([
+      mkCurtDs('Geothermal', 'siGeoCurtail',   C.Geo),
+      mkCurtDs('Hydro',      'siHydroCurtail', C.Hydro),
+      mkCurtDs('Solar',      'siSolarCurtail', C.Solar),
+      mkCurtDs('Wind',       'siWindCurtail',  C.Wind),
+    ])},
+    options:{ responsive:true, animation:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false, callbacks:{
+          label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
+      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
   });
 
   // HVDC
