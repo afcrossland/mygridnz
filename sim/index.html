@@ -47,13 +47,23 @@
       padding:10px 28px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
     .btn-run:hover { background:var(--brand-dark); }
     .btn-run:disabled { opacity:.5; cursor:default; }
+    .scenario-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }
+    .scenario-card { border:1px solid var(--border); border-radius:8px; overflow:hidden; cursor:pointer; transition:box-shadow .15s,transform .1s; display:flex; flex-direction:column; }
+    .scenario-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.1); transform:translateY(-1px); }
+    .scenario-card.sc-active { outline:2px solid var(--sc-col); outline-offset:1px; }
+    .sc-stripe { height:4px; flex-shrink:0; }
+    .sc-body { padding:12px 14px 14px; flex:1; }
+    .sc-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:5px; }
+    .sc-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+    @media (max-width:900px) { .scenario-grid { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:500px) { .scenario-grid { grid-template-columns:1fr; } }
     .btn-blueprint { background:#0d9e6e; color:#fff; border:none; border-radius:6px;
       padding:10px 20px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
     .btn-blueprint:hover { background:#0a7d57; }
     #sim-status { font-size:13px; color:var(--muted); }
 
     /* ── Before/After stat tiles ─────────────── */
-    .stat-row { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:24px; }
+    .stat-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; margin-bottom:0; }
     .scard { border:1px solid var(--border); border-radius:8px; padding:10px 12px;
       text-align:center; background:var(--surface); }
     .scard-label { font-size:9px; font-weight:700; text-transform:uppercase;
@@ -70,7 +80,7 @@
     /* ── Island tables ───────────────────────── */
     .island-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
     .nat-mix-layout { display:grid; grid-template-columns:280px 1fr; gap:32px; align-items:start; margin-bottom:28px; }
-    .nat-fuel-row { display:grid; grid-template-columns:10px auto 52px 1fr auto; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
+    .nat-fuel-row { display:grid; grid-template-columns:10px auto 48px 1fr; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
     .nat-fuel-name { font-weight:500; color:var(--text); white-space:nowrap; }
     .nat-fuel-pct  { font-size:13px; font-weight:700; color:var(--text); text-align:right; }
     .nat-fuel-gwh  { font-size:12px; color:var(--muted); white-space:nowrap; text-align:right; padding-left:8px; }
@@ -91,7 +101,8 @@
 
     /* ── Chart sections ──────────────────────── */
     .ts-section { margin-bottom:32px; }
-    #operability-section > summary::-webkit-details-marker, #operability-section > summary::marker { display:none; }
+    #operability-section > summary::-webkit-details-marker, #operability-section > summary::marker,
+    #reservoirs-section > summary::-webkit-details-marker, #reservoirs-section > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
     .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
     .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
@@ -142,18 +153,51 @@
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:20px 0 28px;font-size:13px;line-height:1.75;">
     <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;">How to use</p>
     <ol style="margin:0;padding-left:18px;color:var(--text);">
-      <li style="margin-bottom:5px;"><strong>Choose a data year</strong> below — this sets the demand profile and the real weather year (wind speeds, sunshine hours, hydro inflows). A dry year like 2022 is a tough test; a wet year like 2021 is a best case.</li>
-      <li style="margin-bottom:5px;"><strong>Set your scenario</strong> using the sliders — installed capacity for wind, solar, storage and dispatchable generation on each island. The Blueprint button loads a ready-made high-renewables scenario.</li>
+      <li style="margin-bottom:5px;"><strong>Choose a data year</strong> in Simulation Settings — this sets the demand profile and real weather year (wind speeds, sunshine hours, hydro inflows). A dry year like 2022 is a tough test; a wet year like 2021 is a best case.</li>
+      <li style="margin-bottom:5px;"><strong>Choose a scenario</strong> below — pick a ready-made energy mix or fine-tune the sliders in Simulation Settings for a custom scenario.</li>
       <li><strong>Click Run Simulation</strong> — results compare today's grid against your scenario: renewable share, carbon intensity, curtailment, unserved energy, frequency reserves and estimated system cost.</li>
     </ol>
   </div>
 
+  <!-- Preconfigured scenarios -->
+  <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:28px 0 12px;">Load preconfigured energy mix</p>
+  <div class="scenario-grid">
+    <div class="scenario-card" id="sc-blueprint" onclick="preloadBlueprint();setActiveScenario('sc-blueprint','#0d9e6e');runSim()">
+      <div class="sc-stripe" style="background:#0d9e6e;"></div>
+      <div class="sc-body">
+        <div class="sc-title">Blueprint 2030</div>
+        <div class="sc-desc">NZ high-renewables future: triple wind, large solar, retire coal. Batteries handle short-term storage gaps.</div>
+      </div>
+    </div>
+    <div class="scenario-card" id="sc-domsolar" onclick="preloadDomSolar();setActiveScenario('sc-domsolar','#d97706');runSim()">
+      <div class="sc-stripe" style="background:#d97706;"></div>
+      <div class="sc-body">
+        <div class="sc-title">Domestic Solar Revolution</div>
+        <div class="sc-desc">60% of homes with solar, 80% adding a home battery. Today's utility-scale generation unchanged.</div>
+      </div>
+    </div>
+    <div class="scenario-card" id="sc-utilityre" onclick="preloadUtilityVRE();setActiveScenario('sc-utilityre','#2563eb');runSim()">
+      <div class="sc-stripe" style="background:#2563eb;"></div>
+      <div class="sc-body">
+        <div class="sc-title">Utility Solar &amp; Wind</div>
+        <div class="sc-desc">2.5 GW solar NI, 500 MW SI, 2.1 / 0.9 GW wind. Everything else at today's installed capacity.</div>
+      </div>
+    </div>
+    <div class="scenario-card" id="sc-lng" onclick="preloadLNG();setActiveScenario('sc-lng','#dc2626');runSim()">
+      <div class="sc-stripe" style="background:#dc2626;"></div>
+      <div class="sc-body">
+        <div class="sc-title">LNG Import</div>
+        <div class="sc-desc">Expand gas to 3 GW via LNG imports for dry-year security. Keeps the lights on — but at high cost.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Controls -->
-  <h2 style="font-size:1rem;font-weight:600;margin:28px 0 12px;color:var(--text);">Simulation Settings</h2>
+  <h2 style="font-size:1rem;font-weight:600;margin:0 0 12px;color:var(--text);">Simulation Settings</h2>
   <div class="ctrl-grid">
 
-    <div class="ctrl-panel">
-      <h3>North Island — Renewables</h3>
+    <details class="ctrl-panel">
+      <summary>North Island — Renewables</summary>
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Wind</span><span id="ni-wind-v" class="sl-val">2.1 GW</span></div>
           <input type="range" id="ni-wind" min="0" max="12" step="0.1" value="2.1" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
@@ -164,10 +208,10 @@
         <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="ni-solar-yield-v" class="sl-val">1200 kWh/kWp</span></div>
           <input type="range" id="ni-solar-yield" min="1100" max="1500" step="10" value="1200" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
-    </div>
+    </details>
 
-    <div class="ctrl-panel">
-      <h3>South Island — Renewables</h3>
+    <details class="ctrl-panel">
+      <summary>South Island — Renewables</summary>
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Wind</span><span id="si-wind-v" class="sl-val">0.9 GW</span></div>
           <input type="range" id="si-wind" min="0" max="6" step="0.1" value="0.9" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
@@ -178,7 +222,7 @@
         <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="si-solar-yield-v" class="sl-val">1100 kWh/kWp</span></div>
           <input type="range" id="si-solar-yield" min="1100" max="1500" step="10" value="1100" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
-    </div>
+    </details>
 
     <details class="ctrl-panel">
       <summary>NI Battery Storage</summary>
@@ -205,7 +249,7 @@
     </details>
 
     <details class="ctrl-panel">
-      <summary>Domestic Solar &amp; Storage</summary>
+      <summary id="dom-solar-panel">Domestic Solar &amp; Storage</summary>
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Enable domestic solar &amp; storage</span>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -247,6 +291,17 @@
       </div>
     </details>
 
+    <details class="ctrl-panel" id="data-year-panel">
+      <summary>Data Year</summary>
+      <div class="slider-row" style="padding:4px 0;">
+        <div class="sl" style="max-width:100%;">
+          <div class="sl-hd"><span>Select year</span></div>
+          <select id="sim-year" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:6px;width:100%;"></select>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;grid-column:span 2;">Weather year sets wind, solar and hydro inflows. A dry year is the hardest case.</p>
+      </div>
+    </details>
+
     <details class="ctrl-panel">
       <summary>Grid Settings</summary>
       <div class="slider-row">
@@ -271,35 +326,23 @@
 
   </div><!-- /ctrl-grid -->
 
-  <!-- Data year selector — after scenario settings -->
-  <details class="settings" style="margin-top:12px;">
-    <summary>Data year</summary>
-    <div class="settings-body">
-      <div class="sl" style="max-width:260px;">
-        <div class="sl-hd"><span>Select year</span></div>
-        <select id="sim-year" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:4px;"></select>
-      </div>
-      <p style="font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;">The chosen year sets the demand profile and all weather-driven inputs — wind, solar and hydro inflows. Try different years to stress-test your scenario: a dry year with low lakes is the hardest case for a renewables-heavy grid.</p>
-    </div>
-  </details>
-
   <div class="run-bar">
     <button class="btn-run" id="btn-run" onclick="runSim()" disabled>▶ Run Simulation</button>
-    <button class="btn-blueprint" onclick="preloadBlueprint()">⚡ Preload NZ Blueprint</button>
     <span id="sim-status">Loading data…</span>
   </div>
 
   <!-- Results -->
   <div id="results" hidden>
 
-    <div class="stat-row" id="stat-row"></div>
-
-    <!-- ── National summary: pie + fuel breakdown ── -->
+    <!-- ── National summary: pie + stat tiles + fuel list ── -->
     <div style="margin-bottom:28px;">
       <h2 style="font-size:.95rem;font-weight:600;margin-bottom:14px;">National — annual generation mix</h2>
       <div class="nat-mix-layout">
         <div><canvas id="nat-pie"></canvas></div>
-        <div id="nat-fuel-list"></div>
+        <div>
+          <div class="stat-row" id="stat-row" style="margin-bottom:16px;"></div>
+          <div id="nat-fuel-list"></div>
+        </div>
       </div>
     </div>
 
@@ -347,8 +390,8 @@
         <h3>Generation dispatch</h3>
         <p>Half-hourly generation by fuel type. The dashed line is demand; the green band above it is generation curtailed in that period.</p>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-        <div class="chart-box"><h3>National</h3><canvas id="ts-nat"></canvas></div>
+      <div class="ts-charts">
+        <div class="chart-box ts-full"><h3>National</h3><canvas id="ts-nat"></canvas></div>
         <div class="chart-box"><h3>North Island</h3><canvas id="ts-ni"></canvas></div>
         <div class="chart-box"><h3>South Island</h3><canvas id="ts-si"></canvas></div>
       </div>
@@ -378,17 +421,23 @@
       </div>
     </div>
 
-    <!-- ── Reservoirs and system balance ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>Reservoirs and system balance</h3>
-        <p>Monthly average hydro reservoir levels and unserved energy / curtailment over the simulated year.</p>
-      </div>
+    <!-- ── Reservoirs and system balance (collapsed by default) ── -->
+    <details class="ts-section" id="reservoirs-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="reservoirs-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Reservoirs and system balance</span>
+        <span style="font-size:11px;color:var(--muted);">— hydro levels, unserved energy and curtailment</span>
+      </summary>
       <div class="ts-charts">
         <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
         <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
       </div>
-    </div>
+    </details>
+    <script>
+      document.getElementById('reservoirs-section').addEventListener('toggle', function() {
+        document.getElementById('reservoirs-arrow').textContent = this.open ? '▼' : '▶';
+      });
+    </script>
 
     <!-- ── Grid Operability (collapsed by default) ── -->
     <details class="ts-section" id="operability-section">
@@ -507,6 +556,75 @@ function preloadBlueprint() {
   setSlider('hvdc-ni-si',    1200);
   setSlider('hvdc-si-ni',    1200);
   document.getElementById('sim-status').textContent = 'Blueprint scenario loaded — click Run to simulate.';
+}
+
+function setActiveScenario(id, colour) {
+  document.querySelectorAll('.scenario-card').forEach(c => {
+    c.style.outline = '';
+    c.style.outlineOffset = '';
+  });
+  const el = document.getElementById(id);
+  if (el) { el.style.outline = `2px solid ${colour}`; el.style.outlineOffset = '1px'; }
+}
+
+function setCheck(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.checked = val;
+  syncCheckbox(id);
+}
+
+function resetToToday() {
+  setSlider('ni-wind',        2.1);
+  setSlider('si-wind',        0.9);
+  setSlider('ni-solar',       2.5);
+  setSlider('ni-solar-yield', 1200);
+  setSlider('si-solar',       0.5);
+  setSlider('si-solar-yield', 1100);
+  setSlider('ni-ror',          70);
+  setSlider('si-ror',          20);
+  setSlider('batt-power',    1000);
+  setSlider('batt-cap',      8000);
+  setSlider('batt-eff',        85);
+  setSlider('si-batt-power',  200);
+  setSlider('si-batt-cap',    800);
+  setSlider('si-batt-eff',     85);
+  setSlider('ni-gas',        1678);
+  setSlider('ni-coal',        400);
+  setSlider('ni-wood',        200);
+  setSlider('ni-diesel',      156);
+  setSlider('ni-other',       135);
+  setSlider('hvdc-ni-si',    1200);
+  setSlider('hvdc-si-ni',    1200);
+  setCheck('dom-solar-enabled', false);
+}
+
+function preloadDomSolar() {
+  resetToToday();
+  setCheck('dom-solar-enabled', true);
+  setSlider('ni-dom-pct',        35);
+  setSlider('si-dom-pct',        30);
+  setSlider('dom-panels',        10);
+  setSlider('dom-panel-watts',  500);
+  setSlider('ni-dom-solar-pct',  60);
+  setSlider('si-dom-solar-pct',  60);
+  setSlider('dom-storage-pct',   80);
+  setSlider('dom-batt-kwh',      10);
+  // Open the domestic solar panel so settings are visible
+  const summary = document.getElementById('dom-solar-panel');
+  if (summary) summary.closest('details').open = true;
+  document.getElementById('sim-status').textContent = 'Domestic Solar Revolution loaded — click Run to simulate.';
+}
+
+function preloadUtilityVRE() {
+  resetToToday();
+  document.getElementById('sim-status').textContent = 'Utility Solar & Wind scenario loaded — click Run to simulate.';
+}
+
+function preloadLNG() {
+  resetToToday();
+  setSlider('ni-gas', 3000);   // ~3 GW gas via LNG import, doubling current capacity
+  document.getElementById('sim-status').textContent = 'LNG Import scenario loaded — click Run to simulate.';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1071,7 +1189,6 @@ function renderTables(mo, pk) {
       <span class="nat-fuel-name">${f.name}</span>
       <span class="nat-fuel-pct">${pct}%</span>
       <div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${barW}%;background:${f.color}"></div></div>
-      <span class="nat-fuel-gwh">${fmt(f.gwh,0)} GWh</span>
     </div>`;
   }).join('');
 
