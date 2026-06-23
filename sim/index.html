@@ -382,10 +382,10 @@ const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','N
 // Brand-aligned palette
 const C = {
   Geo:     '#dc2626', Hydro:   '#2563eb', Wind:    '#0d9e6e', Solar:   '#d97706',
-  Storage: '#7c3aed', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
+  Storage: '#f97316', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
   Diesel:  '#94a3b8', Other:   '#cbd5e1', Demand:  '#1a4d7a',
-  HvdcNiSi:'#06b6d4', HvdcSiNi:'#f43f5e',
-  Charge:  '#a78bfa', Curtail: '#34d399',
+  HvdcNiSi:'#7c3aed', HvdcSiNi:'#a78bfa',
+  Charge:  '#fb923c', Curtail: '#34d399',
 };
 
 // Carbon factors (gCO₂/kWh)
@@ -1109,7 +1109,6 @@ function renderTsCharts() {
     mkTsDs('Wood',        'niWood',   C.Wood,      true),
     mkTsDs('Gas',         'niGas',    C.Gas,       true),
     mkTsDs('Coal',        'niCoal',   C.Coal,      true),
-    mkTsDs('To storage',  'niCharge', C.Charge,    true),
     mkDemand('niDemand'),
   ]), xt, islandMax);
 
@@ -1121,7 +1120,6 @@ function renderTsCharts() {
     mkTsDs('Hydro',       'siHydro',  C.Hydro,     true),
     mkTsDs('Storage',     'siStorage',C.Storage,   true),
     mkTsDs('HVDC transfers','hvdcNiSi', C.HvdcNiSi,  true),
-    mkTsDs('To storage',  'siCharge', C.Charge,    true),
     mkDemand('siDemand'),
   ]), xt, islandMax);
 
@@ -1154,7 +1152,6 @@ function renderTsCharts() {
       nd('Wood',      'natWood',    C.Wood,     true),
       nd('Gas',       'natGas',     C.Gas,      true),
       nd('Coal',      'natCoal',    C.Coal,     true),
-      nd('→ Storage', 'natCharge',  C.Charge,   true),
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ])},
