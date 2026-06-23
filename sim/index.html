@@ -1550,7 +1550,7 @@ function renderTsCharts() {
 
   // Domestic energy supply charts
   ['ts-dom-ni','ts-dom-si'].forEach(id => charts[id]?.destroy());
-  if (pUser.domSolarEnabled) {
+  if (gParams.domSolarEnabled) {
     const domOpts = { responsive:true, animation:false,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
@@ -1869,9 +1869,11 @@ async function runSim() {
     setSlider('ni-other',   gTodayCaps.niOtherMW);
 
     document.getElementById('btn-run').disabled = false;
-    document.getElementById('sim-status').textContent =
-      `${years.length} years available (${years[0]}–${years[years.length-1]}). ` +
-      `Configure sliders or preload the Blueprint scenario.`;
+
+    // Default to Blueprint scenario on load
+    preloadBlueprint();
+    setActiveScenario('sc-blueprint', '#0d9e6e');
+    runSim();
   } catch(e) {
     document.getElementById('sim-status').textContent =
       'Could not load data — check the sheet is publicly accessible.';
