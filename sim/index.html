@@ -9,6 +9,7 @@
   <script src="../assets/nav.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     /* ── Layout ─────────────────────────────── */
     .ctrl-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
@@ -2257,7 +2258,8 @@ async function generateReport() {
     rptCharts.forEach(c => c.destroy()); rptCharts = [];
 
     // Position off-screen but visible so Chart.js canvases get real dimensions
-    rpt.style.cssText = 'display:block;position:fixed;left:-9999px;top:0;width:210mm;pointer-events:none;';
+    // position:absolute (not fixed) so html2canvas can capture at correct DOM coordinates
+    rpt.style.cssText = 'display:block;position:absolute;left:-9999px;top:0;width:210mm;pointer-events:none;';
 
     const scenName = getScenarioName();
     const scenDesc = getScenarioDesc();
@@ -2326,14 +2328,14 @@ async function generateReport() {
     // autoSkip:false so Chart.js visits every position. callback receives the tick index
     // (not the label string) on a category scale — use getLabelForValue() to get the string,
     // then return null for the empty positions (all non-midnight half-hours).
-    const tsTicks = { font:{size:13}, maxRotation:35, minRotation:35, autoSkip:false,
+    const tsTicks = { font:{size:10}, maxRotation:30, minRotation:30, autoSkip:false,
       callback: function(value) {
         const lbl = this.getLabelForValue(value);
         return (lbl && lbl !== '') ? lbl : null;
       } };
 
     // Shared font sizes — match report body text (~10-11px)
-    const RF = { legend:{ boxWidth:12, font:{size:14} }, tick:{font:{size:13}}, title:{font:{size:14}} };
+    const RF = { legend:{ boxWidth:10, font:{size:10} }, tick:{font:{size:10}}, title:{font:{size:10}} };
 
     // Dispatch datasets — exact webapp style: line+fill:'stack' not bar
     function mkDs(label, data, colour) {
@@ -2636,16 +2638,35 @@ async function generateReport() {
       addOpBattCharts(body, slice, labels);
     }
 
-    // ── Print ─────────────────────────────────────────────
-    // Give Chart.js time to complete all synchronous draws before print snapshot
+    // ── Generate and download PDF ──────────────────────────
+    // Give Chart.js time to complete all synchronous draws before capture
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 500))));
-    window.addEventListener('afterprint', () => {
-      rptCharts.forEach(c => c.destroy()); rptCharts = [];
-      const r = document.getElementById('rpt');
-      r.innerHTML = '';
-      r.style.cssText = '';
-    }, { once: true });
-    window.print();
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pages = [...rpt.querySelectorAll('.rpt-pg')];
+    // px per mm based on actual rendered width of a page div (210mm wide)
+    const pxPerMm = pages[0].offsetWidth / 210;
+
+    for (let i = 0; i < pages.length; i++) {
+      btn.textContent = `Building PDF… page ${i + 1} of ${pages.length}`;
+      if (i > 0) doc.addPage();
+      const cvs = await html2canvas(pages[i], {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = cvs.toDataURL('image/jpeg', 0.92);
+      const hMm = cvs.height / (cvs.width / 210); // maintain aspect ratio of captured content
+      doc.addImage(imgData, 'JPEG', 0, 0, 210, hMm);
+    }
+
+    doc.save('mygridnz-report.pdf');
+
+    // Cleanup
+    rptCharts.forEach(c => c.destroy()); rptCharts = [];
+    rpt.innerHTML = ''; rpt.style.cssText = '';
 
   } catch(e) {
     console.error('Report error:', e);
