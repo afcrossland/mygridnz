@@ -81,7 +81,8 @@
     .island-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
     .nat-mix-layout { display:flex; gap:32px; align-items:start; margin-bottom:28px; }
     .nat-pie-section { display:grid; grid-template-columns:210px 1fr; gap:20px; align-items:start; flex:1; min-width:0; }
-    .nat-fuel-row { display:grid; grid-template-columns:10px 1fr 1fr 40px; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
+    .nat-fuel-row  { display:grid; grid-template-columns:10px auto auto 1fr 40px; align-items:center; gap:10px; font-size:13px; margin-bottom:9px; }
+    .nat-fuel-gwh  { font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; }
     .nat-fuel-name { font-weight:500; color:var(--text); }
     .nat-fuel-pct  { font-size:12px; font-weight:600; color:var(--muted); text-align:right; }
     .itbl { width:100%; border-collapse:collapse; font-size:12px; }
@@ -102,7 +103,9 @@
     /* ── Chart sections ──────────────────────── */
     .ts-section { margin-bottom:32px; }
     #operability-section > summary::-webkit-details-marker, #operability-section > summary::marker,
-    #reservoirs-section > summary::-webkit-details-marker, #reservoirs-section > summary::marker { display:none; }
+    #reservoirs-section > summary::-webkit-details-marker, #reservoirs-section > summary::marker,
+    #dom-energy-section > summary::-webkit-details-marker, #dom-energy-section > summary::marker,
+    #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
     .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
     .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
@@ -161,7 +164,8 @@
   </div>
 
   <!-- Preconfigured scenarios -->
-  <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:28px 0 12px;">Load preconfigured energy mix</p>
+  <h2 style="font-size:1.4rem;font-weight:600;margin:32px 0 20px;color:var(--text);">Simulation Settings</h2>
+  <h3 style="font-size:1rem;font-weight:600;margin:0 0 12px;color:var(--text);">Load preconfigured energy mix</h3>
   <div class="scenario-grid">
     <div class="scenario-card" id="sc-blueprint" onclick="preloadBlueprint();setActiveScenario('sc-blueprint','#0d9e6e');runSim()">
       <div class="sc-stripe" style="background:#0d9e6e;"></div>
@@ -194,58 +198,66 @@
   </div>
 
   <!-- Controls -->
-  <h2 style="font-size:1rem;font-weight:600;margin:0 0 12px;color:var(--text);">Simulation Settings</h2>
+  <h3 style="font-size:1rem;font-weight:600;margin:0 0 12px;color:var(--text);">Detailed Settings</h3>
   <div class="ctrl-grid">
 
-    <details class="ctrl-panel">
-      <summary>North Island — Renewables</summary>
-      <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>Wind</span><span id="ni-wind-v" class="sl-val">2.1 GW</span></div>
-          <input type="range" id="ni-wind" min="0" max="12" step="0.1" value="2.1" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Solar</span><span id="ni-solar-v" class="sl-val">2.5 GW</span></div>
-          <input type="range" id="ni-solar" min="0" max="12" step="0.1" value="2.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="ni-ror-v" class="sl-val">70%</span></div>
-          <input type="range" id="ni-ror" min="0" max="100" step="5" value="70" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="ni-solar-yield-v" class="sl-val">1200 kWh/kWp</span></div>
-          <input type="range" id="ni-solar-yield" min="1100" max="1500" step="10" value="1200" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
+    <details class="ctrl-panel" style="grid-column:span 2">
+      <summary>Renewables</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;">North Island</div>
+          <div class="slider-row">
+            <div class="sl"><div class="sl-hd"><span>Wind</span><span id="ni-wind-v" class="sl-val">2.1 GW</span></div>
+              <input type="range" id="ni-wind" min="0" max="12" step="0.1" value="2.1" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Solar</span><span id="ni-solar-v" class="sl-val">2.5 GW</span></div>
+              <input type="range" id="ni-solar" min="0" max="12" step="0.1" value="2.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="ni-ror-v" class="sl-val">70%</span></div>
+              <input type="range" id="ni-ror" min="0" max="100" step="5" value="70" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="ni-solar-yield-v" class="sl-val">1200 kWh/kWp</span></div>
+              <input type="range" id="ni-solar-yield" min="1100" max="1500" step="10" value="1200" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;">South Island</div>
+          <div class="slider-row">
+            <div class="sl"><div class="sl-hd"><span>Wind</span><span id="si-wind-v" class="sl-val">0.9 GW</span></div>
+              <input type="range" id="si-wind" min="0" max="6" step="0.1" value="0.9" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Solar</span><span id="si-solar-v" class="sl-val">0.5 GW</span></div>
+              <input type="range" id="si-solar" min="0" max="6" step="0.1" value="0.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="si-ror-v" class="sl-val">20%</span></div>
+              <input type="range" id="si-ror" min="0" max="100" step="5" value="20" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="si-solar-yield-v" class="sl-val">1100 kWh/kWp</span></div>
+              <input type="range" id="si-solar-yield" min="1100" max="1500" step="10" value="1100" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
+          </div>
+        </div>
       </div>
     </details>
 
-    <details class="ctrl-panel">
-      <summary>South Island — Renewables</summary>
-      <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>Wind</span><span id="si-wind-v" class="sl-val">0.9 GW</span></div>
-          <input type="range" id="si-wind" min="0" max="6" step="0.1" value="0.9" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Solar</span><span id="si-solar-v" class="sl-val">0.5 GW</span></div>
-          <input type="range" id="si-solar" min="0" max="6" step="0.1" value="0.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="si-ror-v" class="sl-val">20%</span></div>
-          <input type="range" id="si-ror" min="0" max="100" step="5" value="20" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="si-solar-yield-v" class="sl-val">1100 kWh/kWp</span></div>
-          <input type="range" id="si-solar-yield" min="1100" max="1500" step="10" value="1100" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
-      </div>
-    </details>
-
-    <details class="ctrl-panel">
-      <summary>NI Battery Storage</summary>
-      <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>Power</span><span id="batt-power-v" class="sl-val">1000 MW</span></div>
-          <input type="range" id="batt-power" min="0" max="5000" step="100" value="1000" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="batt-cap-v" class="sl-val">8000 MWh</span></div>
-          <input type="range" id="batt-cap" min="0" max="50000" step="500" value="8000" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="batt-eff-v" class="sl-val">85%</span></div>
-          <input type="range" id="batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-      </div>
-    </details>
-
-    <details class="ctrl-panel">
-      <summary>SI Battery Storage</summary>
-      <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>Power</span><span id="si-batt-power-v" class="sl-val">200 MW</span></div>
-          <input type="range" id="si-batt-power" min="0" max="5000" step="100" value="200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="si-batt-cap-v" class="sl-val">800 MWh</span></div>
-          <input type="range" id="si-batt-cap" min="0" max="50000" step="500" value="800" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="si-batt-eff-v" class="sl-val">85%</span></div>
-          <input type="range" id="si-batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+    <details class="ctrl-panel" style="grid-column:span 2">
+      <summary>Battery Storage</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;">North Island</div>
+          <div class="slider-row">
+            <div class="sl"><div class="sl-hd"><span>Power</span><span id="batt-power-v" class="sl-val">1000 MW</span></div>
+              <input type="range" id="batt-power" min="0" max="5000" step="100" value="1000" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="batt-cap-v" class="sl-val">8000 MWh</span></div>
+              <input type="range" id="batt-cap" min="0" max="50000" step="500" value="8000" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="batt-eff-v" class="sl-val">85%</span></div>
+              <input type="range" id="batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;">South Island</div>
+          <div class="slider-row">
+            <div class="sl"><div class="sl-hd"><span>Power</span><span id="si-batt-power-v" class="sl-val">200 MW</span></div>
+              <input type="range" id="si-batt-power" min="0" max="5000" step="100" value="200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="si-batt-cap-v" class="sl-val">800 MWh</span></div>
+              <input type="range" id="si-batt-cap" min="0" max="50000" step="500" value="800" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
+            <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="si-batt-eff-v" class="sl-val">85%</span></div>
+              <input type="range" id="si-batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+          </div>
+        </div>
       </div>
     </details>
 
@@ -400,17 +412,47 @@
       </div>
     </div>
 
-    <!-- ── Battery storage ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>Battery storage</h3>
+    <!-- ── Battery storage (collapsed by default) ── -->
+    <details class="ts-section" id="battery-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="battery-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Battery Storage</span>
+        <span style="font-size:11px;color:var(--muted);">— state of charge, charge and discharge power by island</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
         <p>State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge held above the 20% spinning reserve floor.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island battery</h3><canvas id="ts-batt-ni"></canvas></div>
         <div class="chart-box"><h3>South Island battery</h3><canvas id="ts-batt-si"></canvas></div>
       </div>
-    </div>
+    </details>
+    <script>
+      document.getElementById('battery-section').addEventListener('toggle', function() {
+        document.getElementById('battery-arrow').textContent = this.open ? '▼' : '▶';
+      });
+    </script>
+
+    <!-- ── Domestic Energy Supply (collapsed by default) ── -->
+    <details class="ts-section" id="dom-energy-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="dom-energy-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Domestic Energy Supply</span>
+        <span style="font-size:11px;color:var(--muted);">— rooftop solar, battery discharge and household load</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p>Monthly totals for domestic rooftop solar generation, home battery discharge, and total household load. The gap between the load line and the stacked bars is met from the grid.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>North Island (GWh)</h3><canvas id="ts-dom-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island (GWh)</h3><canvas id="ts-dom-si"></canvas></div>
+      </div>
+    </details>
+    <script>
+      document.getElementById('dom-energy-section').addEventListener('toggle', function() {
+        document.getElementById('dom-energy-arrow').textContent = this.open ? '▼' : '▶';
+      });
+    </script>
 
     <!-- ── Curtailment ── -->
     <div class="ts-section">
@@ -742,6 +784,8 @@ function simulate(data, caps, p) {
     siGeo:0, siDomSolar:0, siHydro:0, siWind:0, siSolar:0, siStorage:0, siCharge:0,
     hvdcNiSi:0, hvdcSiNi:0, niCurtail:0, siCurtail:0,
     niUnserved:0, siUnserved:0, niRes:0, siRes:0, cnt:0,
+    niDomSolarGross:0, niDomBattDisch:0, niDomLoad:0,
+    siDomSolarGross:0, siDomBattDisch:0, siDomLoad:0,
   }));
 
   // Peak MW per fuel (for table column)
@@ -917,6 +961,14 @@ function simulate(data, caps, p) {
     mo[m].niDemand   += row.NI_Demand * K;   mo[m].siDemand   += row.SI_Demand * K;
     mo[m].niGeo      += niGeo         * K;   mo[m].siGeo      += siGeo         * K;
     mo[m].niDomSolar += niDomGen      * K;   mo[m].siDomSolar += siDomGen      * K;
+    if (p.domSolarEnabled) {
+      mo[m].niDomSolarGross += (niHomeSolar_kW * solHomesNI / 1000) * K;
+      mo[m].niDomBattDisch  += (niHomeBattDisch_kW * stoHomesNI / 1000) * K;
+      mo[m].niDomLoad       += (row.NI_Demand * p.niDomPct / 100) * K;
+      mo[m].siDomSolarGross += (siHomeSolar_kW * solHomesSI / 1000) * K;
+      mo[m].siDomBattDisch  += (siHomeBattDisch_kW * stoHomesSI / 1000) * K;
+      mo[m].siDomLoad       += (row.SI_Demand * p.siDomPct / 100) * K;
+    }
     mo[m].niHydro    += niHydroTotal  * K;   mo[m].siHydro    += siHydroTotal  * K;
     mo[m].niWind     += niWind        * K;   mo[m].siWind     += siWind        * K;
     mo[m].niSolar    += niSolar       * K;   mo[m].siSolar    += siSolar       * K;
@@ -1189,6 +1241,7 @@ function renderTables(mo, pk) {
     const barW = totalGenGWh > 0 ? f.gwh / totalGenGWh * 100 : 0;
     return `<div class="nat-fuel-row">
       <span class="fuel-dot" style="background:${f.color}"></span>
+      <span class="nat-fuel-gwh">${Math.round(f.gwh).toLocaleString()} GWh</span>
       <span class="nat-fuel-name">${f.name}</span>
       <div class="fuel-bar-wrap"><div class="fuel-bar" style="width:${barW}%;background:${f.color}"></div></div>
       <span class="nat-fuel-pct">${pct}%</span>
@@ -1400,7 +1453,7 @@ function renderTsCharts() {
     mkTsDs('Wind',        'niWind',   C.Wind,      true),
     mkTsDs('Hydro',       'niHydro',  C.Hydro,     true),
     mkTsDs('Storage',     'niStorage',C.Storage,   true),
-    mkTsDs('HVDC transfers','hvdcSiNi', C.HvdcSiNi,  true),
+    mkTsDs('HVDC transfers','hvdcSiNi', C.HvdcNiSi,  true),
     mkTsDs('Wood',        'niWood',   C.Wood,      true),
     mkTsDs('Gas',         'niGas',    C.Gas,       true),
     mkTsDs('Coal',        'niCoal',   C.Coal,      true),
@@ -1453,7 +1506,7 @@ function renderTsCharts() {
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ])},
-    options:{ responsive:true, animation:false,
+    options:{ responsive:true, animation:false, aspectRatio:3,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
@@ -1471,7 +1524,6 @@ function renderTsCharts() {
   charts['ts-curtail-ni'] = new Chart(document.getElementById('ts-curtail-ni'), {
     type:'line',
     data:{ labels:tsXLabels(), datasets: activeDs([
-      mkCurtDs('Hydro',  'niHydroCurtail', C.Hydro),
       mkCurtDs('Solar',  'niSolarCurtail', C.Solar),
       mkCurtDs('Wind',   'niWindCurtail',  C.Wind),
     ])},
@@ -1485,7 +1537,6 @@ function renderTsCharts() {
   charts['ts-curtail-si'] = new Chart(document.getElementById('ts-curtail-si'), {
     type:'line',
     data:{ labels:tsXLabels(), datasets: activeDs([
-      mkCurtDs('Hydro',  'siHydroCurtail', C.Hydro),
       mkCurtDs('Solar',  'siSolarCurtail', C.Solar),
       mkCurtDs('Wind',   'siWindCurtail',  C.Wind),
     ])},
@@ -1496,6 +1547,30 @@ function renderTsCharts() {
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
   });
+
+  // Domestic energy supply charts
+  ['ts-dom-ni','ts-dom-si'].forEach(id => charts[id]?.destroy());
+  if (pUser.domSolarEnabled) {
+    const domOpts = { responsive:true, animation:false,
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false }},
+      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ min:0, title:{ display:true, text:'GWh' } } } };
+    charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'), {
+      data:{ labels:MONTHS, datasets:[
+        { type:'bar', label:'Solar', data:mo.map(m=>+m.niDomSolarGross.toFixed(1)), backgroundColor:C.Solar, stack:'s' },
+        { type:'bar', label:'Battery discharge', data:mo.map(m=>+m.niDomBattDisch.toFixed(1)), backgroundColor:C.Storage, stack:'s' },
+        { type:'line', label:'Domestic load', data:mo.map(m=>+m.niDomLoad.toFixed(1)),
+          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+      ]}, options:domOpts });
+    charts['ts-dom-si'] = new Chart(document.getElementById('ts-dom-si'), {
+      data:{ labels:MONTHS, datasets:[
+        { type:'bar', label:'Solar', data:mo.map(m=>+m.siDomSolarGross.toFixed(1)), backgroundColor:C.Solar, stack:'s' },
+        { type:'bar', label:'Battery discharge', data:mo.map(m=>+m.siDomBattDisch.toFixed(1)), backgroundColor:C.Storage, stack:'s' },
+        { type:'line', label:'Domestic load', data:mo.map(m=>+m.siDomLoad.toFixed(1)),
+          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+      ]}, options:domOpts });
+  }
 
   // HVDC
   charts['ts-hvdc']?.destroy();
