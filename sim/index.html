@@ -102,6 +102,13 @@
       .stat-row{grid-template-columns:repeat(4,1fr);}
       .slider-row{grid-template-columns:1fr;}
     }
+    @media(max-width:600px){
+      .stat-row{grid-template-columns:repeat(2,1fr);}
+      .chart-box canvas{ min-height:260px; }
+    }
+    .scard{ min-width:0; overflow:hidden; }
+    .scard-main{ font-size:clamp(.95rem,4vw,1.4rem); }
+    .scard-label{ font-size:clamp(7px,2vw,9px); }
   </style>
 </head>
 <body>
