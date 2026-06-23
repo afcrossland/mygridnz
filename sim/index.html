@@ -2129,32 +2129,47 @@ async function generateReport() {
       return `${+dt.slice(8,10)} ${MONS3[+dt.slice(5,7)-1]}`;
     });
 
-    const tsOpts = () => ({
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:8} } }, tooltip:{enabled:false} },
+    // Shared x-axis tick config — mirrors webapp (maxTicksLimit auto-picks day boundaries)
+    const tsTicks = { font:{size:7}, maxRotation:0, autoSkipPadding:6 };
+
+    // Dispatch datasets — exact webapp style: line+fill:'stack' not bar
+    function mkDs(label, data, colour) {
+      return { label, type:'line', data,
+        borderColor:colour, backgroundColor:colour+'40',
+        fill:'stack', borderWidth:0.5, pointRadius:0, tension:0.1, stack:'g' };
+    }
+    function mkDem(data) {
+      return { label:'Demand', type:'line', data,
+        borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3],
+        fill:false, pointRadius:0, tension:0.1 };
+    }
+    const tsOpts = (maxY) => ({
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:8},
+        filter: item => item.text !== '' } }, tooltip:{enabled:false} },
       scales:{
-        x:{ stacked:true, ticks:{ maxTicksLimit:8, font:{size:7}, maxRotation:0,
-          callback:(v,i,arr) => { const lbl = arr[i]?.label; return lbl || null; } } },
-        y:{ stacked:true, title:{ display:true, text:'MW', font:{size:8} }, ticks:{font:{size:8}} }
+        x:{ stacked:true, ticks: tsTicks },
+        y:{ stacked:true, min:0, title:{ display:true, text:'MW', font:{size:8} },
+            ticks:{font:{size:8}}, ...(maxY != null ? { max:maxY } : {}) }
       }
     });
 
     const dispDatasets = (slice, island) => {
       const ni = island === 'NI', si = island === 'SI', nat = island === 'NAT';
-      const get = k => slice.map(p => +(p[k]||0));
-      const sum2 = (a, b) => slice.map(p => +((p[a]||0)+(p[b]||0)));
+      const get = k => slice.map(p => +(p[k]||0).toFixed(1));
+      const sum2 = (a, b) => slice.map(p => +((p[a]||0)+(p[b]||0)).toFixed(1));
       return [
-        ...(ni||nat ? [{ label:'Geothermal', data: nat?sum2('niGeo','siGeo'):get('niGeo'), backgroundColor:C.Geo+'cc', stack:'s' }] : []),
-        { label:'Dom. solar', data: nat?sum2('niDomSolar','siDomSolar'):get(ni?'niDomSolar':'siDomSolar'), backgroundColor:C.DomSolar+'cc', stack:'s' },
-        { label:'Solar',      data: nat?sum2('niSolar','siSolar'):get(ni?'niSolar':'siSolar'), backgroundColor:C.Solar+'cc', stack:'s' },
-        { label:'Wind',       data: nat?sum2('niWind','siWind'):get(ni?'niWind':'siWind'), backgroundColor:C.Wind+'cc', stack:'s' },
-        { label:'Hydro',      data: nat?sum2('niHydro','siHydro'):get(ni?'niHydro':'siHydro'), backgroundColor:C.Hydro+'cc', stack:'s' },
-        ...(ni||nat ? [{ label:'Storage', data: nat?sum2('niStorage','siStorage'):get('niStorage'), backgroundColor:C.Storage+'cc', stack:'s' }] : []),
-        ...(ni||nat ? [{ label:'Wood', data:get('niWood'), backgroundColor:C.Wood+'cc', stack:'s' }] : []),
-        ...(ni||nat ? [{ label:'Gas',  data:get('niGas'),  backgroundColor:C.Gas+'cc',  stack:'s' }] : []),
-        ...(si      ? [{ label:'HVDC imports', data:get('hvdcNiSi'), backgroundColor:C.HvdcNiSi+'cc', stack:'s' }] : []),
-        { label:'Demand', data: nat?sum2('niDemand','siDemand'):get(ni?'niDemand':'siDemand'),
-          type:'line', borderColor:C.Demand, borderWidth:1.5, pointRadius:0, fill:false, stack:undefined },
-      ].filter(d => d.data.some(v => v > 0) || d.label === 'Demand');
+        ...(ni||nat ? [mkDs('Geothermal', nat?sum2('niGeo','siGeo'):get('niGeo'), C.Geo)] : []),
+        mkDs('Dom. solar', nat?sum2('niDomSolar','siDomSolar'):get(ni?'niDomSolar':'siDomSolar'), C.DomSolar),
+        mkDs('Solar',      nat?sum2('niSolar','siSolar'):get(ni?'niSolar':'siSolar'), C.Solar),
+        mkDs('Wind',       nat?sum2('niWind','siWind'):get(ni?'niWind':'siWind'), C.Wind),
+        mkDs('Hydro',      nat?sum2('niHydro','siHydro'):get(ni?'niHydro':'siHydro'), C.Hydro),
+        ...(ni||nat ? [mkDs('Storage', nat?sum2('niStorage','siStorage'):get('niStorage'), C.Storage)] : []),
+        ...(ni||nat ? [mkDs('HVDC import', get('hvdcSiNi'), C.HvdcNiSi)] : []),
+        ...(ni||nat ? [mkDs('Wood', get('niWood'), C.Wood)] : []),
+        ...(ni||nat ? [mkDs('Gas',  get('niGas'),  C.Gas)] : []),
+        ...(si      ? [mkDs('HVDC import', get('hvdcNiSi'), C.HvdcNiSi)] : []),
+        mkDem(nat?sum2('niDemand','siDemand'):get(ni?'niDemand':'siDemand')),
+      ].filter(d => d.fill === false || d.data.some(v => v > 0));
     };
 
     // ── PAGE 1: COVER ─────────────────────────────────────
@@ -2273,20 +2288,26 @@ async function generateReport() {
     if (gMo.length) {
       const annMax = Math.ceil(Math.max(...gMo.map(m=>m.niDemand+m.niCurtail), ...gMo.map(m=>m.siDemand+m.siCurtail)) / 500) * 500;
       const annOpts = { plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} } },
-        scales:{ x:{stacked:true}, y:{stacked:true, max:annMax, title:{display:true,text:'GWh',font:{size:8}}, ticks:{font:{size:8}}} } };
+        scales:{ x:{stacked:true, ticks:{font:{size:7},maxRotation:45}},
+          y:{stacked:true, max:annMax, title:{display:true,text:'GWh',font:{size:8}}, ticks:{font:{size:8}}} } };
 
+      // Exact webapp mkStacked dataset order
+      const domEnabled = gParams.domSolarEnabled && (gParams.niDomSolarPct > 0 || gParams.siDomSolarPct > 0);
       for (const [title, datasets] of [
         ['North Island', [
           {label:'Geothermal',data:gMo.map(m=>+m.niGeo.toFixed(1)),backgroundColor:C.Geo,stack:'s'},
           {label:'Hydro',data:gMo.map(m=>+m.niHydro.toFixed(1)),backgroundColor:C.Hydro,stack:'s'},
+          ...(domEnabled?[{label:'Dom. solar',data:gMo.map(m=>+m.niDomSolar.toFixed(1)),backgroundColor:C.DomSolar,stack:'s'}]:[]),
           {label:'Solar',data:gMo.map(m=>+m.niSolar.toFixed(1)),backgroundColor:C.Solar,stack:'s'},
           {label:'Wind',data:gMo.map(m=>+m.niWind.toFixed(1)),backgroundColor:C.Wind,stack:'s'},
           {label:'Storage',data:gMo.map(m=>+m.niStorage.toFixed(1)),backgroundColor:C.Storage,stack:'s'},
           {label:'Wood',data:gMo.map(m=>+m.niWood.toFixed(1)),backgroundColor:C.Wood,stack:'s'},
           {label:'Gas',data:gMo.map(m=>+m.niGas.toFixed(1)),backgroundColor:C.Gas,stack:'s'},
+          {label:'Coal',data:gMo.map(m=>+m.niCoal.toFixed(1)),backgroundColor:C.Coal,stack:'s'},
         ]],
         ['South Island', [
           {label:'Hydro',data:gMo.map(m=>+m.siHydro.toFixed(1)),backgroundColor:C.Hydro,stack:'s'},
+          ...(domEnabled?[{label:'Dom. solar',data:gMo.map(m=>+m.siDomSolar.toFixed(1)),backgroundColor:C.DomSolar,stack:'s'}]:[]),
           {label:'Solar',data:gMo.map(m=>+m.siSolar.toFixed(1)),backgroundColor:C.Solar,stack:'s'},
           {label:'Wind',data:gMo.map(m=>+m.siWind.toFixed(1)),backgroundColor:C.Wind,stack:'s'},
           {label:'HVDC import',data:gMo.map(m=>+m.hvdcNiSi.toFixed(1)),backgroundColor:C.HvdcNiSi,stack:'s'},
@@ -2318,7 +2339,7 @@ async function generateReport() {
       const natWrap = document.createElement('div');
       natWrap.innerHTML = '<div class="rpt-label">National</div>';
       body.appendChild(natWrap);
-      mkChart(natWrap, 'bar', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 155);
+      mkChart(natWrap, 'line', { labels, datasets: dispDatasets(slice, 'NAT') }, tsOpts(), 155);
 
       const isGrid = document.createElement('div');
       isGrid.className = 'rpt-grid2'; isGrid.style.marginTop = '10px';
@@ -2327,7 +2348,7 @@ async function generateReport() {
         const col = document.createElement('div');
         col.innerHTML = `<div class="rpt-label">${islandTitle}</div>`;
         isGrid.appendChild(col);
-        mkChart(col, 'bar', { labels, datasets: dispDatasets(slice, island) }, tsOpts(), 130);
+        mkChart(col, 'line', { labels, datasets: dispDatasets(slice, island) }, tsOpts(4500), 130);
       }
     }
 
@@ -2340,45 +2361,48 @@ async function generateReport() {
     const wSlice = tsSliceAt(181), wLabels = tsLabels(wSlice);
     const lineOpts = ylabel => ({
       plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} }, tooltip:{enabled:false} },
-      scales:{ x:{ ticks:{ maxTicksLimit:8, font:{size:7}, maxRotation:0,
-        callback:(v,i,arr) => arr[i]?.label||null } },
-        y:{ title:{ display:true, text:ylabel, font:{size:8} }, ticks:{font:{size:8}} } }
+      scales:{ x:{ ticks: tsTicks },
+        y:{ min:0, title:{ display:true, text:ylabel, font:{size:8} }, ticks:{font:{size:8}} } }
     });
 
     const hvdcWrap = document.createElement('div');
     hvdcWrap.innerHTML = '<div class="rpt-label">HVDC Cook Strait Flows</div>';
     opBody.appendChild(hvdcWrap);
     mkChart(hvdcWrap, 'line', { labels:wLabels, datasets:[
-      {label:'NI→SI',data:wSlice.map(p=>p.hvdcNiSi||0),borderColor:C.HvdcNiSi,backgroundColor:C.HvdcNiSi+'33',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
-      {label:'SI→NI',data:wSlice.map(p=>p.hvdcSiNi||0),borderColor:C.HvdcSiNi,backgroundColor:C.HvdcSiNi+'33',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
+      {label:'NI→SI',data:wSlice.map(p=>+(p.hvdcNiSi||0).toFixed(1)),borderColor:C.HvdcNiSi,backgroundColor:C.HvdcNiSi+'33',fill:true,tension:.1,pointRadius:0,borderWidth:1.5},
+      {label:'SI→NI',data:wSlice.map(p=>+(p.hvdcSiNi||0).toFixed(1)),borderColor:C.HvdcSiNi,backgroundColor:C.HvdcSiNi+'33',fill:true,tension:.1,pointRadius:0,borderWidth:1.5},
     ]}, lineOpts('MW'), 110);
 
     const resGrid = document.createElement('div');
     resGrid.className = 'rpt-grid2'; resGrid.style.marginTop = '10px';
     opBody.appendChild(resGrid);
-    for (const [label, firK, sirK, contK] of [
-      ['NI — Frequency Reserves','niFIR','niSIR','niContingency'],
-      ['SI — Frequency Reserves','siFIR','siSIR','siContingency'],
+    for (const [label, firK, sirK, contK, contCol] of [
+      ['NI — Frequency Reserves','niFIR','niSIR','niContingency','#dc2626'],
+      ['SI — Frequency Reserves','siFIR','siSIR','siContingency','#f97316'],
     ]) {
       const col = document.createElement('div');
       col.innerHTML = `<div class="rpt-label">${label}</div>`;
       resGrid.appendChild(col);
+      // Exact webapp style: stacked fill for FIR+SIR, dashed line for contingency
       mkChart(col, 'line', { labels:wLabels, datasets:[
-        {label:'FIR (0-6s)',data:wSlice.map(p=>p[firK]||0),borderColor:'#22c55e',backgroundColor:'#22c55e33',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
-        {label:'SIR (6-60s)',data:wSlice.map(p=>p[sirK]||0),borderColor:'#3b82f6',backgroundColor:'#3b82f633',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
-        {label:'Contingency',data:wSlice.map(p=>p[contK]||0),borderColor:'#ef4444',borderDash:[4,3],pointRadius:0,borderWidth:1.5,fill:false},
-      ]}, lineOpts('MW'), 110);
+        {label:'FIR (0–6 s)',data:wSlice.map(p=>+(p[firK]??0)),borderColor:'#059669',backgroundColor:'#05966950',fill:'stack',borderWidth:0.5,pointRadius:0,tension:.1,stack:'r'},
+        {label:'SIR (6–60 s)',data:wSlice.map(p=>+(p[sirK]??0)),borderColor:'#2563eb',backgroundColor:'#2563eb40',fill:'stack',borderWidth:0.5,pointRadius:0,tension:.1,stack:'r'},
+        {label:'Contingency',data:wSlice.map(p=>+(p[contK]??0)),borderColor:contCol,borderDash:[5,3],fill:false,borderWidth:1.8,pointRadius:0,tension:0},
+      ]}, { plugins:{ legend:{ position:'top', labels:{boxWidth:8,font:{size:8}} }, tooltip:{enabled:false} },
+        scales:{ x:{ stacked:true, ticks:tsTicks },
+          y:{ stacked:true, min:0, title:{ display:true, text:'MW', font:{size:8} }, ticks:{font:{size:8}} } }
+      }, 110);
     }
 
     const inertWrap = document.createElement('div');
     inertWrap.innerHTML = '<div class="rpt-label" style="margin-top:10px;">System Inertia</div>';
     opBody.appendChild(inertWrap);
     mkChart(inertWrap, 'line', { labels:wLabels, datasets:[
-      {label:'NI inertia',data:wSlice.map(p=>p.niInertiaMWs||0),borderColor:C.Hydro,tension:.3,pointRadius:0,borderWidth:1.5},
-      {label:'SI inertia',data:wSlice.map(p=>p.siInertiaMWs||0),borderColor:C.Wind,borderDash:[4,3],tension:.3,pointRadius:0,borderWidth:1.5},
-    ]}, lineOpts('MWs'), 100);
+      {label:'NI inertia',data:wSlice.map(p=>+(p.niInertiaMWs??0)),borderColor:C.Hydro,fill:false,borderWidth:2,pointRadius:0,tension:.2},
+      {label:'SI inertia',data:wSlice.map(p=>+(p.siInertiaMWs??0)),borderColor:'#7dd3fc',borderDash:[4,3],fill:false,borderWidth:2,pointRadius:0,tension:.2},
+    ]}, lineOpts('MW·s'), 100);
 
-    // ── PAGE 7: BATTERY ───────────────────────────────────
+    // ── PAGE 7: BATTERY ── exact webapp mkBattChart style ──
     const battBody = pg('Utility-Scale Battery Storage', 'Grid-connected batteries — charge, discharge and state of charge — winter week');
     const battNote = document.createElement('p');
     battNote.style.cssText = 'font-size:10px;color:#64748b;margin:0 0 12px;line-height:1.6;';
@@ -2394,17 +2418,23 @@ async function generateReport() {
       const col = document.createElement('div');
       col.innerHTML = `<div class="rpt-label">${label}</div>`;
       battGrid.appendChild(col);
-      mkChart(col, 'bar', { labels:wLabels, datasets:[
-        {label:'SoC %',data:wSlice.map(p=>p[socK]||0),type:'line',borderColor:'#f97316',borderWidth:2,pointRadius:0,yAxisID:'y',fill:false},
-        {label:'Charging',data:wSlice.map(p=>-(p[chgK]||0)),backgroundColor:'#fbbf2488',stack:'s',yAxisID:'y2'},
-        {label:'Discharging',data:wSlice.map(p=>+(p[dischK]||0)),backgroundColor:'#34d39988',stack:'s',yAxisID:'y2'},
+      mkChart(col, 'line', { labels:wLabels, datasets:[
+        {label:'SoC %',type:'line',data:wSlice.map(p=>+(p[socK]??0).toFixed(1)),
+          borderColor:C.Storage,backgroundColor:C.Storage+'25',fill:true,
+          yAxisID:'ySoC',pointRadius:0,tension:.2,borderWidth:1.5},
+        {label:'Charging',type:'line',data:wSlice.map(p=>+(p[chgK]??0).toFixed(0)),
+          borderColor:'#a78bfa',backgroundColor:'#a78bfa35',fill:true,
+          yAxisID:'yMW',pointRadius:0,tension:.1,borderWidth:0.5},
+        {label:'Discharging',type:'line',data:wSlice.map(p=>+(p[dischK]??0).toFixed(0)),
+          borderColor:'#6d28d9',backgroundColor:'#6d28d935',fill:true,
+          yAxisID:'yMW',pointRadius:0,tension:.1,borderWidth:0.5},
       ]}, {
-        animation:false, responsive:true, maintainAspectRatio:false,
+        animation:false, responsive:false, maintainAspectRatio:false,
         plugins:{ legend:{position:'top',labels:{boxWidth:8,font:{size:8}}}, tooltip:{enabled:false} },
         scales:{
-          x:{ ticks:{maxTicksLimit:8,font:{size:7},maxRotation:0, callback:(v,i,arr)=>arr[i]?.label||null} },
-          y:{type:'linear',position:'left',title:{display:true,text:'SoC %',font:{size:8}},min:0,max:100,ticks:{font:{size:8}}},
-          y2:{type:'linear',position:'right',title:{display:true,text:'MW',font:{size:8}},grid:{drawOnChartArea:false},ticks:{font:{size:8}}},
+          x:{ ticks: tsTicks },
+          ySoC:{type:'linear',position:'left',min:0,max:100,title:{display:true,text:'SoC %',font:{size:8}},ticks:{font:{size:8}}},
+          yMW:{type:'linear',position:'right',title:{display:true,text:'MW',font:{size:8}},grid:{drawOnChartArea:false},ticks:{font:{size:8}}},
         }
       }, 200);
     }
