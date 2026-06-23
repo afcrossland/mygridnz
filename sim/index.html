@@ -136,22 +136,6 @@
     </div>
   </details>
 
-  <!-- Settings: hydro reservoir -->
-  <details class="settings">
-    <summary>Hydro storage</summary>
-    <div class="settings-body">
-      <div class="slider-row">
-        <div class="sl"><div class="sl-hd"><span>NI reservoir max</span><span id="ni-res-max-v" class="sl-val">500 GWh</span></div>
-          <input type="range" id="ni-res-max" min="0" max="2000" step="50" value="500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>SI reservoir max</span><span id="si-res-max-v" class="sl-val">4500 GWh</span></div>
-          <input type="range" id="si-res-max" min="0" max="15000" step="100" value="4500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>NI reservoir start</span><span id="ni-res-start-v" class="sl-val">25%</span></div>
-          <input type="range" id="ni-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>SI reservoir start</span><span id="si-res-start-v" class="sl-val">25%</span></div>
-          <input type="range" id="si-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-      </div>
-    </div>
-  </details>
 
   <!-- Controls -->
   <div class="ctrl-grid">
@@ -185,9 +169,9 @@
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Power</span><span id="batt-power-v" class="sl-val">1000 MW</span></div>
           <input type="range" id="batt-power" min="0" max="5000" step="100" value="1000" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Capacity</span><span id="batt-cap-v" class="sl-val">8000 MWh</span></div>
+        <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="batt-cap-v" class="sl-val">8000 MWh</span></div>
           <input type="range" id="batt-cap" min="0" max="50000" step="500" value="8000" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Efficiency</span><span id="batt-eff-v" class="sl-val">85%</span></div>
+        <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="batt-eff-v" class="sl-val">85%</span></div>
           <input type="range" id="batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
     </div>
@@ -197,10 +181,24 @@
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Power</span><span id="si-batt-power-v" class="sl-val">0 MW</span></div>
           <input type="range" id="si-batt-power" min="0" max="5000" step="100" value="0" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Capacity</span><span id="si-batt-cap-v" class="sl-val">0 MWh</span></div>
+        <div class="sl"><div class="sl-hd"><span>Usable capacity</span><span id="si-batt-cap-v" class="sl-val">0 MWh</span></div>
           <input type="range" id="si-batt-cap" min="0" max="50000" step="500" value="0" data-unit="MWh" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Efficiency</span><span id="si-batt-eff-v" class="sl-val">85%</span></div>
+        <div class="sl"><div class="sl-hd"><span>Round-trip efficiency</span><span id="si-batt-eff-v" class="sl-val">85%</span></div>
           <input type="range" id="si-batt-eff" min="60" max="100" step="1" value="85" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+      </div>
+    </div>
+
+    <div class="ctrl-panel">
+      <h3>Hydro Storage</h3>
+      <div class="slider-row">
+        <div class="sl"><div class="sl-hd"><span>NI reservoir max</span><span id="ni-res-max-v" class="sl-val">500 GWh</span></div>
+          <input type="range" id="ni-res-max" min="0" max="2000" step="50" value="500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>SI reservoir max</span><span id="si-res-max-v" class="sl-val">4500 GWh</span></div>
+          <input type="range" id="si-res-max" min="0" max="15000" step="100" value="4500" data-unit="GWh" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>NI reservoir start</span><span id="ni-res-start-v" class="sl-val">25%</span></div>
+          <input type="range" id="ni-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>SI reservoir start</span><span id="si-res-start-v" class="sl-val">25%</span></div>
+          <input type="range" id="si-res-start" min="0" max="100" step="5" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
     </div>
 
@@ -275,8 +273,12 @@
       <div class="chart-box"><h3>HVDC flows (MW)</h3><canvas id="ts-hvdc"></canvas></div>
     </div>
     <div class="chart-row">
-      <div class="chart-box"><h3>Available reserves (MW)</h3><canvas id="ts-reserves"></canvas></div>
+      <div class="chart-box"><h3>FIR and SIR available vs contingency (MW)</h3><canvas id="ts-reserves"></canvas></div>
+      <div class="chart-box"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
+    </div>
+    <div class="chart-row">
       <div class="chart-box"><h3>Battery — SoC &amp; charge / discharge rate</h3><canvas id="ts-batt"></canvas></div>
+      <div class="chart-box"></div>
     </div>
 
     <!-- Demand simulation placeholder -->
@@ -317,6 +319,11 @@ const CF = { hydro:24, geo:46, wind:12, solar:45, wood:230, gas:490, coal:820, d
 const LCOE = { Geo:85, Hydro:40, Wind:95, Solar:90, Storage:160, Wood:150, Coal:260, Diesel:350 };
 // Marginal cost (NZD/MWh) — short-run variable cost; last dispatched sets wholesale price
 const MARG = { Solar:0, Wind:5, Hydro:5, Storage:20, Geo:25, Wood:100, Coal:90, Gas:140, Diesel:220 };
+// Inertia constants H (seconds) for synchronous generators; wind/solar/battery = 0 (inverter-based)
+const HINERTIA = { Hydro:5.5, Geo:5.0, Gas:6.5, Coal:6.0, Wood:5.0, Diesel:2.5 };
+// Approximate largest single-unit risk per island (MW) when no HVDC import
+const NI_UNIT_RISK = 400;
+const SI_UNIT_RISK = 250;
 
 // ═══════════════════════════════════════════════════════
 // SLIDER HELPERS
@@ -602,12 +609,32 @@ function simulate(data, caps, p) {
       niSoC, siSoC, niResMWh: niRes, siResMWh: siRes,
       niSoCpct:   p.battCap    > 0 ? +(niSoC / p.battCap    * 100).toFixed(1) : 0,
       siBattPct:  p.siBattCap  > 0 ? +(siSoC / p.siBattCap  * 100).toFixed(1) : 0,
-      // reserves: available MW headroom for each source
-      niHydroReserve: +niFlexAvail.toFixed(0),
-      niBattReserve:  +(Math.max(0, Math.min(p.battPower,    (niSoC - BATT_RESERVE * p.battCap)    * p.battEff   / 0.5))).toFixed(0),
-      niThermReserve: +(Math.max(0, (p.niGas + p.niCoal + p.niWood + p.niDiesel + p.niOther) - (dGas + dCoal + dWood + dDiesel + dOther))).toFixed(0),
-      siHydroReserve: +siFlexAvail.toFixed(0),
-      siBattReserve:  +(Math.max(0, Math.min(p.siBattPower,  (siSoC - BATT_RESERVE * p.siBattCap)  * p.siBattEff / 0.5))).toFixed(0),
+      // ─── System inertia (MW·s) — synchronous generators only ───────────────
+      niInertiaMWs: +(niHydroTotal*HINERTIA.Hydro + niGeo*HINERTIA.Geo
+                    + dGas*HINERTIA.Gas + dCoal*HINERTIA.Coal
+                    + dWood*HINERTIA.Wood + dDiesel*HINERTIA.Diesel).toFixed(0),
+      siInertiaMWs: +(siHydroTotal*HINERTIA.Hydro + siGeo*HINERTIA.Geo).toFixed(0),
+      // ─── Contingency size (largest single infeed risk) ──────────────────────
+      niContingency: +Math.max(hvdcSiNi, NI_UNIT_RISK).toFixed(0),
+      siContingency: +Math.max(hvdcNiSi, SI_UNIT_RISK).toFixed(0),
+      // ─── FIR available (respond 0–6 s, hold 60 s) ───────────────────────────
+      // Battery: full rated power if SoC holds 60 s at rated power above reserve floor
+      niFIR: +(
+          (p.battPower > 0 && niSoC > BATT_RESERVE * p.battCap + p.battPower * (60/3600) ? p.battPower : 0)
+        + niFlexAvail * 0.25                                    // fast hydro governor (~25% of headroom)
+        + Math.max(0, p.niGas - dGas) * 0.08                  // gas spinning fast response
+      ).toFixed(0),
+      siFIR: +(
+          (p.siBattPower > 0 && siSoC > BATT_RESERVE * p.siBattCap + p.siBattPower * (60/3600) ? p.siBattPower : 0)
+        + siFlexAvail * 0.25
+      ).toFixed(0),
+      // ─── SIR available (respond 6–60 s, hold 15 min) ────────────────────────
+      niSIR: +(
+          niFlexAvail * 0.75                                    // remaining flex hydro (slower ramp)
+        + Math.max(0, p.niGas  - dGas)  * 0.35               // gas hot standby
+        + Math.max(0, p.niCoal - dCoal) * 0.20               // coal spinning reserve
+      ).toFixed(0),
+      siSIR: +(siFlexAvail * 0.75).toFixed(0),
     });
   }
   return { mo, pp, pk };
@@ -641,18 +668,21 @@ function calcSystemLCOE(mo, p) {
 }
 
 function calcMarginalPrice(mo) {
-  const active = [
-    ['Solar',   sum(mo,'niSolar') + sum(mo,'siSolar')],
-    ['Wind',    sum(mo,'niWind')  + sum(mo,'siWind')],
-    ['Hydro',   sum(mo,'niHydro') + sum(mo,'siHydro')],
-    ['Storage', sum(mo,'niStorage') + sum(mo,'siStorage')],
-    ['Geo',     sum(mo,'niGeo')   + sum(mo,'siGeo')],
-    ['Wood',    sum(mo,'niWood')],
-    ['Coal',    sum(mo,'niCoal')],
-    ['Gas',     sum(mo,'niGas')],
-    ['Diesel',  sum(mo,'niDiesel')],
-  ].filter(([, v]) => v > 0).sort((a, b) => (MARG[b[0]] ?? 0) - (MARG[a[0]] ?? 0));
-  return active.length ? (MARG[active[0][0]] ?? 0) : 0;
+  // Generation-weighted average marginal cost — shows real savings as gas is displaced
+  const fuels = [
+    [sum(mo,'niSolar')  + sum(mo,'siSolar'),   MARG.Solar],
+    [sum(mo,'niWind')   + sum(mo,'siWind'),    MARG.Wind],
+    [sum(mo,'niHydro')  + sum(mo,'siHydro'),   MARG.Hydro],
+    [sum(mo,'niStorage')+ sum(mo,'siStorage'), MARG.Storage],
+    [sum(mo,'niGeo')    + sum(mo,'siGeo'),     MARG.Geo],
+    [sum(mo,'niWood'),                          MARG.Wood],
+    [sum(mo,'niCoal'),                          MARG.Coal],
+    [sum(mo,'niGas'),                           MARG.Gas],
+    [sum(mo,'niDiesel'),                        MARG.Diesel],
+  ];
+  let gwh = 0, cost = 0;
+  fuels.forEach(([g, mc]) => { if (g > 0) { gwh += g; cost += g * mc; } });
+  return gwh > 0 ? Math.round(cost / gwh) : 0;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -717,65 +747,99 @@ function renderStats(moBase, moUser, capsRef, pBase, pUser) {
     mkCard('Renewables',      renPctB,      renPctU,      '%',   renCls(renPctU)) +
     mkCard('Carbon Intensity',carbB,        carbU,        'gCO₂/kWh', carbCls(carbU), 1, true) +
     mkCard('System LCOE',     lcoeB,        lcoeU,        'NZD/MWh', lcoeCls(lcoeU), 0, true) +
-    mkCard('Wholesale Price', margB,        margU,        'NZD/MWh', lcoeCls(margU), 0, true) +
+    mkCard('Avg Marginal',    margB,        margU,        'NZD/MWh', lcoeCls(margU), 0, true) +
     mkCard('Unserved',        unsPctB,      unsPctU,      '%',   unsCls(unsPctU), 3, true) +
     mkCard('Curtailment',     curtailB,     curtailU,     'GWh', 'scard--good', 0);
 }
 
-function renderTable(id, demand, peakDem, rows) {
+// rows: [name, gwh, dot, peakMW, instGW|null, isTotal]
+function renderTable(id, demand, rows) {
   document.getElementById(id).innerHTML =
-    `<tr><th>Fuel</th><th>GWh</th><th>Peak GW</th><th>% demand</th></tr>` +
-    rows.map(([name, gwh, dot, peak, isTotal]) =>
+    `<tr><th>Fuel</th><th>GWh</th><th>Installed GW</th><th>Peak GW</th><th>% demand</th></tr>` +
+    rows.map(([name, gwh, dot, peakMW, instGW, isTotal]) =>
       `<tr class="${isTotal ? 'row-total' : ''}">
         <td><span class="fuel-dot" style="background:${dot||'transparent'}"></span>${name}</td>
         <td>${fmt(gwh, 0)}</td>
-        <td>${isTotal ? '' : (peak > 0 ? fmt(peak/1000, 2) : '—')}</td>
+        <td>${isTotal || instGW == null ? '' : instGW > 0 ? fmt(instGW, 2) : '—'}</td>
+        <td>${isTotal ? '' : (peakMW > 0 ? fmt(peakMW/1000, 2) : '—')}</td>
         <td>${isTotal ? '' : fmt(gwh / demand * 100, 1) + '%'}</td>
       </tr>`
     ).join('');
 }
 
 function renderTables(mo, pk) {
+  const p = gParams;
+  const caps = gCaps;
+  const totalHours = mo.reduce((s, m) => s + m.cnt, 0) * 0.5;
+
+  // Yield and capacity factor helpers
+  const solarYield = (gwh, capGW) => capGW > 0 ? Math.round(gwh / capGW) : 0;
+  const windCF     = (gwh, capGW) => capGW > 0 && totalHours > 0
+    ? Math.round(gwh / (capGW * totalHours) * 100) : 0;
+
+  const niSolarGWh = sum(mo,'niSolar'), siSolarGWh = sum(mo,'siSolar');
+  const niWindGWh  = sum(mo,'niWind'),  siWindGWh  = sum(mo,'siWind');
+  const niYield = solarYield(niSolarGWh, p.niSolarGW);
+  const siYield = solarYield(siSolarGWh, p.siSolarGW);
+  const niCF    = windCF(niWindGWh, p.niWindGW);
+  const siCF    = windCF(siWindGWh, p.siWindGW);
+
+  // Installed capacity in GW: slider for dispatchables, caps sheet for hydro/geo
+  const niHydroGW = (caps['Hydro']?.NI  ?? pk.niHydro) / 1000;
+  const niGeoGW   = (caps['Geothermal']?.NI ?? caps['Geo']?.NI ?? pk.niGeo) / 1000;
+  const siHydroGW = (caps['Hydro']?.SI  ?? pk.siHydro) / 1000;
+  const siGeoGW   = (caps['Geothermal']?.SI ?? caps['Geo']?.SI ?? pk.siGeo) / 1000;
+
   const niDem = sum(mo,'niDemand'), siDem = sum(mo,'siDemand');
-  renderTable('tbl-ni', niDem, pk.niDemand, [
-    ['Demand',       niDem,              '#000',     pk.niDemand, true],
-    ['Geothermal',   sum(mo,'niGeo'),    C.Geo,      pk.niGeo],
-    ['Hydro',        sum(mo,'niHydro'),  C.Hydro,    pk.niHydro],
-    ['Wind',         sum(mo,'niWind'),   C.Wind,     pk.niWind],
-    ['Solar',        sum(mo,'niSolar'),  C.Solar,    pk.niSolar],
-    ['Storage',      sum(mo,'niStorage'),C.Storage,  pk.niStorage],
-    ['Wood',         sum(mo,'niWood'),   C.Wood,     pk.niWood],
-    ['Gas',          sum(mo,'niGas'),    C.Gas,      pk.niGas],
-    ['Coal',         sum(mo,'niCoal'),   C.Coal,     pk.niCoal],
-    ['Diesel',       sum(mo,'niDiesel'), C.Diesel,   pk.niDiesel],
-    ['→ SI via HVDC',sum(mo,'hvdcNiSi'), C.HvdcNiSi, 0],
-    ['Unserved',     sum(mo,'niUnserved'),'#fca5a5', 0],
+
+  renderTable('tbl-ni', niDem, [
+    ['Demand',                                    niDem,               '#000',     pk.niDemand, null,              true],
+    ['Geothermal',                                sum(mo,'niGeo'),     C.Geo,      pk.niGeo,    niGeoGW],
+    ['Hydro',                                     sum(mo,'niHydro'),   C.Hydro,    pk.niHydro,  niHydroGW],
+    [`Solar (${niYield} kWh/kWp)`,                niSolarGWh,          C.Solar,    pk.niSolar,  p.niSolarGW],
+    [`Wind (${niCF}% CF)`,                        niWindGWh,           C.Wind,     pk.niWind,   p.niWindGW],
+    ['Battery storage',                           sum(mo,'niStorage'), C.Storage,  pk.niStorage,p.battPower/1000],
+    ['Wood / biomass',                            sum(mo,'niWood'),    C.Wood,     pk.niWood,   p.niWood/1000],
+    ['Gas',                                       sum(mo,'niGas'),     C.Gas,      pk.niGas,    p.niGas/1000],
+    ['Coal',                                      sum(mo,'niCoal'),    C.Coal,     pk.niCoal,   p.niCoal/1000],
+    ['Diesel',                                    sum(mo,'niDiesel'),  C.Diesel,   pk.niDiesel, p.niDiesel/1000],
+    ['HVDC export to SI',                         sum(mo,'hvdcNiSi'),  C.HvdcNiSi, 0,          null],
+    ['Unserved',                                  sum(mo,'niUnserved'),'#fca5a5',  0,           null],
   ]);
-  renderTable('tbl-si', siDem, pk.siDemand, [
-    ['Demand',       siDem,              '#000',     pk.siDemand, true],
-    ['Geothermal',   sum(mo,'siGeo'),    C.Geo,      pk.siGeo],
-    ['Hydro',        sum(mo,'siHydro'),  C.Hydro,    pk.siHydro],
-    ['Wind',         sum(mo,'siWind'),   C.Wind,     pk.siWind],
-    ['Solar',        sum(mo,'siSolar'),  C.Solar,    pk.siSolar],
-    ['Storage',      sum(mo,'siStorage'),C.Storage,  pk.siStorage],
-    ['← NI via HVDC',sum(mo,'hvdcNiSi'),C.HvdcNiSi, 0],
-    ['→ NI via HVDC',sum(mo,'hvdcSiNi'),C.HvdcSiNi, 0],
-    ['Unserved',     sum(mo,'siUnserved'),'#fca5a5', 0],
+
+  renderTable('tbl-si', siDem, [
+    ['Demand',                                    siDem,               '#000',     pk.siDemand, null,              true],
+    ['Geothermal',                                sum(mo,'siGeo'),     C.Geo,      pk.siGeo,    siGeoGW],
+    ['Hydro',                                     sum(mo,'siHydro'),   C.Hydro,    pk.siHydro,  siHydroGW],
+    [`Solar (${siYield} kWh/kWp)`,                siSolarGWh,          C.Solar,    pk.siSolar,  p.siSolarGW],
+    [`Wind (${siCF}% CF)`,                        siWindGWh,           C.Wind,     pk.siWind,   p.siWindGW],
+    ['Battery storage',                           sum(mo,'siStorage'), C.Storage,  pk.siStorage,p.siBattPower/1000],
+    ['HVDC import from NI',                       sum(mo,'hvdcNiSi'),  C.HvdcNiSi, 0,          null],
+    ['HVDC export to NI',                         sum(mo,'hvdcSiNi'),  C.HvdcSiNi, 0,          null],
+    ['Unserved',                                  sum(mo,'siUnserved'),'#fca5a5',  0,           null],
   ]);
 }
+
+let gCaps = {}, gParams = {};   // stashed after each run for use in renderTables
 
 let charts = {};
 function killCharts() { Object.values(charts).forEach(c => c?.destroy()); charts = {}; }
 
-function mkStacked(id, datasets) {
+function mkStacked(id, datasets, maxY) {
   charts[id] = new Chart(document.getElementById(id), {
     type:'bar', data:{ labels:MONTHS, datasets },
     options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } } },
-      scales:{ x:{ stacked:true }, y:{ stacked:true, title:{ display:true, text:'GWh' } } } },
+      scales:{ x:{ stacked:true }, y:{ stacked:true, title:{ display:true, text:'GWh' },
+        ...(maxY != null ? { min:0, max:maxY } : {}) } } },
   });
 }
 
 function renderAnnualCharts(mo) {
+  // Shared y-axis so NI and SI charts are directly comparable
+  const niPeak = Math.max(...mo.map(m => m.niDemand + m.niCurtail + m.niCharge));
+  const siPeak = Math.max(...mo.map(m => m.siDemand + m.siCurtail + m.siCharge));
+  const annMax = Math.ceil(Math.max(niPeak, siPeak) / 500) * 500;
+
   mkStacked('chart-ni', [
     { label:'Geothermal', data:mo.map(m=>+m.niGeo.toFixed(1)),     backgroundColor:C.Geo,     stack:'s' },
     { label:'Hydro',      data:mo.map(m=>+m.niHydro.toFixed(1)),   backgroundColor:C.Hydro,   stack:'s' },
@@ -785,13 +849,13 @@ function renderAnnualCharts(mo) {
     { label:'Wood',       data:mo.map(m=>+m.niWood.toFixed(1)),    backgroundColor:C.Wood,    stack:'s' },
     { label:'Gas',        data:mo.map(m=>+m.niGas.toFixed(1)),     backgroundColor:C.Gas,     stack:'s' },
     { label:'Coal',       data:mo.map(m=>+m.niCoal.toFixed(1)),    backgroundColor:C.Coal,    stack:'s' },
-  ]);
+  ], annMax);
   mkStacked('chart-si', [
     { label:'Hydro',      data:mo.map(m=>+m.siHydro.toFixed(1)),   backgroundColor:C.Hydro,   stack:'s' },
     { label:'Solar',      data:mo.map(m=>+m.siSolar.toFixed(1)),   backgroundColor:C.Solar,   stack:'s' },
     { label:'Wind',       data:mo.map(m=>+m.siWind.toFixed(1)),    backgroundColor:C.Wind,    stack:'s' },
-    { label:'← NI HVDC', data:mo.map(m=>+m.hvdcNiSi.toFixed(1)),  backgroundColor:C.HvdcNiSi,stack:'s' },
-  ]);
+    { label:'HVDC import',data:mo.map(m=>+m.hvdcNiSi.toFixed(1)),  backgroundColor:C.HvdcNiSi,stack:'s' },
+  ], annMax);
   charts['chart-res'] = new Chart(document.getElementById('chart-res'), {
     type:'line', data:{ labels:MONTHS, datasets:[
       { label:'NI (GWh)', data:mo.map(m=>m.cnt?+(m.niRes/m.cnt).toFixed(1):0),
@@ -883,7 +947,7 @@ function mkDemand(key) {
   };
 }
 
-function mkTsChart(id, datasets, xMaxTicks) {
+function mkTsChart(id, datasets, xMaxTicks, maxY) {
   charts[id]?.destroy();
   charts[id] = new Chart(document.getElementById(id), {
     data:{ labels: tsXLabels(), datasets },
@@ -895,7 +959,8 @@ function mkTsChart(id, datasets, xMaxTicks) {
         }}},
       scales:{
         x:{ ticks:{ maxTicksLimit: xMaxTicks, maxRotation:0, autoSkipPadding:6 } },
-        y:{ stacked:true, title:{ display:true, text:'MW' } },
+        y:{ stacked:true, title:{ display:true, text:'MW' },
+            ...(maxY != null ? { min:0, max:maxY } : {}) },
       },
     },
   });
@@ -906,6 +971,11 @@ function renderTsCharts() {
   document.getElementById('ts-label').textContent = tsLabel(slice);
   const xt = tsWindowDays <= 7 ? 14 : 32;
 
+  // Shared y-axis max for NI and SI island charts (stack top = demand + curtailment + charging)
+  const niPeak = Math.max(...slice.map(p => (p.niDemand||0) + (p.niCurtail||0) + (p.niCharge||0)));
+  const siPeak = Math.max(...slice.map(p => (p.siDemand||0) + (p.siCurtail||0) + (p.siCharge||0)));
+  const islandMax = Math.ceil(Math.max(niPeak, siPeak) / 500) * 500;
+
   // NI — solar before wind; curtailment unlabelled band above demand
   mkTsChart('ts-ni', [
     mkTsDs('Geothermal', 'niGeo',    C.Geo,      true),
@@ -913,27 +983,27 @@ function renderTsCharts() {
     mkTsDs('Solar',      'niSolar',  C.Solar,    true),
     mkTsDs('Wind',       'niWind',   C.Wind,     true),
     mkTsDs('Storage',    'niStorage',C.Storage,  true),
-    mkTsDs('← SI HVDC', 'hvdcSiNi', C.HvdcSiNi, true),
+    mkTsDs('HVDC import', 'hvdcSiNi', C.HvdcSiNi, true),
     mkTsDs('Wood',       'niWood',   C.Wood,     true),
     mkTsDs('Gas',        'niGas',    C.Gas,      true),
     mkTsDs('Coal',       'niCoal',   C.Coal,     true),
-    mkTsDs('→ Storage',  'niCharge', C.Charge,   true),
+    mkTsDs('To storage', 'niCharge', C.Charge,   true),
     mkTsDs('',           'niCurtail',C.Curtail,  true),
     mkDemand('niDemand'),
-  ], xt);
+  ], xt, islandMax);
 
   // SI
   mkTsChart('ts-si', [
-    mkTsDs('Geo',        'siGeo',    C.Geo,      true),
+    mkTsDs('Geothermal', 'siGeo',    C.Geo,      true),
     mkTsDs('Hydro',      'siHydro',  C.Hydro,    true),
     mkTsDs('Solar',      'siSolar',  C.Solar,    true),
     mkTsDs('Wind',       'siWind',   C.Wind,     true),
     mkTsDs('Storage',    'siStorage',C.Storage,  true),
-    mkTsDs('← NI HVDC', 'hvdcNiSi', C.HvdcNiSi, true),
-    mkTsDs('→ Storage',  'siCharge', C.Charge,   true),
+    mkTsDs('HVDC import','hvdcNiSi', C.HvdcNiSi, true),
+    mkTsDs('To storage', 'siCharge', C.Charge,   true),
     mkTsDs('',           'siCurtail',C.Curtail,  true),
     mkDemand('siDemand'),
-  ], xt);
+  ], xt, islandMax);
 
   // National combined
   const nat = slice.map(p => ({
@@ -956,7 +1026,7 @@ function renderTsCharts() {
   charts['ts-nat']?.destroy();
   charts['ts-nat'] = new Chart(document.getElementById('ts-nat'), {
     data:{ labels:tsXLabels(), datasets:[
-      nd('Geo',       'natGeo',     C.Geo,      true),
+      nd('Geothermal','natGeo',     C.Geo,      true),
       nd('Hydro',     'natHydro',   C.Hydro,    true),
       nd('Solar',     'natSolar',   C.Solar,    true),
       nd('Wind',      'natWind',    C.Wind,     true),
@@ -993,33 +1063,60 @@ function renderTsCharts() {
         y:{ title:{ display:true, text:'MW' } } } },
   });
 
-  // Reserves — NI stacked (hydro / battery / thermal), SI total line
+  // FIR and SIR — NI stacked FIR+SIR with contingency line; SI dashed
   charts['ts-reserves']?.destroy();
   charts['ts-reserves'] = new Chart(document.getElementById('ts-reserves'), {
     type:'line',
     data:{ labels:tsXLabels(), datasets:[
-      { label:'NI Hydro headroom',
-        data: slice.map(p=>+(p.niHydroReserve??0)),
-        borderColor:C.Hydro, backgroundColor:C.Hydro+'50',
+      { label:'NI FIR (0–6 s)',
+        data: slice.map(p=>+(p.niFIR??0)),
+        borderColor:'#059669', backgroundColor:'#05966950',
         fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
-      { label:'NI Battery',
-        data: slice.map(p=>+(p.niBattReserve??0)),
-        borderColor:C.Storage, backgroundColor:C.Storage+'50',
+      { label:'NI SIR (6–60 s)',
+        data: slice.map(p=>+(p.niSIR??0)),
+        borderColor:'#2563eb', backgroundColor:'#2563eb40',
         fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
-      { label:'NI Thermal standby',
-        data: slice.map(p=>+(p.niThermReserve??0)),
-        borderColor:C.Gas, backgroundColor:C.Gas+'50',
-        fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
-      { label:'SI Hydro + Battery',
-        data: slice.map(p=>+(( p.siHydroReserve??0)+(p.siBattReserve??0))),
+      { label:'NI contingency',
+        data: slice.map(p=>+(p.niContingency??0)),
+        borderColor:'#dc2626', borderDash:[5,3],
+        fill:false, borderWidth:1.8, pointRadius:0, tension:.0 },
+      { label:'SI FIR+SIR',
+        data: slice.map(p=>+((p.siFIR??0)+(p.siSIR??0))),
         borderColor:'#7dd3fc', borderDash:[4,3],
-        fill:false, borderWidth:1.8, pointRadius:0, tension:.1 },
+        fill:false, borderWidth:1.5, pointRadius:0, tension:.1 },
+      { label:'SI contingency',
+        data: slice.map(p=>+(p.siContingency??0)),
+        borderColor:'#f97316', borderDash:[5,3],
+        fill:false, borderWidth:1.5, pointRadius:0, tension:.0 },
     ]},
     options:{ responsive:true, animation:false,
       plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false }},
+        tooltip:{ mode:'index', intersect:false,
+          callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
+  });
+
+  // System inertia (MW·s) — NI and SI
+  charts['ts-inertia']?.destroy();
+  charts['ts-inertia'] = new Chart(document.getElementById('ts-inertia'), {
+    type:'line',
+    data:{ labels:tsXLabels(), datasets:[
+      { label:'NI inertia',
+        data: slice.map(p=>+(p.niInertiaMWs??0)),
+        borderColor:C.Hydro, backgroundColor:C.Hydro+'30',
+        fill:true, borderWidth:1.5, pointRadius:0, tension:.2 },
+      { label:'SI inertia',
+        data: slice.map(p=>+(p.siInertiaMWs??0)),
+        borderColor:'#7dd3fc', borderDash:[4,3],
+        fill:false, borderWidth:1.5, pointRadius:0, tension:.2 },
+    ]},
+    options:{ responsive:true, animation:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false,
+          callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW·s` }}},
+      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ title:{ display:true, text:'MW·s' }, min:0 } } },
   });
 
   // Battery — SoC % on left axis, charge/discharge MW on right axis
@@ -1124,6 +1221,7 @@ async function runSim() {
 
     const pBase = buildBaselineParams(caps);
     const pUser = getParams();
+    gCaps = caps; gParams = pUser;
     const { mo: moBase }            = simulate(data, caps, pBase);
     const { mo: moUser, pp, pk }    = simulate(data, caps, pUser);
 
@@ -1158,15 +1256,17 @@ async function runSim() {
 
     // Update slider defaults from actual fleet capacity
     console.log('capacity_perIsland keys:', Object.keys(caps), caps);
-    const setIfPresent = (key, sliderId) => {
-      const v = caps[key]?.NI;
-      if (v != null && v > 0) setSlider(sliderId, v);
+    const setIfPresent = (sliderId, ...keys) => {
+      for (const key of keys) {
+        const v = caps[key]?.NI;
+        if (v != null && v > 0) { setSlider(sliderId, v); break; }
+      }
     };
-    setIfPresent('Gas',    'ni-gas');
-    setIfPresent('Coal',   'ni-coal');
-    setIfPresent('Wood',   'ni-wood');
-    setIfPresent('Diesel', 'ni-diesel');
-    setIfPresent('Other',  'ni-other');
+    setIfPresent('ni-gas',    'Gas', 'Gas Thermal');
+    setIfPresent('ni-coal',   'Coal', 'Coal Thermal');
+    setIfPresent('ni-wood',   'Wood', 'Wood / Biomass', 'Biomass', 'Bio', 'Wood/Biomass');
+    setIfPresent('ni-diesel', 'Diesel');
+    setIfPresent('ni-other',  'Other');
 
     document.getElementById('sim-status').textContent =
       `${years.length} years available (${years[0]}–${years[years.length-1]}). ` +
