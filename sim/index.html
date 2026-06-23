@@ -90,9 +90,11 @@
     .nat-pie-section { display:grid; grid-template-columns:210px 1fr; gap:20px; align-items:start; flex:1; min-width:0; }
     .nat-pie-wrap { width:210px; }
     .nat-fuel-row  { display:grid; grid-template-columns:10px auto auto 1fr 40px; align-items:center; gap:10px; font-size:13px; margin-bottom:9px; }
-    .nat-fuel-gwh  { font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; }
-    .nat-fuel-name { font-weight:500; color:var(--text); }
+    .nat-fuel-gwh  { font-size:12px; color:var(--muted); text-align:left; white-space:nowrap; }
+    .nat-fuel-name { font-weight:500; color:var(--text); text-align:left; }
     .nat-fuel-pct  { font-size:12px; font-weight:600; color:var(--muted); text-align:right; }
+    .fuel-bar-wrap { height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
+    .fuel-bar      { height:100%; border-radius:3px; }
     .itbl { width:100%; border-collapse:collapse; font-size:12px; }
     .itbl th { text-align:left; padding:4px 6px; font-size:9px; font-weight:700;
       letter-spacing:.07em; color:var(--muted);
@@ -2471,7 +2473,7 @@ async function generateReport() {
     gNatFuels.forEach(f => {
       const pct = totalGWh>0 ? f.gwh/totalGWh*100 : 0;
       const row = document.createElement('div');
-      row.style.cssText = 'display:grid;grid-template-columns:12px 100px 58px 1fr 38px;gap:8px;align-items:center;margin-bottom:8px;font-size:11px;';
+      row.style.cssText = 'display:grid;grid-template-columns:12px 140px 90px 1fr 38px;gap:8px;align-items:center;margin-bottom:8px;font-size:11px;';
       row.innerHTML = `<span style="width:11px;height:11px;border-radius:50%;background:${f.color};display:inline-block;"></span>
         <span style="font-weight:500;color:#0f172a;">${f.name}</span>
         <span style="color:#64748b;text-align:right;">${Math.round(f.gwh).toLocaleString()} GWh</span>
@@ -2537,7 +2539,7 @@ async function generateReport() {
       mkChart(hvdcWrap, 'line', { labels:lbl, datasets:[
         {label:'North Island → South Island',data:sl.map(p=>+(p.hvdcNiSi||0).toFixed(1)),borderColor:C.HvdcNiSi,backgroundColor:C.HvdcNiSi+'33',fill:true,tension:.1,pointRadius:0,borderWidth:1.5},
         {label:'South Island → North Island',data:sl.map(p=>+(p.hvdcSiNi||0).toFixed(1)),borderColor:C.HvdcSiNi,backgroundColor:C.HvdcSiNi+'33',fill:true,tension:.1,pointRadius:0,borderWidth:1.5},
-      ]}, lineOpts('MW'), 70);
+      ]}, lineOpts('MW'), 200);
 
       const resGrid = document.createElement('div');
       resGrid.className = 'rpt-grid2'; resGrid.style.marginTop = '10px';
@@ -2556,7 +2558,7 @@ async function generateReport() {
         ]}, { plugins:{ legend:{ position:'top', labels:RF.legend }, tooltip:{enabled:false} },
           scales:{ x:{ stacked:true, ticks:tsTicks },
             y:{ stacked:true, min:0, title:{ display:true, text:'MW', ...RF.title }, ticks:RF.tick } }
-        }, 65);
+        }, 200);
       }
 
       const inertWrap = document.createElement('div');
@@ -2565,7 +2567,7 @@ async function generateReport() {
       mkChart(inertWrap, 'line', { labels:lbl, datasets:[
         {label:'North Island inertia',data:sl.map(p=>+(p.niInertiaMWs??0)),borderColor:C.Hydro,fill:false,borderWidth:2,pointRadius:0,tension:.2},
         {label:'South Island inertia',data:sl.map(p=>+(p.siInertiaMWs??0)),borderColor:'#7dd3fc',borderDash:[4,3],fill:false,borderWidth:2,pointRadius:0,tension:.2},
-      ]}, lineOpts('MW·s'), 60);
+      ]}, lineOpts('MW·s'), 200);
 
       const battLabel = document.createElement('div');
       battLabel.className = 'rpt-label'; battLabel.style.marginTop = '10px';
@@ -2599,7 +2601,7 @@ async function generateReport() {
             ySoC:{type:'linear',position:'left',min:0,max:100,title:{display:true,text:'SoC %',...RF.title},ticks:RF.tick},
             yMW:{type:'linear',position:'right',title:{display:true,text:'MW',...RF.title},grid:{drawOnChartArea:false},ticks:RF.tick},
           }
-        }, 90);
+        }, 200);
       }
     }
 
