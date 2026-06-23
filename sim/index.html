@@ -2107,8 +2107,13 @@ async function generateReport() {
       const canvas = document.createElement('canvas');
       wrap.appendChild(canvas);
       parent.appendChild(wrap);
+      // Read actual pixel dimensions after adding to DOM (rpt is position:fixed off-screen so offsetWidth is real)
+      const w = Math.max(wrap.offsetWidth, 300);
+      canvas.width = w;
+      canvas.height = heightPx;
+      // responsive:false prevents Chart.js ResizeObserver from clearing/redrawing during print CSS transitions
       const ch = new Chart(canvas, { type, data,
-        options: { ...options, animation:false, responsive:true, maintainAspectRatio:false } });
+        options: { ...options, animation:false, responsive:false, maintainAspectRatio:false } });
       rptCharts.push(ch);
       return ch;
     }
@@ -2229,14 +2234,15 @@ async function generateReport() {
 
     const natLayout = natBody.querySelector('#nat-layout');
     const pieWrap = document.createElement('div');
-    pieWrap.style.cssText = 'height:200px;position:relative;';
+    pieWrap.style.cssText = 'height:200px;width:200px;position:relative;flex-shrink:0;';
     const pieCanvas = document.createElement('canvas');
     pieWrap.appendChild(pieCanvas);
     natLayout.appendChild(pieWrap);
     if (gNatFuels.length) {
+      pieCanvas.width = 200; pieCanvas.height = 200;
       rptCharts.push(new Chart(pieCanvas, { type:'pie',
         data:{ labels:gNatFuels.map(f=>f.name), datasets:[{ data:gNatFuels.map(f=>f.gwh), backgroundColor:gNatFuels.map(f=>f.color), borderColor:'#fff', borderWidth:2 }] },
-        options:{ animation:false, responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{enabled:false} } } }));
+        options:{ animation:false, responsive:false, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{enabled:false} } } }));
     }
 
     const fuelListEl = document.createElement('div');
@@ -2404,7 +2410,8 @@ async function generateReport() {
     }
 
     // ── Print ─────────────────────────────────────────────
-    await new Promise(r => setTimeout(r, 600));
+    // Give Chart.js time to complete all synchronous draws before print snapshot
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 500))));
     window.addEventListener('afterprint', () => {
       rptCharts.forEach(c => c.destroy()); rptCharts = [];
       const r = document.getElementById('rpt');
