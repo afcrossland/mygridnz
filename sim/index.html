@@ -158,8 +158,8 @@
           <input type="range" id="ni-solar" min="0" max="12" step="0.1" value="2.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="ni-ror-v" class="sl-val">70%</span></div>
           <input type="range" id="ni-ror" min="0" max="100" step="5" value="70" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Solar yield factor</span><span id="ni-solar-corr-v" class="sl-val">1.5 ×</span></div>
-          <input type="range" id="ni-solar-corr" min="0.5" max="3" step="0.1" value="1.5" data-unit="×" data-dp="1" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="ni-solar-yield-v" class="sl-val">1200 kWh/kWp</span></div>
+          <input type="range" id="ni-solar-yield" min="1100" max="1500" step="10" value="1200" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
     </div>
 
@@ -172,8 +172,8 @@
           <input type="range" id="si-solar" min="0" max="6" step="0.1" value="0.5" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Hydro run-of-river</span><span id="si-ror-v" class="sl-val">20%</span></div>
           <input type="range" id="si-ror" min="0" max="100" step="5" value="20" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Solar yield factor</span><span id="si-solar-corr-v" class="sl-val">1.3 ×</span></div>
-          <input type="range" id="si-solar-corr" min="0.5" max="3" step="0.1" value="1.3" data-unit="×" data-dp="1" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Solar yield target</span><span id="si-solar-yield-v" class="sl-val">1100 kWh/kWp</span></div>
+          <input type="range" id="si-solar-yield" min="1100" max="1500" step="10" value="1100" data-unit="kWh/kWp" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
     </div>
 
@@ -280,11 +280,13 @@
     <div class="ts-section">
       <div class="ts-section-hd">
         <h3>Reservoirs and system balance</h3>
-        <p>Monthly average hydro reservoir levels, unserved energy, and total curtailment by island.</p>
+        <p>Monthly average hydro reservoir levels, unserved energy, curtailment, and battery state of charge and charge/discharge by island.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
         <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
+        <div class="chart-box"><h3>North Island battery — SoC % and charge / discharge (MW)</h3><canvas id="ts-batt-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island battery — SoC % and charge / discharge (MW)</h3><canvas id="ts-batt-si"></canvas></div>
       </div>
     </div>
 
@@ -342,22 +344,12 @@
     <div class="ts-section">
       <div class="ts-section-hd">
         <h3>Frequency reserves and system inertia</h3>
-        <p>Estimated Fast Instantaneous Reserve (FIR, 0–6 s) and Sustained Instantaneous Reserve (SIR, 6–60 s) versus the largest single contingency. System inertia comes from synchronous generators only — wind, solar and batteries contribute none.</p>
+        <p>Estimated Fast Instantaneous Reserve (FIR, 0–6 s) and Sustained Instantaneous Reserve (SIR, 6–60 s) versus the largest single contingency for each island. System inertia from synchronous generators only — wind, solar and batteries contribute none.</p>
       </div>
       <div class="ts-charts">
-        <div class="chart-box"><h3>FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves"></canvas></div>
-        <div class="chart-box"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
-      </div>
-    </div>
-
-    <!-- ── Battery ── -->
-    <div class="ts-section">
-      <div class="ts-section-hd">
-        <h3>Battery storage</h3>
-        <p>State of charge (%) and charge/discharge rate (MW). The 20% reserve floor is retained for frequency response.</p>
-      </div>
-      <div class="ts-charts">
-        <div class="chart-box ts-full"><h3>SoC % and charge / discharge rate</h3><canvas id="ts-batt"></canvas></div>
+        <div class="chart-box"><h3>North Island — FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island — FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves-si"></canvas></div>
+        <div class="chart-box ts-full"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
       </div>
     </div>
 
@@ -431,9 +423,9 @@ function preloadBlueprint() {
   setSlider('ni-wind',        3.0);
   setSlider('si-wind',        1.5);
   setSlider('ni-solar',       2.5);
-  setSlider('ni-solar-corr',  1.5);
+  setSlider('ni-solar-yield', 1200);
   setSlider('si-solar',       0.5);
-  setSlider('si-solar-corr',  1.3);
+  setSlider('si-solar-yield', 1100);
   setSlider('ni-ror',          70);
   setSlider('si-ror',          20);
   setSlider('batt-power',    1000);
@@ -688,21 +680,19 @@ function simulate(data, caps, p) {
       siGeo, siHydro: siHydroTotal, siWind, siSolar, siStorage: siDischarge, siCharge,
       hvdcNiSi, hvdcSiNi,
       niCurtail: niSurp, siCurtail: siSurp,
-      // Curtailment attributed proportionally to each must-run source
+      // Curtailment attributed proportionally to curtailable VRE (not geo — always runs)
       ...(() => {
-        const niBase = niGeo + niWind + niSolar + niRoRmw;
-        const siBase = siGeo + siWind + siSolar + siRoRmw;
+        const niBase = niWind + niSolar + niRoRmw;
+        const siBase = siWind + siSolar + siRoRmw;
         const niF = niBase > 0 && niSurp > 0 ? Math.min(niSurp / niBase, 1) : 0;
         const siF = siBase > 0 && siSurp > 0 ? Math.min(siSurp / siBase, 1) : 0;
         return {
-          niGeoCurtail:   +(niGeo    * niF).toFixed(1),
-          niWindCurtail:  +(niWind   * niF).toFixed(1),
-          niSolarCurtail: +(niSolar  * niF).toFixed(1),
-          niHydroCurtail: +(niRoRmw  * niF).toFixed(1),
-          siGeoCurtail:   +(siGeo    * siF).toFixed(1),
-          siWindCurtail:  +(siWind   * siF).toFixed(1),
-          siSolarCurtail: +(siSolar  * siF).toFixed(1),
-          siHydroCurtail: +(siRoRmw  * siF).toFixed(1),
+          niWindCurtail:  +(niWind  * niF).toFixed(1),
+          niSolarCurtail: +(niSolar * niF).toFixed(1),
+          niHydroCurtail: +(niRoRmw * niF).toFixed(1),
+          siWindCurtail:  +(siWind  * siF).toFixed(1),
+          siSolarCurtail: +(siSolar * siF).toFixed(1),
+          siHydroCurtail: +(siRoRmw * siF).toFixed(1),
         };
       })(),
       niUnserved: niDef, siUnserved: siDef,
@@ -1093,7 +1083,6 @@ function renderTsCharts() {
     mkTsDs('Gas',        'niGas',    C.Gas,      true),
     mkTsDs('Coal',       'niCoal',   C.Coal,     true),
     mkTsDs('To storage', 'niCharge', C.Charge,   true),
-    mkTsDs('',           'niCurtail',C.Curtail,  true),
     mkDemand('niDemand'),
   ]), xt, islandMax);
 
@@ -1106,7 +1095,6 @@ function renderTsCharts() {
     mkTsDs('Storage',    'siStorage',C.Storage,  true),
     mkTsDs('HVDC import','hvdcNiSi', C.HvdcNiSi, true),
     mkTsDs('To storage', 'siCharge', C.Charge,   true),
-    mkTsDs('',           'siCurtail',C.Curtail,  true),
     mkDemand('siDemand'),
   ]), xt, islandMax);
 
@@ -1140,7 +1128,6 @@ function renderTsCharts() {
       nd('Gas',       'natGas',     C.Gas,      true),
       nd('Coal',      'natCoal',    C.Coal,     true),
       nd('→ Storage', 'natCharge',  C.Charge,   true),
-      nd('',          'natCurtail', C.Curtail,  true),
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ])},
@@ -1162,10 +1149,9 @@ function renderTsCharts() {
   charts['ts-curtail-ni'] = new Chart(document.getElementById('ts-curtail-ni'), {
     type:'line',
     data:{ labels:tsXLabels(), datasets: activeDs([
-      mkCurtDs('Geothermal', 'niGeoCurtail',   C.Geo),
-      mkCurtDs('Hydro',      'niHydroCurtail', C.Hydro),
-      mkCurtDs('Solar',      'niSolarCurtail', C.Solar),
-      mkCurtDs('Wind',       'niWindCurtail',  C.Wind),
+      mkCurtDs('Hydro',  'niHydroCurtail', C.Hydro),
+      mkCurtDs('Solar',  'niSolarCurtail', C.Solar),
+      mkCurtDs('Wind',   'niWindCurtail',  C.Wind),
     ])},
     options:{ responsive:true, animation:false,
       plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
@@ -1177,10 +1163,9 @@ function renderTsCharts() {
   charts['ts-curtail-si'] = new Chart(document.getElementById('ts-curtail-si'), {
     type:'line',
     data:{ labels:tsXLabels(), datasets: activeDs([
-      mkCurtDs('Geothermal', 'siGeoCurtail',   C.Geo),
-      mkCurtDs('Hydro',      'siHydroCurtail', C.Hydro),
-      mkCurtDs('Solar',      'siSolarCurtail', C.Solar),
-      mkCurtDs('Wind',       'siWindCurtail',  C.Wind),
+      mkCurtDs('Hydro',  'siHydroCurtail', C.Hydro),
+      mkCurtDs('Solar',  'siSolarCurtail', C.Solar),
+      mkCurtDs('Wind',   'siWindCurtail',  C.Wind),
     ])},
     options:{ responsive:true, animation:false,
       plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
@@ -1207,41 +1192,37 @@ function renderTsCharts() {
         y:{ title:{ display:true, text:'MW' } } } },
   });
 
-  // FIR and SIR — NI stacked FIR+SIR with contingency line; SI dashed
-  charts['ts-reserves']?.destroy();
-  charts['ts-reserves'] = new Chart(document.getElementById('ts-reserves'), {
-    type:'line',
-    data:{ labels:tsXLabels(), datasets:[
-      { label:'NI FIR (0–6 s)',
-        data: slice.map(p=>+(p.niFIR??0)),
-        borderColor:'#059669', backgroundColor:'#05966950',
-        fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
-      { label:'NI SIR (6–60 s)',
-        data: slice.map(p=>+(p.niSIR??0)),
-        borderColor:'#2563eb', backgroundColor:'#2563eb40',
-        fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'ni' },
-      { label:'NI contingency',
-        data: slice.map(p=>+(p.niContingency??0)),
-        borderColor:'#dc2626', borderDash:[5,3],
-        fill:false, borderWidth:1.8, pointRadius:0, tension:.0 },
-      { label:'SI FIR+SIR',
-        data: slice.map(p=>+((p.siFIR??0)+(p.siSIR??0))),
-        borderColor:'#7dd3fc', borderDash:[4,3],
-        fill:false, borderWidth:1.5, pointRadius:0, tension:.1 },
-      { label:'SI contingency',
-        data: slice.map(p=>+(p.siContingency??0)),
-        borderColor:'#f97316', borderDash:[5,3],
-        fill:false, borderWidth:1.5, pointRadius:0, tension:.0 },
-    ]},
-    options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false,
-          callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
-      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
-  });
+  // FIR and SIR — separate NI and SI charts
+  function mkFirChart(id, firKey, sirKey, contingencyKey, contingencyColor) {
+    charts[id]?.destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+      type:'line',
+      data:{ labels:tsXLabels(), datasets:[
+        { label:'FIR (0–6 s)',
+          data: slice.map(p=>+(p[firKey]??0)),
+          borderColor:'#059669', backgroundColor:'#05966950',
+          fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'r' },
+        { label:'SIR (6–60 s)',
+          data: slice.map(p=>+(p[sirKey]??0)),
+          borderColor:'#2563eb', backgroundColor:'#2563eb40',
+          fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'r' },
+        { label:'Contingency',
+          data: slice.map(p=>+(p[contingencyKey]??0)),
+          borderColor:contingencyColor, borderDash:[5,3],
+          fill:false, borderWidth:1.8, pointRadius:0, tension:.0 },
+      ]},
+      options:{ responsive:true, animation:false,
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+          tooltip:{ mode:'index', intersect:false,
+            callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
+        scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+          y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
+    });
+  }
+  mkFirChart('ts-reserves-ni', 'niFIR', 'niSIR', 'niContingency', '#dc2626');
+  mkFirChart('ts-reserves-si', 'siFIR', 'siSIR', 'siContingency', '#f97316');
 
-  // System inertia (MW·s) — NI and SI
+  // System inertia (MW·s) — NI and SI, full width
   charts['ts-inertia']?.destroy();
   charts['ts-inertia'] = new Chart(document.getElementById('ts-inertia'), {
     type:'line',
@@ -1263,49 +1244,39 @@ function renderTsCharts() {
         y:{ title:{ display:true, text:'MW·s' }, min:0 } } },
   });
 
-  // Battery — SoC % on left axis, charge/discharge MW on right axis
-  charts['ts-batt']?.destroy();
-  charts['ts-batt'] = new Chart(document.getElementById('ts-batt'), {
-    data:{ labels:tsXLabels(), datasets:[
-      { label:'NI SoC %', type:'line',
-        data: slice.map(p=>+(p.niSoCpct??0).toFixed(1)),
-        borderColor:C.Storage, backgroundColor:C.Storage+'25', fill:true,
-        yAxisID:'ySoC', pointRadius:0, tension:.2, borderWidth:1.5 },
-      { label:'SI SoC %', type:'line',
-        data: slice.map(p=>+(p.siBattPct??0).toFixed(1)),
-        borderColor:'#818cf8', borderDash:[4,3],
-        fill:false, yAxisID:'ySoC', pointRadius:0, tension:.2, borderWidth:1.2 },
-      { label:'NI Charging', type:'line',
-        data: slice.map(p=>+(p.niCharge??0).toFixed(0)),
-        borderColor:'#a78bfa', backgroundColor:'#a78bfa35', fill:true,
-        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
-      { label:'NI Discharging', type:'line',
-        data: slice.map(p=>+(p.niStorage??0).toFixed(0)),
-        borderColor:'#6d28d9', backgroundColor:'#6d28d935', fill:true,
-        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
-      { label:'SI Charging', type:'line',
-        data: slice.map(p=>+(p.siCharge??0).toFixed(0)),
-        borderColor:'#c084fc', backgroundColor:'#c084fc25', fill:true,
-        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
-      { label:'SI Discharging', type:'line',
-        data: slice.map(p=>+(p.siStorage??0).toFixed(0)),
-        borderColor:'#9333ea', backgroundColor:'#9333ea25', fill:true,
-        yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
-    ]},
-    options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10},
-        filter: item => item.text !== '' } },
-        tooltip:{ mode:'index', intersect:false }},
-      scales:{
-        x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        ySoC:{ type:'linear', position:'left', min:0, max:100,
-          title:{ display:true, text:'SoC %' } },
-        yMW:{ type:'linear', position:'right',
-          title:{ display:true, text:'MW' },
-          grid:{ drawOnChartArea:false } },
+  // Battery per island — SoC % (left axis) + charge/discharge MW (right axis)
+  function mkBattChart(id, socKey, chargeKey, dischargeKey) {
+    charts[id]?.destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+      data:{ labels:tsXLabels(), datasets:[
+        { label:'SoC %', type:'line',
+          data: slice.map(p=>+(p[socKey]??0).toFixed(1)),
+          borderColor:C.Storage, backgroundColor:C.Storage+'25', fill:true,
+          yAxisID:'ySoC', pointRadius:0, tension:.2, borderWidth:1.5 },
+        { label:'Charging', type:'line',
+          data: slice.map(p=>+(p[chargeKey]??0).toFixed(0)),
+          borderColor:'#a78bfa', backgroundColor:'#a78bfa35', fill:true,
+          yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
+        { label:'Discharging', type:'line',
+          data: slice.map(p=>+(p[dischargeKey]??0).toFixed(0)),
+          borderColor:'#6d28d9', backgroundColor:'#6d28d935', fill:true,
+          yAxisID:'yMW', pointRadius:0, tension:.1, borderWidth:0.5 },
+      ]},
+      options:{ responsive:true, animation:false,
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:8, font:{size:10} } },
+          tooltip:{ mode:'index', intersect:false }},
+        scales:{
+          x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+          ySoC:{ type:'linear', position:'left', min:0, max:100,
+            title:{ display:true, text:'SoC %' } },
+          yMW:{ type:'linear', position:'right',
+            title:{ display:true, text:'MW' }, grid:{ drawOnChartArea:false } },
+        },
       },
-    },
-  });
+    });
+  }
+  mkBattChart('ts-batt-ni', 'niSoCpct', 'niCharge', 'niStorage');
+  mkBattChart('ts-batt-si', 'siBattPct', 'siCharge', 'siStorage');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1316,7 +1287,7 @@ function getParams() {
   return {
     niWindGW:   g('ni-wind'),    siWindGW:   g('si-wind'),
     niSolarGW:  g('ni-solar'),   siSolarGW:  g('si-solar'),
-    niSolarCorr: g('ni-solar-corr'), siSolarCorr: g('si-solar-corr'),
+    niSolarTargetYield: g('ni-solar-yield'), siSolarTargetYield: g('si-solar-yield'),
     niRoR:      g('ni-ror'),     siRoR:      g('si-ror'),
     battPower:  g('batt-power'), battCap:    g('batt-cap'),
     battEff:    g('batt-eff')/100, battSoC0: 0.5,
@@ -1338,7 +1309,7 @@ function buildBaselineParams(caps, pUser) {
     siWindGW:  (caps['Wind']?.SI  ?? 137)  / 1000,
     niSolarGW: (caps['Solar']?.NI ?? 141)  / 1000,
     siSolarGW: (caps['Solar']?.SI ?? 47)   / 1000,
-    niSolarCorr: pUser.niSolarCorr, siSolarCorr: pUser.siSolarCorr,
+    niSolarTargetYield: pUser.niSolarTargetYield, siSolarTargetYield: pUser.siSolarTargetYield,
     niRoR: 70, siRoR: 20,
     battPower:0, battCap:0, battEff:.85, battSoC0:.5,
     siBattPower:0, siBattCap:0, siBattEff:.85, siBattSoC0:.5,
@@ -1388,6 +1359,16 @@ async function runSim() {
 
     const pUser = getParams();
     const pBase = buildBaselineParams(caps, pUser);
+
+    // Compute solar correction factors from raw data yield vs kWh/kWp target
+    const niCapGW = (caps['Solar']?.NI || 1) / 1000;
+    const siCapGW = (caps['Solar']?.SI || 1) / 1000;
+    const niRawYield = data.reduce((s,r) => s + r.NI_Solar, 0) * 0.5 / 1000 / niCapGW;
+    const siRawYield = data.reduce((s,r) => s + r.SI_Solar, 0) * 0.5 / 1000 / siCapGW;
+    pUser.niSolarCorr = niRawYield > 1 ? pUser.niSolarTargetYield / niRawYield : 1;
+    pUser.siSolarCorr = siRawYield > 1 ? pUser.siSolarTargetYield / siRawYield : 1;
+    pBase.niSolarCorr = pUser.niSolarCorr;
+    pBase.siSolarCorr = pUser.siSolarCorr;
     gCaps = caps; gParams = pUser;
     const { mo: moBase }            = simulate(data, caps, pBase);
     const { mo: moUser, pp, pk }    = simulate(data, caps, pUser);
