@@ -71,7 +71,7 @@
     .island-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-bottom:24px; }
     .itbl { width:100%; border-collapse:collapse; font-size:12px; }
     .itbl th { text-align:left; padding:4px 6px; font-size:9px; font-weight:700;
-      text-transform:uppercase; letter-spacing:.07em; color:var(--muted);
+      letter-spacing:.07em; color:var(--muted);
       border-bottom:1px solid var(--border); }
     .itbl th:not(:first-child) { text-align:right; }
     .itbl td { padding:3px 6px; border-bottom:1px solid var(--border); }
@@ -202,6 +202,33 @@
     </details>
 
     <details class="ctrl-panel">
+      <summary>Domestic Solar &amp; Storage</summary>
+      <div class="slider-row">
+        <div class="sl"><div class="sl-hd"><span>Enable domestic solar &amp; storage</span>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="dom-solar-enabled" onchange="syncCheckbox('dom-solar-enabled');runSim()">
+            <span id="dom-solar-enabled-v" class="sl-val">Off</span>
+          </label></div></div>
+        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — NI</span><span id="ni-dom-pct-v" class="sl-val">35%</span></div>
+          <input type="range" id="ni-dom-pct" min="0" max="100" step="1" value="35" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — SI</span><span id="si-dom-pct-v" class="sl-val">30%</span></div>
+          <input type="range" id="si-dom-pct" min="0" max="100" step="1" value="30" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Panels per home</span><span id="dom-panels-v" class="sl-val">10</span></div>
+          <input type="range" id="dom-panels" min="1" max="30" step="1" value="10" data-unit="" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Panel size</span><span id="dom-panel-watts-v" class="sl-val">500 W</span></div>
+          <input type="range" id="dom-panel-watts" min="100" max="700" step="50" value="500" data-unit="W" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>NI homes with solar</span><span id="ni-dom-solar-pct-v" class="sl-val">5%</span></div>
+          <input type="range" id="ni-dom-solar-pct" min="0" max="100" step="1" value="5" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>SI homes with solar</span><span id="si-dom-solar-pct-v" class="sl-val">3%</span></div>
+          <input type="range" id="si-dom-solar-pct" min="0" max="100" step="1" value="3" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Solar homes with storage</span><span id="dom-storage-pct-v" class="sl-val">20%</span></div>
+          <input type="range" id="dom-storage-pct" min="0" max="100" step="1" value="20" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Home battery size</span><span id="dom-batt-kwh-v" class="sl-val">10 kWh</span></div>
+          <input type="range" id="dom-batt-kwh" min="2" max="30" step="1" value="10" data-unit="kWh" data-dp="0" oninput="syncSlider(this)"></div>
+      </div>
+    </details>
+
+    <details class="ctrl-panel">
       <summary>NI Dispatchables (MW capacity)</summary>
       <div class="slider-row">
         <div class="sl"><div class="sl-hd"><span>Gas</span><span id="ni-gas-v" class="sl-val">1678 MW</span></div>
@@ -242,9 +269,9 @@
   </div><!-- /ctrl-grid -->
 
   <div class="run-bar">
-    <button class="btn-run" id="btn-run" onclick="runSim()">▶ Run Simulation</button>
+    <button class="btn-run" id="btn-run" onclick="runSim()" disabled>▶ Run Simulation</button>
     <button class="btn-blueprint" onclick="preloadBlueprint()">⚡ Preload NZ Blueprint</button>
-    <span id="sim-status">Configure and click Run — or preload the Blueprint scenario.</span>
+    <span id="sim-status">Loading data…</span>
   </div>
 
   <!-- Results -->
@@ -289,8 +316,6 @@
       <div class="ts-charts">
         <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
         <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
-        <div class="chart-box"><h3>North Island battery — SoC % and charge / discharge (MW)</h3><canvas id="ts-batt-ni"></canvas></div>
-        <div class="chart-box"><h3>South Island battery — SoC % and charge / discharge (MW)</h3><canvas id="ts-batt-si"></canvas></div>
       </div>
     </div>
 
@@ -321,6 +346,18 @@
       </div>
     </div>
 
+    <!-- ── Battery storage ── -->
+    <div class="ts-section">
+      <div class="ts-section-hd">
+        <h3>Battery storage</h3>
+        <p>State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge held above the 20% spinning reserve floor.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>North Island battery</h3><canvas id="ts-batt-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island battery</h3><canvas id="ts-batt-si"></canvas></div>
+      </div>
+    </div>
+
     <!-- ── Curtailment ── -->
     <div class="ts-section">
       <div class="ts-section-hd">
@@ -348,7 +385,7 @@
     <div class="ts-section">
       <div class="ts-section-hd">
         <h3>Frequency reserves and system inertia</h3>
-        <p>Estimated Fast Instantaneous Reserve (FIR, 0–6 s) and Sustained Instantaneous Reserve (SIR, 6–60 s) versus the largest single contingency for each island. System inertia from synchronous generators only — wind, solar and batteries contribute none.</p>
+        <p>Estimated Fast Instantaneous Reserve (FIR, 0–6 s) and Sustained Instantaneous Reserve (SIR, 6–60 s) versus the largest single contingency for each island. Batteries contribute full rated power to both FIR and SIR when sufficient charge is held above the reserve floor. System inertia is from synchronous generators only — wind, solar and batteries contribute none.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island — FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves-ni"></canvas></div>
@@ -382,7 +419,7 @@ const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','N
 // Brand-aligned palette
 const C = {
   Geo:     '#dc2626', Hydro:   '#2563eb', Wind:    '#0d9e6e', Solar:   '#d97706',
-  Storage: '#f97316', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
+  Storage: '#f97316', DomSolar:'#84cc16', Wood:    '#78350f', Gas:     '#475569', Coal:    '#0f172a',
   Diesel:  '#94a3b8', Other:   '#cbd5e1', Demand:  '#1a4d7a',
   HvdcNiSi:'#7c3aed', HvdcSiNi:'#a78bfa',
   Charge:  '#fb923c', Curtail: '#34d399',
@@ -411,6 +448,11 @@ function syncSlider(el) {
   const v    = +el.value;
   const lbl  = document.getElementById(el.id + '-v');
   if (lbl) lbl.textContent = v.toFixed(dp) + (unit ? ' ' + unit : '');
+}
+function syncCheckbox(id) {
+  const el  = document.getElementById(id);
+  const lbl = document.getElementById(id + '-v');
+  if (el && lbl) lbl.textContent = el.checked ? 'On' : 'Off';
 }
 function setSlider(id, val) {
   const el = document.getElementById(id);
@@ -519,21 +561,54 @@ function simulate(data, caps, p) {
   const BATT_RESERVE = 0.20;   // keep 20% SoC as spinning reserve
   const K = 0.5 / 1000;        // MW × 0.5h → GWh
 
+  // ── Domestic solar & storage pre-computation ──────────────────────────
+  // Historical demand is already net of existing rooftop solar, so this
+  // models ADDITIONAL new domestic installations on top of the current fleet.
+  const AVG_HOME_MWH_YEAR = 7.5;   // NZ average household consumption
+  const HOME_BATT_KW = 5;           // assumed inverter power per home (kW)
+  const niDomEnabled = p.domSolarEnabled && p.niDomSolarPct > 0;
+  const siDomEnabled = p.domSolarEnabled && p.siDomSolarPct > 0;
+  const solarKWp = p.domPanels * p.domPanelWatts / 1000;  // kWp per home
+
+  const niDomTotalGWh = data.reduce((s, r) => s + r.NI_Demand * (p.niDomPct / 100), 0) * K;
+  const siDomTotalGWh = data.reduce((s, r) => s + r.SI_Demand * (p.siDomPct / 100), 0) * K;
+  const nHomesNI = niDomTotalGWh * 1000 / AVG_HOME_MWH_YEAR;
+  const nHomesSI = siDomTotalGWh * 1000 / AVG_HOME_MWH_YEAR;
+
+  const solHomesNI = nHomesNI * (niDomEnabled ? p.niDomSolarPct / 100 : 0);
+  const solHomesSI = nHomesSI * (siDomEnabled ? p.siDomSolarPct / 100 : 0);
+  const stoHomesNI = solHomesNI * p.domStoragePct / 100;
+  const stoHomesSI = solHomesSI * p.domStoragePct / 100;
+
+  const domSolCapNI = solHomesNI * solarKWp / 1e6;   // GW domestic solar NI
+  const domSolCapSI = solHomesSI * solarKWp / 1e6;   // GW domestic solar SI
+  const domSolScNI  = domSolCapNI * 1000 / Math.max(caps['Solar']?.NI || 1, 1);
+  const domSolScSI  = domSolCapSI * 1000 / Math.max(caps['Solar']?.SI || 1, 1);
+
+  const domBatCapNI = stoHomesNI * p.domBattKWh / 1e6;   // GWh total home batteries NI
+  const domBatCapSI = stoHomesSI * p.domBattKWh / 1e6;
+  const domBatPowNI = stoHomesNI * HOME_BATT_KW / 1e6;   // GW total home battery power NI
+  const domBatPowSI = stoHomesSI * HOME_BATT_KW / 1e6;
+
+  let niDomSoC = domBatCapNI * 0.5;
+  let siDomSoC = domBatCapSI * 0.5;
+
   const mo = Array.from({length:12}, () => ({
     niDemand:0, siDemand:0,
-    niGeo:0, niHydro:0, niWind:0, niSolar:0, niStorage:0, niCharge:0,
+    niGeo:0, niDomSolar:0, niHydro:0, niWind:0, niSolar:0, niStorage:0, niCharge:0,
     niWood:0, niGas:0,  niCoal:0, niDiesel:0, niOther:0,
-    siGeo:0, siHydro:0, siWind:0, siSolar:0,  siStorage:0, siCharge:0,
+    siGeo:0, siDomSolar:0, siHydro:0, siWind:0, siSolar:0, siStorage:0, siCharge:0,
     hvdcNiSi:0, hvdcSiNi:0, niCurtail:0, siCurtail:0,
     niUnserved:0, siUnserved:0, niRes:0, siRes:0, cnt:0,
   }));
 
   // Peak MW per fuel (for table column)
   const pk = {
-    niGeo:0, niHydro:0, niWind:0, niSolar:0, niStorage:0,
+    niGeo:0, niDomSolar:0, niHydro:0, niWind:0, niSolar:0, niStorage:0,
     niWood:0, niGas:0,  niCoal:0, niDiesel:0, niOther:0,
-    siGeo:0, siHydro:0, siWind:0, siSolar:0,  siStorage:0,
+    siGeo:0, siDomSolar:0, siHydro:0, siWind:0, siSolar:0, siStorage:0,
     niDemand:0, siDemand:0, natDemand:0,
+    domSolCapNI, domSolCapSI,  // stash for table display
   };
 
   const pp = [];
@@ -548,7 +623,6 @@ function simulate(data, caps, p) {
     const niHist  = row.NI_Hydro;
     const niRoRmw = niHist * (p.niRoR / 100);
     const niFlex  = niHist * (1 - p.niRoR / 100);
-    const niFixed = niGeo + niWind + niSolar + niRoRmw;
 
     const siGeo   = row.SI_Geo;
     const siWind  = row.SI_Wind  * siWindSc;
@@ -556,7 +630,50 @@ function simulate(data, caps, p) {
     const siHist  = row.SI_Hydro;
     const siRoRmw = siHist * (p.siRoR / 100);
     const siFlex  = siHist * (1 - p.siRoR / 100);
-    const siFixed = siGeo + siWind + siSolar + siRoRmw;
+
+    // ── Domestic solar & storage (dispatched after geo, before grid VRE) ──
+    // Uses same solar resource profile, scaled to domestic installed capacity.
+    // Zero-export model: solar meets home load first, surplus charges battery,
+    // battery discharges 06:00–22:00 only. Net effect = reduced domestic draw.
+    const hour = parseInt(row.dt.slice(11, 13), 10);
+    const canDomDischarge = hour >= 6 && hour < 22;
+
+    // NI domestic
+    const rawDomNI   = row.NI_Solar * domSolScNI * p.niSolarCorr;
+    const niDomDem   = row.NI_Demand * p.niDomPct / 100;
+    const niDomSelf  = Math.min(rawDomNI, niDomDem);
+    let   niDomSurp  = rawDomNI - niDomSelf;
+    let   niDomDef   = niDomDem - niDomSelf;
+    if (niDomSurp > 0 && domBatCapNI > 0) {
+      const cw = Math.min(niDomSurp, domBatPowNI * 1000, (domBatCapNI - niDomSoC) / K);
+      niDomSoC += cw * K;  niDomSurp -= cw;
+    }
+    let niDomBatt = 0;
+    if (canDomDischarge && niDomDef > 0 && niDomSoC > 0) {
+      const dw = Math.min(niDomDef, domBatPowNI * 1000, niDomSoC / K);
+      niDomBatt = dw;  niDomSoC -= dw * K;  niDomDef -= dw;
+    }
+    const niDomGen = niDomSelf + niDomBatt;  // MW virtual generation (demand offset)
+
+    // SI domestic
+    const rawDomSI   = row.SI_Solar * domSolScSI * p.siSolarCorr;
+    const siDomDem   = row.SI_Demand * p.siDomPct / 100;
+    const siDomSelf  = Math.min(rawDomSI, siDomDem);
+    let   siDomSurp  = rawDomSI - siDomSelf;
+    let   siDomDef   = siDomDem - siDomSelf;
+    if (siDomSurp > 0 && domBatCapSI > 0) {
+      const cw = Math.min(siDomSurp, domBatPowSI * 1000, (domBatCapSI - siDomSoC) / K);
+      siDomSoC += cw * K;  siDomSurp -= cw;
+    }
+    let siDomBatt = 0;
+    if (canDomDischarge && siDomDef > 0 && siDomSoC > 0) {
+      const dw = Math.min(siDomDef, domBatPowSI * 1000, siDomSoC / K);
+      siDomBatt = dw;  siDomSoC -= dw * K;  siDomDef -= dw;
+    }
+    const siDomGen = siDomSelf + siDomBatt;
+
+    const niFixed = niGeo + niDomGen + niWind + niSolar + niRoRmw;
+    const siFixed = siGeo + siDomGen + siWind + siSolar + siRoRmw;
 
     // Surplus/deficit from fixed gen only (before any flex hydro or HVDC)
     let niSurp = Math.max(niFixed - row.NI_Demand, 0);
@@ -652,6 +769,7 @@ function simulate(data, caps, p) {
 
     mo[m].niDemand   += row.NI_Demand * K;   mo[m].siDemand   += row.SI_Demand * K;
     mo[m].niGeo      += niGeo         * K;   mo[m].siGeo      += siGeo         * K;
+    mo[m].niDomSolar += niDomGen      * K;   mo[m].siDomSolar += siDomGen      * K;
     mo[m].niHydro    += niHydroTotal  * K;   mo[m].siHydro    += siHydroTotal  * K;
     mo[m].niWind     += niWind        * K;   mo[m].siWind     += siWind        * K;
     mo[m].niSolar    += niSolar       * K;   mo[m].siSolar    += siSolar       * K;
@@ -668,6 +786,8 @@ function simulate(data, caps, p) {
 
     // Peak tracking
     pk.niGeo      = Math.max(pk.niGeo,      niGeo);
+    pk.niDomSolar = Math.max(pk.niDomSolar, niDomGen);
+    pk.siDomSolar = Math.max(pk.siDomSolar, siDomGen);
     pk.niHydro    = Math.max(pk.niHydro,    niHydroTotal);
     pk.niWind     = Math.max(pk.niWind,     niWind);
     pk.niSolar    = Math.max(pk.niSolar,    niSolar);
@@ -688,9 +808,9 @@ function simulate(data, caps, p) {
 
     pp.push({
       dt: row.dt, niDemand: row.NI_Demand, siDemand: row.SI_Demand,
-      niGeo, niHydro: niHydroTotal, niWind, niSolar, niStorage: niDischarge, niCharge,
+      niGeo, niDomSolar: niDomGen, niHydro: niHydroTotal, niWind, niSolar, niStorage: niDischarge, niCharge,
       niWood: dWood, niGas: dGas, niCoal: dCoal, niDiesel: dDiesel, niOther: dOther,
-      siGeo, siHydro: siHydroTotal, siWind, siSolar, siStorage: siDischarge, siCharge,
+      siGeo, siDomSolar: siDomGen, siHydro: siHydroTotal, siWind, siSolar, siStorage: siDischarge, siCharge,
       hvdcNiSi, hvdcSiNi,
       niCurtail: niSurp, siCurtail: siSurp,
       // Curtailment attributed proportionally to curtailable VRE (not geo — always runs)
@@ -733,11 +853,15 @@ function simulate(data, caps, p) {
       ).toFixed(0),
       // ─── SIR available (respond 6–60 s, hold 15 min) ────────────────────────
       niSIR: +(
-          niFlexAvail * 0.75                                    // remaining flex hydro (slower ramp)
+          (p.battPower > 0 && niSoC > BATT_RESERVE * p.battCap + p.battPower * 0.25 ? p.battPower : 0)  // battery: 15 min hold
+        + niFlexAvail * 0.75                                    // remaining flex hydro
         + Math.max(0, p.niGas  - dGas)  * 0.35               // gas hot standby
         + Math.max(0, p.niCoal - dCoal) * 0.20               // coal spinning reserve
       ).toFixed(0),
-      siSIR: +(siFlexAvail * 0.75).toFixed(0),
+      siSIR: +(
+          (p.siBattPower > 0 && siSoC > BATT_RESERVE * p.siBattCap + p.siBattPower * 0.25 ? p.siBattPower : 0)  // battery: 15 min hold
+        + siFlexAvail * 0.75
+      ).toFixed(0),
     });
   }
   return { mo, pp, pk };
@@ -899,7 +1023,8 @@ function renderTables(mo, pk) {
 
   renderTable('tbl-nat', natDem, [
     ['Demand',                                    natDem,                                          '#000',      pk.natDemand,                    null,                              true],
-    ['Geothermal',                                sum(mo,'niGeo')   + sum(mo,'siGeo'),             C.Geo,       pk.niGeo    + pk.siGeo,           niGeoGW   + siGeoGW],
+    ['Geothermal',                                sum(mo,'niGeo')    + sum(mo,'siGeo'),            C.Geo,       pk.niGeo    + pk.siGeo,           niGeoGW   + siGeoGW],
+    ['Domestic solar & storage',                  sum(mo,'niDomSolar')+sum(mo,'siDomSolar'),       C.DomSolar,  pk.niDomSolar+pk.siDomSolar,      (pk.domSolCapNI+pk.domSolCapSI)||null],
     ['Hydro',                                     sum(mo,'niHydro') + sum(mo,'siHydro'),           C.Hydro,     pk.niHydro  + pk.siHydro,         niHydroGW + siHydroGW],
     [`Solar`,                                     niSolarGWh        + siSolarGWh,                  C.Solar,     pk.niSolar  + pk.siSolar,         p.niSolarGW + p.siSolarGW],
     [`Wind`,                                      niWindGWh         + siWindGWh,                   C.Wind,      pk.niWind   + pk.siWind,          p.niWindGW  + p.siWindGW],
@@ -914,6 +1039,7 @@ function renderTables(mo, pk) {
   renderTable('tbl-ni', niDem, [
     ['Demand',                                    niDem,               '#000',     pk.niDemand, null,              true],
     ['Geothermal',                                sum(mo,'niGeo'),     C.Geo,      pk.niGeo,    niGeoGW],
+    ['Domestic solar & storage',                  sum(mo,'niDomSolar'),C.DomSolar, pk.niDomSolar, pk.domSolCapNI||null],
     ['Hydro',                                     sum(mo,'niHydro'),   C.Hydro,    pk.niHydro,  niHydroGW],
     [`Solar (${niYield} kWh/kWp)`,                niSolarGWh,          C.Solar,    pk.niSolar,  p.niSolarGW],
     [`Wind (${niCF}% CF)`,                        niWindGWh,           C.Wind,     pk.niWind,   p.niWindGW],
@@ -929,6 +1055,7 @@ function renderTables(mo, pk) {
   renderTable('tbl-si', siDem, [
     ['Demand',                                    siDem,               '#000',     pk.siDemand, null,              true],
     ['Geothermal',                                sum(mo,'siGeo'),     C.Geo,      pk.siGeo,    siGeoGW],
+    ['Domestic solar & storage',                  sum(mo,'siDomSolar'),C.DomSolar, pk.siDomSolar, pk.domSolCapSI||null],
     ['Hydro',                                     sum(mo,'siHydro'),   C.Hydro,    pk.siHydro,  siHydroGW],
     [`Solar (${siYield} kWh/kWp)`,                siSolarGWh,          C.Solar,    pk.siSolar,  p.siSolarGW],
     [`Wind (${siCF}% CF)`,                        siWindGWh,           C.Wind,     pk.siWind,   p.siWindGW],
@@ -1098,10 +1225,11 @@ function renderTsCharts() {
   // Fixed shared y-axis for NI and SI generation dispatch charts
   const islandMax = 4500;
 
-  // NI — plot order: Geo → Solar → Wind → Hydro → Storage → HVDC → dispatchables
+  // NI — plot order: Geo → Domestic solar → Solar → Wind → Hydro → Storage → HVDC → dispatchables
   mkTsChart('ts-ni', activeDs([
-    mkTsDs('Geothermal',  'niGeo',    C.Geo,       true),
-    mkTsDs('Solar',       'niSolar',  C.Solar,     true),
+    mkTsDs('Geothermal',  'niGeo',       C.Geo,       true),
+    mkTsDs('Dom. solar',  'niDomSolar',  C.DomSolar,  true),
+    mkTsDs('Solar',       'niSolar',     C.Solar,     true),
     mkTsDs('Wind',        'niWind',   C.Wind,      true),
     mkTsDs('Hydro',       'niHydro',  C.Hydro,     true),
     mkTsDs('Storage',     'niStorage',C.Storage,   true),
@@ -1114,8 +1242,9 @@ function renderTsCharts() {
 
   // SI — same order
   mkTsChart('ts-si', activeDs([
-    mkTsDs('Geothermal',  'siGeo',    C.Geo,       true),
-    mkTsDs('Solar',       'siSolar',  C.Solar,     true),
+    mkTsDs('Geothermal',  'siGeo',       C.Geo,       true),
+    mkTsDs('Dom. solar',  'siDomSolar',  C.DomSolar,  true),
+    mkTsDs('Solar',       'siSolar',     C.Solar,     true),
     mkTsDs('Wind',        'siWind',   C.Wind,      true),
     mkTsDs('Hydro',       'siHydro',  C.Hydro,     true),
     mkTsDs('Storage',     'siStorage',C.Storage,   true),
@@ -1126,8 +1255,9 @@ function renderTsCharts() {
   // National combined
   const nat = slice.map(p => ({
     natDemand:  p.niDemand + p.siDemand,
-    natGeo:     p.niGeo    + p.siGeo,
-    natHydro:   p.niHydro  + p.siHydro,
+    natGeo:     p.niGeo      + p.siGeo,
+    natDomSolar:p.niDomSolar + p.siDomSolar,
+    natHydro:   p.niHydro   + p.siHydro,
     natWind:    p.niWind   + p.siWind,
     natSolar:   p.niSolar  + p.siSolar,
     natStorage: p.niStorage+ p.siStorage,
@@ -1144,8 +1274,9 @@ function renderTsCharts() {
   charts['ts-nat']?.destroy();
   charts['ts-nat'] = new Chart(document.getElementById('ts-nat'), {
     data:{ labels:tsXLabels(), datasets: activeDs([
-      nd('Geothermal','natGeo',     C.Geo,      true),
-      nd('Solar',     'natSolar',   C.Solar,    true),
+      nd('Geothermal', 'natGeo',       C.Geo,       true),
+      nd('Dom. solar', 'natDomSolar',  C.DomSolar,  true),
+      nd('Solar',      'natSolar',     C.Solar,     true),
       nd('Wind',      'natWind',    C.Wind,     true),
       nd('Hydro',     'natHydro',   C.Hydro,    true),
       nd('Storage',   'natStorage', C.Storage,  true),
@@ -1324,6 +1455,15 @@ function getParams() {
     niResMax: g('ni-res-max') * 1000, siResMax: g('si-res-max') * 1000,
     niRes0:   g('ni-res-start') / 100, siRes0:  g('si-res-start') / 100,
     niLoss: 0.5, siLoss: 4.5,
+    domSolarEnabled: document.getElementById('dom-solar-enabled').checked,
+    niDomPct:       g('ni-dom-pct'),
+    siDomPct:       g('si-dom-pct'),
+    domPanels:      g('dom-panels'),
+    domPanelWatts:  g('dom-panel-watts'),
+    niDomSolarPct:  g('ni-dom-solar-pct'),
+    siDomSolarPct:  g('si-dom-solar-pct'),
+    domStoragePct:  g('dom-storage-pct'),
+    domBattKWh:     g('dom-batt-kwh'),
   };
 }
 
@@ -1346,6 +1486,9 @@ function buildBaselineParams(caps, pUser) {
     constrainHvdcByReserves: false,
     niResMax:500000, siResMax:4500000, niRes0:.25, siRes0:.25,
     niLoss:0.5, siLoss:4.5,
+    domSolarEnabled: false, niDomPct:35, siDomPct:30,
+    domPanels:10, domPanelWatts:500,
+    niDomSolarPct:0, siDomSolarPct:0, domStoragePct:20, domBattKWh:10,
   };
 }
 
@@ -1375,6 +1518,27 @@ async function runSim() {
             return { ...r, NI_Solar: ref.NI_Solar, SI_Solar: ref.SI_Solar };
           });
         } catch(e) { console.warn('Solar fallback failed:', e); }
+      }
+    }
+
+    // SI solar gap-fill: if SI solar is incomplete, substitute from NI solar
+    // scaled by capacity ratio. Detects incomplete series by comparing periods
+    // where NI has solar output but SI is zero (genuine zeros only happen at night).
+    {
+      const niSolCap = caps['Solar']?.NI || 141;
+      const siSolCap = caps['Solar']?.SI || 47;
+      const siNiRatio = siSolCap / niSolCap;
+      const niDayPeriods = data.filter(r => r.NI_Solar > 10).length;
+      const siDayPeriods = data.filter(r => r.SI_Solar > 10).length;
+      // If SI solar coverage is less than 60% of NI coverage, fill gaps from NI
+      if (niDayPeriods > 0 && siDayPeriods < niDayPeriods * 0.6) {
+        const msg = `SI solar incomplete (${siDayPeriods} vs ${niDayPeriods} NI periods) — filling from NI profile`;
+        console.info(msg);
+        status.textContent = msg + '…';
+        data = data.map(r => ({
+          ...r,
+          SI_Solar: r.SI_Solar > 0 ? r.SI_Solar : r.NI_Solar * siNiRatio,
+        }));
       }
     }
 
@@ -1445,6 +1609,7 @@ async function runSim() {
     setIfPresent('ni-diesel', 'Diesel');
     setIfPresent('ni-other',  'Other');
 
+    document.getElementById('btn-run').disabled = false;
     document.getElementById('sim-status').textContent =
       `${years.length} years available (${years[0]}–${years[years.length-1]}). ` +
       `Configure sliders or preload the Blueprint scenario.`;
