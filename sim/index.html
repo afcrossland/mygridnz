@@ -578,11 +578,12 @@ function setCheck(id, val) {
 }
 
 function resetToToday() {
-  setSlider('ni-wind',        2.1);
-  setSlider('si-wind',        0.9);
-  setSlider('ni-solar',       2.5);
+  // Wind/solar/dispatchables from actual 2025 installed capacity loaded on init
+  setSlider('ni-wind',        gTodayCaps.niWindGW   || 2.1);
+  setSlider('si-wind',        gTodayCaps.siWindGW   || 0.9);
+  setSlider('ni-solar',       gTodayCaps.niSolarGW  || 2.5);
   setSlider('ni-solar-yield', 1200);
-  setSlider('si-solar',       0.5);
+  setSlider('si-solar',       gTodayCaps.siSolarGW  || 0.5);
   setSlider('si-solar-yield', 1100);
   setSlider('ni-ror',          70);
   setSlider('si-ror',          20);
@@ -592,11 +593,11 @@ function resetToToday() {
   setSlider('si-batt-power',  200);
   setSlider('si-batt-cap',    800);
   setSlider('si-batt-eff',     85);
-  setSlider('ni-gas',        1678);
-  setSlider('ni-coal',        400);
-  setSlider('ni-wood',        200);
-  setSlider('ni-diesel',      156);
-  setSlider('ni-other',       135);
+  setSlider('ni-gas',        gTodayCaps.niGasMW    || 1678);
+  setSlider('ni-coal',       gTodayCaps.niCoalMW   || 400);
+  setSlider('ni-wood',       gTodayCaps.niWoodMW   || 200);
+  setSlider('ni-diesel',     gTodayCaps.niDieselMW || 156);
+  setSlider('ni-other',      gTodayCaps.niOtherMW  || 135);
   setSlider('hvdc-ni-si',    1200);
   setSlider('hvdc-si-ni',    1200);
   setCheck('dom-solar-enabled', false);
@@ -1232,6 +1233,7 @@ function renderTables(mo, pk) {
 }
 
 let gCaps = {}, gParams = {};   // stashed after each run for use in renderTables
+let gTodayCaps = {};            // actual 2025 installed capacity, set on init
 
 let charts = {};
 function killCharts() { Object.values(charts).forEach(c => c?.destroy()); charts = {}; }
@@ -1751,6 +1753,7 @@ async function runSim() {
 (async () => {
   try {
     const [years, caps] = await Promise.all([loadYears(), loadCapacity()]);
+    gCaps  = caps;
     gYears = years;
     const sel = document.getElementById('sim-year');
     years.forEach(y => {
@@ -1760,19 +1763,35 @@ async function runSim() {
     });
     sel.value = years.includes(2025) ? 2025 : years[years.length - 1];
 
-    // Update slider defaults from actual fleet capacity
-    console.log('capacity_perIsland keys:', Object.keys(caps), caps);
-    const setIfPresent = (sliderId, ...keys) => {
-      for (const key of keys) {
-        const v = caps[key]?.NI;
-        if (v != null && v > 0) { setSlider(sliderId, v); break; }
-      }
+    // Helper: first matching key with a positive value
+    const capVal = (island, ...keys) => {
+      for (const k of keys) { const v = caps[k]?.[island]; if (v > 0) return v; }
+      return null;
     };
-    setIfPresent('ni-gas',    'Gas', 'Gas Thermal');
-    setIfPresent('ni-coal',   'Coal', 'Coal Thermal');
-    setIfPresent('ni-wood',   'Wood', 'Wood / Biomass', 'Biomass', 'Bio', 'Wood/Biomass');
-    setIfPresent('ni-diesel', 'Diesel');
-    setIfPresent('ni-other',  'Other');
+
+    // Store today's capacity for use by resetToToday() preload helper
+    gTodayCaps = {
+      niWindGW:   (capVal('NI','Wind')                          || 2100) / 1000,
+      siWindGW:   (capVal('SI','Wind')                          || 900)  / 1000,
+      niSolarGW:  (capVal('NI','Solar')                         || 2500) / 1000,
+      siSolarGW:  (capVal('SI','Solar')                         || 500)  / 1000,
+      niGasMW:     capVal('NI','Gas','Gas Thermal')             || 1678,
+      niCoalMW:    capVal('NI','Coal','Coal Thermal')           || 400,
+      niWoodMW:    capVal('NI','Wood','Wood / Biomass','Biomass')|| 200,
+      niDieselMW:  capVal('NI','Diesel')                        || 156,
+      niOtherMW:   capVal('NI','Other')                         || 135,
+    };
+
+    // Set all slider defaults from actual 2025 fleet capacity
+    setSlider('ni-wind',    gTodayCaps.niWindGW);
+    setSlider('si-wind',    gTodayCaps.siWindGW);
+    setSlider('ni-solar',   gTodayCaps.niSolarGW);
+    setSlider('si-solar',   gTodayCaps.siSolarGW);
+    setSlider('ni-gas',     gTodayCaps.niGasMW);
+    setSlider('ni-coal',    gTodayCaps.niCoalMW);
+    setSlider('ni-wood',    gTodayCaps.niWoodMW);
+    setSlider('ni-diesel',  gTodayCaps.niDieselMW);
+    setSlider('ni-other',   gTodayCaps.niOtherMW);
 
     document.getElementById('btn-run').disabled = false;
     document.getElementById('sim-status').textContent =
