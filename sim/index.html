@@ -195,8 +195,8 @@
         <div class="sc-desc">2.0 GW solar NI, 500 MW SI, 2.1 / 0.9 GW wind. Everything else at today's installed capacity.</div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-lng" onclick="preloadLNG();setActiveScenario('sc-lng','#dc2626')">
-      <div class="sc-stripe" style="background:#dc2626;"></div>
+    <div class="scenario-card" id="sc-lng" onclick="preloadLNG();setActiveScenario('sc-lng','#1e293b')">
+      <div class="sc-stripe" style="background:#1e293b;"></div>
       <div class="sc-body">
         <div class="sc-title">LNG Import</div>
         <div class="sc-desc">Expand gas to 3 GW via LNG imports for dry-year security. Keeps the lights on — but at high cost.</div>
@@ -276,10 +276,10 @@
             <input type="checkbox" id="dom-solar-enabled" onchange="syncCheckbox('dom-solar-enabled')">
             <span id="dom-solar-enabled-v" class="sl-val">Off</span>
           </label></div></div>
-        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — NI</span><span id="ni-dom-pct-v" class="sl-val">35%</span></div>
-          <input type="range" id="ni-dom-pct" min="0" max="100" step="1" value="35" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — SI</span><span id="si-dom-pct-v" class="sl-val">30%</span></div>
-          <input type="range" id="si-dom-pct" min="0" max="100" step="1" value="30" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — NI</span><span id="ni-dom-pct-v" class="sl-val">38%</span></div>
+          <input type="range" id="ni-dom-pct" min="0" max="100" step="1" value="38" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>% of demand that is domestic — SI</span><span id="si-dom-pct-v" class="sl-val">25%</span></div>
+          <input type="range" id="si-dom-pct" min="0" max="100" step="1" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Panels per home</span><span id="dom-panels-v" class="sl-val">10</span></div>
           <input type="range" id="dom-panels" min="1" max="30" step="1" value="10" data-unit="" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Panel size</span><span id="dom-panel-watts-v" class="sl-val">500 W</span></div>
@@ -694,8 +694,8 @@ function resetToToday() {
 function preloadDomSolar() {
   resetToToday();
   setCheck('dom-solar-enabled', true);
-  setSlider('ni-dom-pct',        35);
-  setSlider('si-dom-pct',        30);
+  setSlider('ni-dom-pct',        38);
+  setSlider('si-dom-pct',        25);
   setSlider('dom-panels',        10);
   setSlider('dom-panel-watts',  500);
   setSlider('ni-dom-solar-pct',  60);
