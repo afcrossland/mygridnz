@@ -108,7 +108,8 @@
     #dom-energy-section > summary::-webkit-details-marker, #dom-energy-section > summary::marker,
     #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker,
     #curtailment-section > summary::-webkit-details-marker, #curtailment-section > summary::marker,
-    #island-detail-section > summary::-webkit-details-marker, #island-detail-section > summary::marker { display:none; }
+    #island-detail-section > summary::-webkit-details-marker, #island-detail-section > summary::marker,
+    #island-dispatch-section > summary::-webkit-details-marker, #island-dispatch-section > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
     .ts-section-hd h3 { font-size:.95rem; font-weight:600; margin:0 0 4px; color:var(--text); }
     .ts-section-hd p  { font-size:13px; color:var(--muted); line-height:1.6; margin:0; }
@@ -118,7 +119,8 @@
     /* ── Timeseries ──────────────────────────── */
     .ts-header { display:flex; align-items:center; gap:10px; margin:32px 0 16px; flex-wrap:wrap;
       padding:12px 16px; background:var(--surface); border:1px solid var(--border);
-      border-radius:8px; border-left:3px solid var(--brand); }
+      border-radius:8px; border-left:3px solid var(--brand);
+      position:sticky; top:0; z-index:20; }
     .ts-header h2 { font-size:1rem; font-weight:600; margin:0; color:var(--text); }
     .ts-view { display:flex; gap:4px; }
     .ts-nav { display:flex; align-items:center; gap:6px; margin-left:auto; }
@@ -422,9 +424,23 @@
       </div>
       <div class="ts-charts">
         <div class="chart-box ts-full"><h3>National</h3><canvas id="ts-nat"></canvas></div>
-        <div class="chart-box"><h3>North Island</h3><canvas id="ts-ni"></canvas></div>
-        <div class="chart-box"><h3>South Island</h3><canvas id="ts-si"></canvas></div>
       </div>
+      <details id="island-dispatch-section" style="margin-top:12px;">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:12px;color:var(--muted);" id="island-dispatch-arrow">▶</span>
+          <span style="font-size:.85rem;font-weight:600;color:var(--text);">North and South Island detail</span>
+        </summary>
+        <div class="ts-charts">
+          <div class="chart-box"><h3>North Island</h3><canvas id="ts-ni"></canvas></div>
+          <div class="chart-box"><h3>South Island</h3><canvas id="ts-si"></canvas></div>
+        </div>
+      </details>
+      <script>
+        document.getElementById('island-dispatch-section').addEventListener('toggle', function() {
+          document.getElementById('island-dispatch-arrow').textContent = this.open ? '▼' : '▶';
+          if (this.open) renderTsCharts();
+        });
+      </script>
     </div>
 
     <!-- ── Domestic Energy Supply (collapsed by default) ── -->
@@ -454,11 +470,11 @@
     <details class="ts-section" id="battery-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <span style="font-size:12px;color:var(--muted);" id="battery-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Battery Storage</span>
-        <span style="font-size:11px;color:var(--muted);">— state of charge, charge and discharge power by island</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Utility-Scale Battery Storage</span>
+        <span style="font-size:11px;color:var(--muted);">— grid-connected batteries, state of charge and power by island</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge held above the 20% spinning reserve floor.</p>
+        <p>Grid-connected utility-scale batteries only — not domestic home batteries (shown separately above). State of charge (%) and charge / discharge power (MW) by island. Batteries contribute to both FIR (rated power, 60 s hold) and SIR (rated power, 15 min hold) when charge is held above the 20% spinning reserve floor.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island battery</h3><canvas id="ts-batt-ni"></canvas></div>
@@ -857,7 +873,7 @@ function simulate(data, caps, p) {
     // Domestic load per home = (domestic % × island demand) ÷ number of homes.
     // Multiply per-home result by number of homes for total MW grid offset.
     const hour = parseInt(row.dt.slice(11, 13), 10);
-    const canDomDischarge = hour >= 6 && hour < 22;
+    const canDomDischarge = hour >= 4;  // discharge from 4am onwards; no cutoff at night
 
     // NI domestic — per solar home
     const niHomeSolar_kW  = (row.NI_Solar / niSolCapMW) * solarKWp * p.niSolarCorr;
@@ -1424,7 +1440,7 @@ function tsLabel(slice) {
   if (!slice.length) return '';
   if (tsWindowDays === 30) {
     const dt = tsData[tsOffset]?.dt || '';
-    return `${MONS3[+dt.slice(5,7)-1]} ${dt.slice(0,4)}`;
+    return MONS3[+dt.slice(5,7)-1] || '';
   }
   return `${fmtDtDay(slice[0].dt)} — ${fmtDtDay(slice[slice.length-1].dt)}`;
 }
