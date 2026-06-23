@@ -68,7 +68,7 @@
     .scard--bad  { border-color:#ef4444; } .scard--bad  .scard-main { color:#dc2626; }
 
     /* ── Island tables ───────────────────────── */
-    .island-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+    .island-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-bottom:24px; }
     .itbl { width:100%; border-collapse:collapse; font-size:12px; }
     .itbl th { text-align:left; padding:4px 6px; font-size:9px; font-weight:700;
       text-transform:uppercase; letter-spacing:.07em; color:var(--muted);
@@ -254,6 +254,10 @@
 
     <!-- ── Annual tables ── -->
     <div class="island-grid">
+      <div>
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:8px;">National — annual generation</h2>
+        <table class="itbl" id="tbl-nat"></table>
+      </div>
       <div>
         <h2 style="font-size:.95rem;font-weight:600;margin-bottom:8px;">North Island — annual generation</h2>
         <table class="itbl" id="tbl-ni"></table>
@@ -529,7 +533,7 @@ function simulate(data, caps, p) {
     niGeo:0, niHydro:0, niWind:0, niSolar:0, niStorage:0,
     niWood:0, niGas:0,  niCoal:0, niDiesel:0, niOther:0,
     siGeo:0, siHydro:0, siWind:0, siSolar:0,  siStorage:0,
-    niDemand:0, siDemand:0,
+    niDemand:0, siDemand:0, natDemand:0,
   };
 
   const pp = [];
@@ -554,26 +558,19 @@ function simulate(data, caps, p) {
     const siFlex  = siHist * (1 - p.siRoR / 100);
     const siFixed = siGeo + siWind + siSolar + siRoRmw;
 
-    // ── Phase 1b: local flexible hydro dispatch ───────────────────────────
-    let niFlexUsed  = Math.min(Math.max(row.NI_Demand - niFixed, 0), niFlex);
-    let siFlexUsed  = Math.min(Math.max(row.SI_Demand - siFixed, 0), siFlex);
-    let niFlexAvail = niFlex - niFlexUsed;
-    let siFlexAvail = siFlex - siFlexUsed;
+    // Surplus/deficit from fixed gen only (before any flex hydro or HVDC)
+    let niSurp = Math.max(niFixed - row.NI_Demand, 0);
+    let siSurp = Math.max(siFixed - row.SI_Demand, 0);
+    let niDef  = Math.max(row.NI_Demand - niFixed, 0);
+    let siDef  = Math.max(row.SI_Demand - siFixed, 0);
 
-    // Reservoir draw for remaining local deficit
-    let niDef = Math.max(row.NI_Demand - niFixed - niFlexUsed, 0);
-    let siDef = Math.max(row.SI_Demand - siFixed - siFlexUsed, 0);
-    const niExMWh = Math.min(niDef * 0.5, niRes);
-    const siExMWh = Math.min(siDef * 0.5, siRes);
-    niDef = Math.max(niDef - niExMWh / 0.5, 0);
-    siDef = Math.max(siDef - siExMWh / 0.5, 0);
-
-    let niSurp = Math.max(niFixed + niFlexUsed + niExMWh / 0.5 - row.NI_Demand, 0);
-    let siSurp = Math.max(siFixed + siFlexUsed + siExMWh / 0.5 - row.SI_Demand, 0);
-
-    // ── Phase 2: HVDC ────────────────────────────────────────────────────
+    // ── Phase 2a: HVDC surplus transfer BEFORE flex hydro dispatch ────────
+    // NI VRE/geo surplus reaches SI (and vice versa) before either island
+    // opens its flexible hydro — correct merit order, saves reservoir water.
+    // TODO: constrain export when SI reserves (FIR/SIR) would fall below
+    //       contingency requirement after sending — wire to 'Constrain HVDC
+    //       by reserves' checkbox once reserve headroom calc is implemented.
     let hvdcNiSi = 0, hvdcSiNi = 0;
-    // 2a: transfer actual surplus first
     if (niSurp > 0 && siDef > 0) {
       const x = Math.min(niSurp, siDef, p.hvdcNiSi);
       niSurp -= x; siDef -= x; hvdcNiSi += x;
@@ -581,7 +578,22 @@ function simulate(data, caps, p) {
       const x = Math.min(siSurp, niDef, p.hvdcSiNi);
       siSurp -= x; niDef -= x; hvdcSiNi += x;
     }
-    // 2b: dispatch idle flexible hydro cross-island (fixes surplus hydro unused while other island runs gas)
+
+    // ── Phase 1b: local flexible hydro for REMAINING deficit (after HVDC) ─
+    let niFlexUsed  = Math.min(niDef, niFlex);
+    let siFlexUsed  = Math.min(siDef, siFlex);
+    niDef = Math.max(niDef - niFlexUsed, 0);
+    siDef = Math.max(siDef - siFlexUsed, 0);
+    let niFlexAvail = niFlex - niFlexUsed;
+    let siFlexAvail = siFlex - siFlexUsed;
+
+    // Reservoir draw for deficit still unmet after flex hydro
+    const niExMWh = Math.min(niDef * 0.5, niRes);
+    const siExMWh = Math.min(siDef * 0.5, siRes);
+    niDef = Math.max(niDef - niExMWh / 0.5, 0);
+    siDef = Math.max(siDef - siExMWh / 0.5, 0);
+
+    // ── Phase 2b: cross-island idle flex hydro via HVDC ──────────────────
     if (siFlexAvail > 0 && niDef > 0) {
       const x = Math.min(siFlexAvail, niDef, p.hvdcSiNi - hvdcSiNi);
       siFlexAvail -= x; siFlexUsed += x; niDef -= x; hvdcSiNi += x;
@@ -591,7 +603,7 @@ function simulate(data, caps, p) {
       niFlexAvail -= x; niFlexUsed += x; siDef -= x; hvdcNiSi += x;
     }
 
-    // Reservoir update after all cross-island decisions
+    // Reservoir update after all hydro and cross-island decisions
     niRes = Math.min(Math.max(niRes + niFlexAvail * 0.5 - p.niLoss - niExMWh, 0), p.niResMax);
     siRes = Math.min(Math.max(siRes + siFlexAvail * 0.5 - p.siLoss - siExMWh, 0), p.siResMax);
 
@@ -672,6 +684,7 @@ function simulate(data, caps, p) {
     pk.siStorage  = Math.max(pk.siStorage,  siDischarge);
     pk.niDemand   = Math.max(pk.niDemand,   row.NI_Demand);
     pk.siDemand   = Math.max(pk.siDemand,   row.SI_Demand);
+    pk.natDemand  = Math.max(pk.natDemand,  row.NI_Demand + row.SI_Demand);
 
     pp.push({
       dt: row.dt, niDemand: row.NI_Demand, siDemand: row.SI_Demand,
@@ -787,8 +800,9 @@ function renderStats(moBase, moUser, capsRef, pBase, pUser) {
   const unservB = sum(moBase,'niUnserved') + sum(moBase,'siUnserved');
   const unservU = sum(moUser,'niUnserved') + sum(moUser,'siUnserved');
 
-  const fossilB = sum(moBase,'niGas')+sum(moBase,'niCoal')+sum(moBase,'niDiesel')+sum(moBase,'niOther')+sum(moBase,'niWood');
-  const fossilU = sum(moUser,'niGas')+sum(moUser,'niCoal')+sum(moUser,'niDiesel')+sum(moUser,'niOther')+sum(moUser,'niWood');
+  // Fossil = gas, coal, diesel, other only — wood/biomass is renewable in NZ context
+  const fossilB = sum(moBase,'niGas')+sum(moBase,'niCoal')+sum(moBase,'niDiesel')+sum(moBase,'niOther');
+  const fossilU = sum(moUser,'niGas')+sum(moUser,'niCoal')+sum(moUser,'niDiesel')+sum(moUser,'niOther');
   const renPctB = Math.max(0, Math.min(100, (totDemB - fossilB - unservB) / totDemB * 100));
   const renPctU = Math.max(0, Math.min(100, (totDemU - fossilU - unservU) / totDemU * 100));
 
@@ -851,7 +865,7 @@ function renderTable(id, demand, rows) {
         <td><span class="fuel-dot" style="background:${dot||'transparent'}"></span>${name}</td>
         <td>${fmt(gwh, 0)}</td>
         <td>${isTotal || instGW == null ? '' : instGW > 0 ? fmt(instGW, 2) : '—'}</td>
-        <td>${isTotal ? '' : (peakMW > 0 ? fmt(peakMW/1000, 2) : '—')}</td>
+        <td>${peakMW > 0 ? fmt(peakMW/1000, 2) : (isTotal ? '' : '—')}</td>
         <td>${isTotal ? '' : fmt(gwh / demand * 100, 1) + '%'}</td>
       </tr>`
     ).join('');
@@ -881,6 +895,21 @@ function renderTables(mo, pk) {
   const siGeoGW   = (caps['Geothermal']?.SI ?? caps['Geo']?.SI ?? pk.siGeo) / 1000;
 
   const niDem = sum(mo,'niDemand'), siDem = sum(mo,'siDemand');
+  const natDem = niDem + siDem;
+
+  renderTable('tbl-nat', natDem, [
+    ['Demand',                                    natDem,                                          '#000',      pk.natDemand,                    null,                              true],
+    ['Geothermal',                                sum(mo,'niGeo')   + sum(mo,'siGeo'),             C.Geo,       pk.niGeo    + pk.siGeo,           niGeoGW   + siGeoGW],
+    ['Hydro',                                     sum(mo,'niHydro') + sum(mo,'siHydro'),           C.Hydro,     pk.niHydro  + pk.siHydro,         niHydroGW + siHydroGW],
+    [`Solar`,                                     niSolarGWh        + siSolarGWh,                  C.Solar,     pk.niSolar  + pk.siSolar,         p.niSolarGW + p.siSolarGW],
+    [`Wind`,                                      niWindGWh         + siWindGWh,                   C.Wind,      pk.niWind   + pk.siWind,          p.niWindGW  + p.siWindGW],
+    ['Battery storage',                           sum(mo,'niStorage')+ sum(mo,'siStorage'),        C.Storage,   pk.niStorage+ pk.siStorage,       (p.battPower + p.siBattPower)/1000],
+    ['Wood / biomass',                            sum(mo,'niWood'),                                C.Wood,      pk.niWood,                        p.niWood/1000],
+    ['Gas',                                       sum(mo,'niGas'),                                 C.Gas,       pk.niGas,                         p.niGas/1000],
+    ['Coal',                                      sum(mo,'niCoal'),                                C.Coal,      pk.niCoal,                        p.niCoal/1000],
+    ['Diesel',                                    sum(mo,'niDiesel'),                              C.Diesel,    pk.niDiesel,                      p.niDiesel/1000],
+    ['Unserved',                                  sum(mo,'niUnserved')+sum(mo,'siUnserved'),       '#fca5a5',   0,                                null],
+  ]);
 
   renderTable('tbl-ni', niDem, [
     ['Demand',                                    niDem,               '#000',     pk.niDemand, null,              true],
@@ -1066,10 +1095,8 @@ function renderTsCharts() {
   document.getElementById('ts-label').textContent = tsLabel(slice);
   const xt = tsWindowDays <= 7 ? 14 : 32;
 
-  // Shared y-axis max for NI and SI island charts (stack top = demand + curtailment + charging)
-  const niPeak = Math.max(...slice.map(p => (p.niDemand||0) + (p.niCurtail||0) + (p.niCharge||0)));
-  const siPeak = Math.max(...slice.map(p => (p.siDemand||0) + (p.siCurtail||0) + (p.siCharge||0)));
-  const islandMax = Math.ceil(Math.max(niPeak, siPeak) / 500) * 500;
+  // Fixed shared y-axis for NI and SI generation dispatch charts
+  const islandMax = 4500;
 
   // NI — solar before wind; curtailment unlabelled band above demand
   mkTsChart('ts-ni', activeDs([
@@ -1373,7 +1400,11 @@ async function runSim() {
     const { mo: moBase }            = simulate(data, caps, pBase);
     const { mo: moUser, pp, pk }    = simulate(data, caps, pUser);
 
-    tsData = pp; tsOffset = 0;
+    tsData = pp;
+    // Default to last week of May — representative of shoulder/autumn demand
+    const mayIdx = pp.findIndex(p => p.dt.slice(5, 7) === '05');
+    const juneIdx = pp.findIndex(p => p.dt.slice(5, 7) === '06');
+    tsOffset = juneIdx > 48 ? Math.max(0, juneIdx - 7 * 48) : mayIdx >= 0 ? mayIdx : 0;
     killCharts();
     renderStats(moBase, moUser, caps, pBase, pUser);
     renderTables(moUser, pk);
