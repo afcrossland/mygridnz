@@ -170,7 +170,6 @@
       }
     }
     @media(max-width:600px){
-      .chart-box canvas{ min-height:260px; }
       .stat-row{width:100%;}
     }
     .scard{ min-width:0; overflow:hidden; }
@@ -834,6 +833,16 @@
 // Without this, charts created inside collapsed <details> sections can end up
 // at 1× DPR because the canvas has zero dimensions at init time.
 Chart.defaults.devicePixelRatio = window.devicePixelRatio || 1;
+
+// Mobile charts need a smaller uniform font and a taller (lower) aspect ratio.
+// Desktop values match Chart.js defaults (12 / 2), so desktop is unchanged.
+// Called at the top of each render fn so the globals are correct before any
+// chart is built, and reset per-call to avoid leaking between chart groups.
+function setChartScale(mobileAR) {
+  const m = window.innerWidth < 600;
+  Chart.defaults.font.size   = m ? 9 : 12;
+  Chart.defaults.aspectRatio = m ? mobileAR : 2;
+}
 
 const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
 const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1751,6 +1760,7 @@ function mkStacked(id, datasets, maxY) {
 }
 
 function renderAnnualCharts(mo) {
+  setChartScale(2);   // keep normal proportions for donut/bars/reservoir; just unify font
   // Shared y-axis so NI and SI charts are directly comparable
   const niPeak = Math.max(...mo.map(m => m.niDemand + m.niCurtail + m.niCharge));
   const siPeak = Math.max(...mo.map(m => m.siDemand + m.siCurtail + m.siCharge));
@@ -1928,6 +1938,8 @@ function periodMixLCOE(p) {
 
 function renderCostCharts() {
   if (!gRawData.length) return;
+  setChartScale(1.2);
+  const mob       = window.innerWidth < 600;
   const slice     = tsSlice();
   const baseSlice = gRawData.slice(tsOffset, tsOffset + tsWindow());
   const labels    = slice.map(p => p.dt.slice(11, 16));
@@ -1938,9 +1950,9 @@ function renderCostCharts() {
     responsive:true, animation:false,
     plugins:{ legend:{ position:'top', labels:{ usePointStyle:true, pointStyle:'line' } }, tooltip:{ mode:'index', intersect:false } },
     scales:{
-      x:{ ticks:{ maxTicksLimit:12, maxRotation:0, font:{size:11} }, grid:{ color:'#f1f5f9' } },
-      y:{ min:0, title:{ display:true, text:yLabel, font:{size:11} },
-          ticks:{ font:{size:11} }, grid:{ color:'#f1f5f9' } }
+      x:{ ticks:{ maxTicksLimit: mob ? 6 : 12, maxRotation: mob ? 45 : 0, minRotation: mob ? 45 : 0, font:{size: mob ? 9 : 11} }, grid:{ color:'#f1f5f9' } },
+      y:{ min:0, title:{ display:true, text:yLabel, font:{size: mob ? 9 : 11} },
+          ticks:{ font:{size: mob ? 9 : 11} }, grid:{ color:'#f1f5f9' } }
     }
   });
 
@@ -1963,6 +1975,7 @@ function renderCostCharts() {
 
 function renderBaseDispatch() {
   if (!gRawData.length) return;
+  setChartScale(1.2);
   const base  = gRawData.slice(tsOffset, tsOffset + tsWindow());
   const labels = tsXLabels();
   const mob    = window.innerWidth < 600;
@@ -2014,7 +2027,7 @@ function renderBaseDispatch() {
       bdNat('Coal',             'niCoal',    '',          C.Coal),
       bdDemand('niDemand','siDemand'),
     ])},
-    options:{ ...baseOpts(xt), aspectRatio:natAR },
+    options:{ ...baseOpts(xt), aspectRatio: mob ? 1.2 : natAR },
   });
 
   // NI
@@ -2054,6 +2067,7 @@ function renderBaseDispatch() {
 }
 
 function renderTsCharts() {
+  setChartScale(1.2);
   const slice = tsSlice();
   document.getElementById('ts-label').textContent = tsLabel(slice);
   const mob = window.innerWidth < 600;
@@ -2124,10 +2138,12 @@ function renderTsCharts() {
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ])},
-    options:{ responsive:true, animation:false, aspectRatio:natAR,
+    options:{ responsive:true, animation:false, aspectRatio: mob ? 1.2 : natAR * 1.5,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
-      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit: mob ? 4 : xt,
+          maxRotation: mob ? 45 : 0, minRotation: mob ? 45 : 0,
+          autoSkipPadding:6, font:{ size: mob ? 9 : 12 } } },
         y:{ stacked:true, min:0, title:{ display:true, text:'MW' } } } },
   });
 
