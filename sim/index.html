@@ -114,11 +114,12 @@
     /* ── Chart sections ──────────────────────── */
     .ts-section { margin-bottom:32px; }
     #operability-section > summary::-webkit-details-marker, #operability-section > summary::marker,
+    #base-dispatch-section > summary::-webkit-details-marker, #base-dispatch-section > summary::marker,
+    #costs-section > summary::-webkit-details-marker, #costs-section > summary::marker,
     #reservoirs-section > summary::-webkit-details-marker, #reservoirs-section > summary::marker,
     #dom-energy-section > summary::-webkit-details-marker, #dom-energy-section > summary::marker,
     #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker,
-    #curtailment-section > summary::-webkit-details-marker, #curtailment-section > summary::marker,
-    #island-detail-section > summary::-webkit-details-marker, #island-detail-section > summary::marker,
+#island-detail-section > summary::-webkit-details-marker, #island-detail-section > summary::marker,
     #island-dispatch-section > summary::-webkit-details-marker, #island-dispatch-section > summary::marker,
     #detailed-settings > summary::-webkit-details-marker, #detailed-settings > summary::marker { display:none; }
     .ts-section-hd { margin-bottom:12px; }
@@ -157,6 +158,17 @@
       .nat-mix-layout{flex-direction:column;}
       .nat-pie-section{grid-template-columns:1fr;}
     }
+    #mobile-banner { display:none; }
+    @media(max-width:900px){
+      #mobile-banner {
+        display:block;
+        background:#1a4d7a; color:#fff;
+        text-align:center;
+        padding:10px 16px;
+        font-size:13px;
+        line-height:1.5;
+      }
+    }
     @media(max-width:600px){
       .chart-box canvas{ min-height:260px; }
       .stat-row{width:100%;}
@@ -189,10 +201,13 @@
   </style>
 </head>
 <body>
+<div id="mobile-banner">
+  ⚠️ This simulator is best experienced on a desktop browser. Some charts may not display correctly on mobile.
+</div>
 <div class="page-wrap">
 <main>
   <h1 class="page-title">NZ Grid Simulator</h1>
-  <p class="page-intro">How much wind and solar does New Zealand need to get off fossil gas? What happens in a dry year when the lakes run low? This simulator lets you explore those questions using real half-hourly metered generation data — the same measurements that describe the actual grid. It models how the North and South Islands balance supply and demand every 30 minutes through a full year, routing renewable surplus between islands via the Cook Strait HVDC link before drawing on flexible hydro, battery storage or gas.</p>
+  <p class="page-intro">How much wind and solar does New Zealand need to get off fossil gas? What happens in a dry year when the lakes run low? This simulator lets you explore those questions using real half-hourly metered generation data — the same measurements that describe the actual grid. It models how the North and South Islands balance supply and demand every 30 minutes through a full year, routing renewable surplus between islands via the Cook Strait HVDC link before drawing on flexible hydro, battery storage or gas. Transmission losses are accounted for: gross generation is typically 3–5% higher than metered demand, and the simulator replicates this by scaling the generation target up by the historical loss factor for each island in each period.</p>
 
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:20px 0 28px;font-size:13px;line-height:1.75;">
     <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;">How to use</p>
@@ -326,8 +341,8 @@
           <input type="range" id="si-dom-solar-pct" min="0" max="100" step="1" value="40" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Solar homes with storage</span><span id="dom-storage-pct-v" class="sl-val">80%</span></div>
           <input type="range" id="dom-storage-pct" min="0" max="100" step="1" value="80" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Home battery size</span><span id="dom-batt-kwh-v" class="sl-val">10 kWh</span></div>
-          <input type="range" id="dom-batt-kwh" min="2" max="30" step="1" value="10" data-unit="kWh" data-dp="0" oninput="syncSlider(this)"></div>
+        <div class="sl"><div class="sl-hd"><span>Home battery size</span><span id="dom-batt-kwh-v" class="sl-val">15 kWh</span></div>
+          <input type="range" id="dom-batt-kwh" min="2" max="30" step="1" value="15" data-unit="kWh" data-dp="0" oninput="syncSlider(this)"></div>
       </div>
     </details>
 
@@ -482,6 +497,26 @@
       </script>
     </div>
 
+    <!-- ── Before — generation mix (collapsed by default) ── -->
+    <details class="ts-section" id="base-dispatch-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="base-dispatch-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Before — generation mix</span>
+        <span style="font-size:11px;color:var(--muted);">— dispatch without your scenario changes</span>
+      </summary>
+      <div class="ts-charts">
+        <div class="chart-box ts-full"><h3>National</h3><canvas id="ts-base-nat"></canvas></div>
+        <div class="chart-box"><h3>North Island</h3><canvas id="ts-base-ni"></canvas></div>
+        <div class="chart-box"><h3>South Island</h3><canvas id="ts-base-si"></canvas></div>
+      </div>
+    </details>
+    <script>
+      document.getElementById('base-dispatch-section').addEventListener('toggle', function() {
+        document.getElementById('base-dispatch-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) renderTsCharts();
+      });
+    </script>
+
     <!-- ── Residential Energy Supply (collapsed by default) ── -->
     <details class="ts-section" id="dom-energy-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -527,42 +562,48 @@
     </script>
 
     <!-- ── Curtailment (collapsed by default) ── -->
-    <details class="ts-section" id="curtailment-section">
-      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-size:12px;color:var(--muted);" id="curtailment-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Curtailment by generation type</span>
-        <span style="font-size:11px;color:var(--muted);">— surplus wind and solar that cannot be used or stored</span>
-      </summary>
-      <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>Surplus generation that cannot be used locally, exported via HVDC, or stored. Attributed proportionally to each must-run source — wind and solar tend to dominate in high-VRE scenarios.</p>
-      </div>
-      <div class="ts-charts">
-        <div class="chart-box"><h3>North Island (MW)</h3><canvas id="ts-curtail-ni"></canvas></div>
-        <div class="chart-box"><h3>South Island (MW)</h3><canvas id="ts-curtail-si"></canvas></div>
-      </div>
-    </details>
-    <script>
-      document.getElementById('curtailment-section').addEventListener('toggle', function() {
-        document.getElementById('curtailment-arrow').textContent = this.open ? '▼' : '▶';
-      });
-    </script>
-
-    <!-- ── Reservoirs and system balance (collapsed by default) ── -->
+    <!-- ── Hydro, surplus and system balance (collapsed by default) ── -->
     <details class="ts-section" id="reservoirs-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <span style="font-size:12px;color:var(--muted);" id="reservoirs-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Reservoirs and system balance</span>
-        <span style="font-size:11px;color:var(--muted);">— hydro levels, unserved energy and curtailment</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Hydro, surplus and system balance</span>
+        <span style="font-size:11px;color:var(--muted);">— reservoir levels, VRE curtailment by type, and unserved energy</span>
       </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p>Surplus generation that cannot be used locally, exported via HVDC, or stored. Wind and solar tend to dominate curtailment in high-VRE scenarios. Reservoir levels reflect hydro storage drawn down during dry periods or high demand.</p>
+      </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
         <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
+        <div class="chart-box"><h3>VRE curtailment — North Island (MW)</h3><canvas id="ts-curtail-ni"></canvas></div>
+        <div class="chart-box"><h3>VRE curtailment — South Island (MW)</h3><canvas id="ts-curtail-si"></canvas></div>
       </div>
     </details>
     <script>
       document.getElementById('reservoirs-section').addEventListener('toggle', function() {
         document.getElementById('reservoirs-arrow').textContent = this.open ? '▼' : '▶';
         if (this.open) { charts['chart-res']?.resize(); charts['chart-unserved']?.resize(); }
+      });
+    </script>
+
+    <!-- ── Costs (collapsed by default) ── -->
+    <details class="ts-section" id="costs-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="costs-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Costs</span>
+        <span style="font-size:11px;color:var(--muted);">— monthly generation cost before and after your scenario</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p>Two cost methods compared month by month. <strong>Marginal price</strong> is the generation-weighted average short-run variable cost — it falls when cheap renewables dominate and rises when gas sets the price. <strong>System LCOE</strong> spreads the full capital and operating cost of every asset across the electricity delivered — it captures the true cost of building and running the grid, including wind and solar whose low marginal cost still requires large capital investment.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>Wholesale price — before and after (NZD/MWh)</h3><canvas id="chart-cost-marg"></canvas></div>
+        <div class="chart-box"><h3>Mix LCOE — before and after (NZD/MWh)</h3><canvas id="chart-cost-lcoe"></canvas></div>
+      </div>
+    </details>
+    <script>
+      document.getElementById('costs-section').addEventListener('toggle', function() {
+        document.getElementById('costs-arrow').textContent = this.open ? '▼' : '▶';
       });
     </script>
 
@@ -574,12 +615,13 @@
         <span style="font-size:11px;color:var(--muted);">— HVDC flows, frequency reserves and system inertia</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>Cook Strait HVDC flows (purple = NI exports south, blue = SI exports north). FIR (0–6 s) and SIR (6–60 s) reserves versus the largest single contingency per island. System inertia is from synchronous generators only — wind, solar and batteries contribute none.</p>
+        <p>Cook Strait HVDC flows (purple = NI exports south, blue = SI exports north). FIR (0–6 s) and SIR (6–60 s) reserves versus the largest single contingency per island. System inertia is from synchronous generators and grid-forming batteries (synthetic inertia) — wind and solar contribute none.</p>
+        <p style="font-size:13px;color:var(--muted);margin-top:6px;">The <strong>contingency</strong> (dashed line) is the reserve requirement — the size of the largest single power loss event each island must survive without a frequency collapse. It is the greater of: the volume of HVDC power being imported at that moment (loss of the Cook Strait cable), or the largest single generating unit on that island (~400 MW). When imports are high, the contingency rises and more reserve is required. FIR and SIR must stay <em>above</em> the contingency line.</p>
       </div>
       <div class="ts-charts">
         <div class="chart-box"><h3>North Island — FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves-ni"></canvas></div>
         <div class="chart-box"><h3>South Island — FIR and SIR vs contingency (MW)</h3><canvas id="ts-reserves-si"></canvas></div>
-        <div class="chart-box"><h3>System inertia — NI and SI (MW·s)</h3><canvas id="ts-inertia"></canvas></div>
+        <div class="chart-box"><h3>System inertia — NI and SI (GVA·s)</h3><canvas id="ts-inertia"></canvas></div>
         <div class="chart-box"><h3>HVDC flows (MW)</h3><canvas id="ts-hvdc"></canvas></div>
       </div>
     </details>
@@ -713,7 +755,7 @@
         <ul style="margin:0;padding-left:20px;font-size:14px;color:var(--muted);">
           <li style="margin-bottom:6px;"><strong>Frequency Instantaneous Reserve (FIR, 0–6 s)</strong> — available from the headroom of online synchronous plant (hydro, geo, gas, coal, wood). Each generator type contributes its headroom scaled by a response fraction. FIR is compared against the contingency requirement: the larger of the HVDC import volume or the largest single-unit risk (400 MW NI, 400 MW SI).</li>
           <li style="margin-bottom:6px;"><strong>Sustained Reserve (SIR, 6–60 s)</strong> — similar to FIR but with larger headroom contribution per unit as plant ramps up further. The contingency is the same as FIR.</li>
-          <li><strong>Synchronous inertia (MW·s)</strong> — each online synchronous generator contributes inertia proportional to its output and its inertia constant H (Hydro H=5.5, Geo H=5.0, Gas H=6.5, Coal H=6.0, Wood H=5.0). Wind, solar and battery are inverter-connected and contribute zero synchronous inertia. Low inertia increases the rate-of-change-of-frequency (RoCoF) after a fault.</li>
+          <li><strong>System inertia (GVA·s)</strong> — synchronous generators contribute inertia proportional to their output and inertia constant H (Hydro H=5.5, Geo H=5.0, Gas H=6.5, Coal H=6.0, Wood H=5.0). Grid-forming batteries provide equivalent synthetic inertia (H=5.0) based on their rated power. Wind and solar are inverter-connected and contribute no inertia. Low inertia increases the rate-of-change-of-frequency (RoCoF) after a fault.</li>
         </ul>
       </div>
 
@@ -738,6 +780,7 @@
           <li style="margin-bottom:6px;"><strong>Transmission is simplified</strong> — the model treats each island as a single node. Intra-island congestion (e.g. upper North Island constraints) is not modelled. HVDC is modelled as a controllable link with a configurable capacity limit.</li>
           <li style="margin-bottom:6px;"><strong>Geothermal is fixed</strong> — geothermal output is taken from the historical metered record and is not scalable (it is capacity-constrained at actual plant levels). A future version may allow new geothermal capacity to be specified.</li>
           <li style="margin-bottom:6px;"><strong>Hydro reservoir is simplified</strong> — the model uses a single reservoir per island rather than modelling individual catchments or water rights constraints. Inflow equals metered actual hydro output; there is no separate hydrology model. In a wet year the reservoir overflows; in a dry year it empties.</li>
+          <li style="margin-bottom:6px;"><strong>Transmission losses</strong> — gross generation exceeds metered demand by typically 3–5% due to resistive losses in the transmission network. The simulator accounts for this by deriving a per-period, per-island loss factor from historical data (gross generation ÷ metered demand, capped at 10%) and scaling the generation dispatch target up accordingly. Domestic rooftop solar and home batteries are exempt — they generate and consume power at the home, bypassing the transmission network entirely.</li>
           <li style="margin-bottom:6px;"><strong>No market price modelling</strong> — the LCOE and marginal cost figures use fixed assumed cost parameters (capital/fuel cost per fuel type) and do not reflect the actual spot market.</li>
           <li><strong>Carbon factors</strong> — lifecycle emission factors are used (gCO₂/kWh): Hydro 24, Geo 46, Wind 12, Solar 45, Wood 230, Gas 490, Coal 820, Diesel 800. These include upstream and construction emissions.</li>
         </ul>
@@ -750,8 +793,8 @@
         <dd style="margin:2px 0 0 16px;">Reserve available within 6 seconds of a generation or HVDC loss event. Required to arrest frequency decay before it reaches trip thresholds (47.5 Hz).</dd>
         <dt style="font-weight:700;color:var(--text);margin-top:8px;">SIR (Sustained Instantaneous Reserve)</dt>
         <dd style="margin:2px 0 0 16px;">Reserve available within 60 seconds, maintaining frequency while governors respond and fast-start plant is committed.</dd>
-        <dt style="font-weight:700;color:var(--text);margin-top:8px;">Inertia (MW·s)</dt>
-        <dd style="margin:2px 0 0 16px;">Kinetic energy stored in spinning generators. Higher inertia slows the rate-of-change-of-frequency (RoCoF) after a fault, giving protection systems more time to respond.</dd>
+        <dt style="font-weight:700;color:var(--text);margin-top:8px;">Inertia (GVA·s)</dt>
+        <dd style="margin:2px 0 0 16px;">Kinetic energy stored in spinning generators plus synthetic inertia from grid-forming batteries. Higher inertia slows the rate-of-change-of-frequency (RoCoF) after a fault, giving protection systems more time to respond.</dd>
         <dt style="font-weight:700;color:var(--text);margin-top:8px;">HVDC (High Voltage Direct Current)</dt>
         <dd style="margin:2px 0 0 16px;">The Cook Strait cable linking the North and South Islands. Capacity is 1,200 MW in each direction. Used to export South Island hydro surplus northward and North Island thermal surplus southward during dry years.</dd>
         <dt style="font-weight:700;color:var(--text);margin-top:8px;">Run-of-river hydro (RoR)</dt>
@@ -812,8 +855,8 @@ let gYears = [];
 const LCOE = { Geo:85, Hydro:45, Wind:170, Solar:125, Storage:190, Wood:120, Coal:130, Diesel:475 };
 // Marginal cost (NZD/MWh) — short-run variable cost; last dispatched sets wholesale price
 const MARG = { Solar:0, Wind:5, Hydro:5, Storage:20, Geo:25, Wood:100, Coal:90, Gas:140, Diesel:220 };
-// Inertia constants H (seconds) for synchronous generators; wind/solar/battery = 0 (inverter-based)
-const HINERTIA = { Hydro:5.5, Geo:5.0, Gas:6.5, Coal:6.0, Wood:5.0, Diesel:2.5 };
+// Inertia constants H (seconds); grid-forming batteries contribute synthetic inertia
+const HINERTIA = { Hydro:5.5, Geo:5.0, Gas:6.5, Coal:6.0, Wood:5.0, Diesel:2.5, Batt:5.0 };
 // Approximate largest single-unit risk per island (MW) when no HVDC import
 const NI_UNIT_RISK = 400;
 const SI_UNIT_RISK = 250;
@@ -981,10 +1024,17 @@ async function loadIslandData(year) {
   const idx = {};
   (tbl.cols || []).forEach((col, i) => { idx[col.label] = i; });
   function ci(label, fallback) { return idx[label] ?? idx[label.replace(/_MW$/, '')] ?? fallback; }
-  const iDt=ci('DateTime',0), iNIH=ci('NI_Hydro_MW',3), iNIG=ci('NI_Geothermal_MW',4),
-        iNIW=ci('NI_Wind_MW',6), iNIS=ci('NI_Solar_MW',7), iSIH=ci('SI_Hydro_MW',13),
-        iSIG=ci('SI_Geothermal_MW',14), iSIW=ci('SI_Wind_MW',16), iSIS=ci('SI_Solar_MW',17),
-        iNID=ci('NI_Demand_MW',23), iSID=ci('SI_Demand_MW',24);
+  const iDt  = ci('DateTime',0);
+  const iNIH = ci('NI_Hydro_MW',3),  iNIG  = ci('NI_Geothermal_MW',4), iNIGas = ci('NI_Gas_MW',5),
+        iNIW = ci('NI_Wind_MW',6),    iNIS  = ci('NI_Solar_MW',7),
+        iNIWd= ci('NI_Wood_MW',8),    iNIC  = ci('NI_Coal_MW',9),
+        iNIDi= ci('NI_Diesel_MW',10), iNIOt = ci('NI_Other_MW',11);
+  const iSIH = ci('SI_Hydro_MW',13), iSIG  = ci('SI_Geothermal_MW',14), iSIGas = ci('SI_Gas_MW',15),
+        iSIW = ci('SI_Wind_MW',16),   iSIS  = ci('SI_Solar_MW',17),
+        iSIWd= ci('SI_Wood_MW',18),   iSIC  = ci('SI_Coal_MW',19),
+        iSIDi= ci('SI_Diesel_MW',20), iSIOt = ci('SI_Other_MW',21);
+  const iNID = ci('NI_Demand_MW',23), iSID = ci('SI_Demand_MW',24);
+  const iHvNS= ci('HVDC_NI_to_SI_MW',25), iHvSN = ci('HVDC_SI_to_NI_MW',26);
   return tbl.rows.map(r => {
     const c = r.c;
     const dtv = String(c[iDt]?.v || '');
@@ -992,11 +1042,16 @@ async function loadIslandData(year) {
     return {
       dt: c[iDt]?.f || dtv,
       month: dtm ? parseInt(dtm[1], 10) : 0,
-      NI_Hydro:  gv(c[iNIH]), NI_Geo:    gv(c[iNIG]),
-      NI_Wind:   gv(c[iNIW]), NI_Solar:  gv(c[iNIS]),
-      SI_Hydro:  gv(c[iSIH]), SI_Geo:    gv(c[iSIG]),
-      SI_Wind:   gv(c[iSIW]), SI_Solar:  gv(c[iSIS]),
-      NI_Demand: gv(c[iNID]), SI_Demand: gv(c[iSID]),
+      NI_Hydro: gv(c[iNIH]), NI_Geo:    gv(c[iNIG]), NI_Gas:  gv(c[iNIGas]),
+      NI_Wind:  gv(c[iNIW]), NI_Solar:  gv(c[iNIS]),
+      NI_Wood:  gv(c[iNIWd]),NI_Coal:   gv(c[iNIC]),
+      NI_Diesel:gv(c[iNIDi]),NI_Other:  gv(c[iNIOt]),
+      SI_Hydro: gv(c[iSIH]), SI_Geo:    gv(c[iSIG]), SI_Gas:  gv(c[iSIGas]),
+      SI_Wind:  gv(c[iSIW]), SI_Solar:  gv(c[iSIS]),
+      SI_Wood:  gv(c[iSIWd]),SI_Coal:   gv(c[iSIC]),
+      SI_Diesel:gv(c[iSIDi]),SI_Other:  gv(c[iSIOt]),
+      NI_Demand:gv(c[iNID]), SI_Demand: gv(c[iSID]),
+      HVDC_NI_to_SI: gv(c[iHvNS]), HVDC_SI_to_NI: gv(c[iHvSN]),
     };
   });
 }
@@ -1018,6 +1073,16 @@ function simulate(data, caps, p) {
   const BATT_RESERVE = 0.20;   // keep 20% SoC as spinning reserve
   const K = 0.5 / 1000;        // MW × 0.5h → GWh
 
+  // ── Inertia constraint — developer toggle, not exposed in UI ─────────
+  // When true, forces additional synchronous hydro online whenever island
+  // inertia falls below the Transpower minimum threshold. The extra hydro
+  // output first fills any remaining energy deficit, then becomes curtailment.
+  // Thresholds in MW·s (NI ~3 GVA·s, SI ~1.5 GVA·s per Transpower guidance).
+  const INERTIA_CONSTRAINT  = false;
+  const APPLY_LOSSES        = true;   // account for transmission losses per island per period
+  const NI_MIN_INERTIA_MWS  = 3000;
+  const SI_MIN_INERTIA_MWS  = 1500;
+
   // ── Domestic solar & storage pre-computation ──────────────────────────
   // Simulates a SINGLE typical home with solar and storage, then scales by
   // number of homes. This is critical: at aggregate level, solar rarely
@@ -1027,7 +1092,8 @@ function simulate(data, caps, p) {
   // Historical demand is net of existing rooftop solar, so this models
   // ADDITIONAL new installations on top of the current fleet.
   const AVG_HOME_MWH_YEAR = 7.5;   // NZ average household consumption
-  const HOME_BATT_KW = 5;           // inverter power per home (kW)
+  const HOME_BATT_KW  = 5;           // inverter power per home (kW)
+  const HOME_BATT_DOD = 0.80;        // depth of discharge limit — floor at 20% SoC
   const niDomEnabled = p.domSolarEnabled && p.niDomSolarPct > 0;
   const siDomEnabled = p.domSolarEnabled && p.siDomSolarPct > 0;
   const solarKWp = p.domPanels * p.domPanelWatts / 1000;  // kWp per home
@@ -1121,10 +1187,11 @@ function simulate(data, caps, p) {
       niHomeSoC = Math.min(niHomeSoC + niHomeChargeKW * 0.5, p.domBattKWh);
     }
     let niHomeBattDisch_kW = 0;
-    if (canDomDischarge && niHomeDef_kW > 0 && niHomeSoC > 0) {
-      const dr = Math.min(niHomeDef_kW, HOME_BATT_KW, niHomeSoC / 0.5);
+    const niHomeFloor = p.domBattKWh * (1 - HOME_BATT_DOD);
+    if (canDomDischarge && niHomeDef_kW > 0 && niHomeSoC > niHomeFloor) {
+      const dr = Math.min(niHomeDef_kW, HOME_BATT_KW, (niHomeSoC - niHomeFloor) / 0.5);
       niHomeBattDisch_kW = dr;
-      niHomeSoC = Math.max(niHomeSoC - dr * 0.5, 0);
+      niHomeSoC = Math.max(niHomeSoC - dr * 0.5, niHomeFloor);
     }
     const niDomGen = (niHomeSelf_kW * solHomesNI + niHomeBattDisch_kW * stoHomesNI) / 1000;  // MW
 
@@ -1141,21 +1208,29 @@ function simulate(data, caps, p) {
       siHomeSoC = Math.min(siHomeSoC + siHomeChargeKW * 0.5, p.domBattKWh);
     }
     let siHomeBattDisch_kW = 0;
-    if (canDomDischarge && siHomeDef_kW > 0 && siHomeSoC > 0) {
-      const dr = Math.min(siHomeDef_kW, HOME_BATT_KW, siHomeSoC / 0.5);
+    const siHomeFloor = p.domBattKWh * (1 - HOME_BATT_DOD);
+    if (canDomDischarge && siHomeDef_kW > 0 && siHomeSoC > siHomeFloor) {
+      const dr = Math.min(siHomeDef_kW, HOME_BATT_KW, (siHomeSoC - siHomeFloor) / 0.5);
       siHomeBattDisch_kW = dr;
-      siHomeSoC = Math.max(siHomeSoC - dr * 0.5, 0);
+      siHomeSoC = Math.max(siHomeSoC - dr * 0.5, siHomeFloor);
     }
     const siDomGen = (siHomeSelf_kW * solHomesSI + siHomeBattDisch_kW * stoHomesSI) / 1000;  // MW
 
     const niFixed = niGeo + niDomGen + niWind + niSolar + niRoRmw;
     const siFixed = siGeo + siDomGen + siWind + siSolar + siRoRmw;
 
+    // Effective gross demand: scale up metered demand to account for transmission losses.
+    // Domestic solar/battery (niDomGen) is generated at home and exempt — it sits inside
+    // niFixed already and its load uses row.NI_Demand directly, so the ratio naturally
+    // excludes it. All other grid dispatch is implicitly scaled up by 1/(1−loss).
+    const niDemandEff = APPLY_LOSSES ? row.NI_Demand / (1 - (row.niLoss||0)) : row.NI_Demand;
+    const siDemandEff = APPLY_LOSSES ? row.SI_Demand / (1 - (row.siLoss||0)) : row.SI_Demand;
+
     // Surplus/deficit from fixed gen only (before any flex hydro or HVDC)
-    let niSurp = Math.max(niFixed - row.NI_Demand, 0);
-    let siSurp = Math.max(siFixed - row.SI_Demand, 0);
-    let niDef  = Math.max(row.NI_Demand - niFixed, 0);
-    let siDef  = Math.max(row.SI_Demand - siFixed, 0);
+    let niSurp = Math.max(niFixed - niDemandEff, 0);
+    let siSurp = Math.max(siFixed - siDemandEff, 0);
+    let niDef  = Math.max(niDemandEff - niFixed, 0);
+    let siDef  = Math.max(siDemandEff - siFixed, 0);
 
     // ── Phase 2a: HVDC surplus transfer BEFORE flex hydro dispatch ────────
     // NI VRE/geo surplus reaches SI (and vice versa) before either island
@@ -1240,8 +1315,43 @@ function simulate(data, caps, p) {
     siDef = Math.max(siDef - forSi, 0);
 
     // ── Accumulate monthly totals ─────────────────────────────────────────
-    const niHydroTotal = niRoRmw + niFlexUsed + niExMWh / 0.5;
-    const siHydroTotal = siRoRmw + siFlexUsed + siExMWh / 0.5;
+    let niHydroTotal = niRoRmw + niFlexUsed + niExMWh / 0.5;
+    let siHydroTotal = siRoRmw + siFlexUsed + siExMWh / 0.5;
+
+    // ── Inertia constraint: force synchronous hydro online if below minimum ─
+    if (INERTIA_CONSTRAINT) {
+      const niInertNow = niHydroTotal * HINERTIA.Hydro
+        + niGeo   * HINERTIA.Geo
+        + dGas    * HINERTIA.Gas
+        + dCoal   * HINERTIA.Coal
+        + dWood   * HINERTIA.Wood
+        + dDiesel * HINERTIA.Diesel
+        + p.battPower * HINERTIA.Batt;
+      if (niInertNow < NI_MIN_INERTIA_MWS) {
+        const niHydExtra = Math.min(
+          (NI_MIN_INERTIA_MWS - niInertNow) / HINERTIA.Hydro,
+          Math.max(0, niFlexAvail)
+        );
+        niHydroTotal += niHydExtra;
+        const absorb = Math.min(niHydExtra, niDef);
+        niDef  -= absorb;
+        niSurp += niHydExtra - absorb;
+      }
+
+      const siInertNow = siHydroTotal * HINERTIA.Hydro
+        + siGeo * HINERTIA.Geo
+        + p.siBattPower * HINERTIA.Batt;
+      if (siInertNow < SI_MIN_INERTIA_MWS) {
+        const siHydExtra = Math.min(
+          (SI_MIN_INERTIA_MWS - siInertNow) / HINERTIA.Hydro,
+          Math.max(0, siFlexAvail)
+        );
+        siHydroTotal += siHydExtra;
+        const absorb = Math.min(siHydExtra, siDef);
+        siDef  -= absorb;
+        siSurp += siHydExtra - absorb;
+      }
+    }
 
     mo[m].niDemand   += row.NI_Demand * K;   mo[m].siDemand   += row.SI_Demand * K;
     mo[m].niGeo      += niGeo         * K;   mo[m].siGeo      += siGeo         * K;
@@ -1327,11 +1437,13 @@ function simulate(data, caps, p) {
       niSoC, siSoC, niResMWh: niRes, siResMWh: siRes,
       niSoCpct:   p.battCap    > 0 ? +(niSoC / p.battCap    * 100).toFixed(1) : 0,
       siBattPct:  p.siBattCap  > 0 ? +(siSoC / p.siBattCap  * 100).toFixed(1) : 0,
-      // ─── System inertia (MW·s) — synchronous generators only ───────────────
-      niInertiaMWs: +(niHydroTotal*HINERTIA.Hydro + niGeo*HINERTIA.Geo
+      // ─── System inertia (GVA·s) — synchronous generators + grid-forming batteries ──
+      niInertiaMWs: +((niHydroTotal*HINERTIA.Hydro + niGeo*HINERTIA.Geo
                     + dGas*HINERTIA.Gas + dCoal*HINERTIA.Coal
-                    + dWood*HINERTIA.Wood + dDiesel*HINERTIA.Diesel).toFixed(0),
-      siInertiaMWs: +(siHydroTotal*HINERTIA.Hydro + siGeo*HINERTIA.Geo).toFixed(0),
+                    + dWood*HINERTIA.Wood + dDiesel*HINERTIA.Diesel
+                    + p.battPower*HINERTIA.Batt) / 1000).toFixed(2),
+      siInertiaMWs: +((siHydroTotal*HINERTIA.Hydro + siGeo*HINERTIA.Geo
+                    + p.siBattPower*HINERTIA.Batt) / 1000).toFixed(2),
       // ─── Contingency size (largest single infeed risk) ──────────────────────
       niContingency: +Math.max(hvdcSiNi, NI_UNIT_RISK).toFixed(0),
       siContingency: +Math.max(hvdcNiSi, SI_UNIT_RISK).toFixed(0),
@@ -1367,6 +1479,30 @@ function simulate(data, caps, p) {
 // COST CALCULATIONS
 // ═══════════════════════════════════════════════════════
 function sum(mo, k) { return mo.reduce((s, m) => s + (m[k] ?? 0), 0); }
+
+// Aggregate gRawData periods (MW, 30-min) into a single mo-like GWh record
+// so calcSystemLCOE / calcMarginalPrice can work on true historical data.
+function moFromRaw() {
+  if (!gRawData.length) return null;
+  const K = 0.5 / 1000;
+  const sum2 = (a, b) => gRawData.reduce((s, p) => s + (p[a]||0) + (p[b]||0), 0) * K;
+  const sum1 = a       => gRawData.reduce((s, p) => s + (p[a]||0), 0) * K;
+  return [{
+    niGeo: sum1('niGeo'), siGeo: sum1('siGeo'),
+    niHydro: sum1('niHydro'), siHydro: sum1('siHydro'),
+    niWind: sum1('niWind'),   siWind: sum1('siWind'),
+    niSolar: sum1('niSolar'), siSolar: sum1('siSolar'),
+    niStorage: sum1('niStorage'), siStorage: sum1('siStorage'),
+    // SI has real gas/coal/wood/diesel in historical data — combine into NI key
+    niGas:    sum2('niGas',    'siGas'),
+    niCoal:   sum2('niCoal',   'siCoal'),
+    niWood:   sum2('niWood',   'siWood'),
+    niDiesel: sum2('niDiesel', 'siDiesel'),
+    niOther:  sum2('niOther',  'siOther'),
+    niDemand: sum1('niDemand'), siDemand: sum1('siDemand'),
+    niCurtail: 0, siCurtail: 0,
+  }];
+}
 
 function calcSystemLCOE(mo, p) {
   const gasGWh = sum(mo, 'niGas');
@@ -1436,8 +1572,11 @@ function renderStats(moBase, moUser, capsRef, pBase, pUser) {
   }
   const carbB = carbInt(moBase, totDemB), carbU = carbInt(moUser, totDemU);
 
-  const lcoeB = calcSystemLCOE(moBase, pBase), lcoeU = calcSystemLCOE(moUser, pUser);
-  const margB = calcMarginalPrice(moBase), margU = calcMarginalPrice(moUser);
+  const moRaw = moFromRaw();
+  const lcoeB = moRaw ? calcSystemLCOE(moRaw, pBase) : calcSystemLCOE(moBase, pBase);
+  const lcoeU = calcSystemLCOE(moUser, pUser);
+  const margB = moRaw ? calcMarginalPrice(moRaw) : calcMarginalPrice(moBase);
+  const margU = calcMarginalPrice(moUser);
 
   const curtailB = sum(moBase,'niCurtail')+sum(moBase,'siCurtail');
   const curtailU = sum(moUser,'niCurtail')+sum(moUser,'siCurtail');
@@ -1470,8 +1609,8 @@ function renderStats(moBase, moUser, capsRef, pBase, pUser) {
     mkCard('Total Demand',    totDemB/1000, totDemU/1000, 'TWh', 'scard--good') +
     mkCard('Renewables',      renPctB,      renPctU,      '%',   renCls(renPctU)) +
     mkCard('Carbon Intensity',carbB,        carbU,        'gCO₂/kWh', carbCls(carbU), 1, true) +
-    mkCard('System LCOE',     lcoeB,        lcoeU,        'NZD/MWh', lcoeCls(lcoeU), 0, true) +
-    mkCard('Avg Marginal',    margB,        margU,        'NZD/MWh', lcoeCls(margU), 0, true) +
+    mkCard('LCOE',            lcoeB,        lcoeU,        'NZD/MWh', lcoeCls(lcoeU), 0, true) +
+    mkCard('Wholesale Price', margB,        margU,        'NZD/MWh', lcoeCls(margU), 0, true) +
     mkCard('Curtailment',     curtailB,     curtailU,     'GWh', 'scard--good', 0);
 
   gStats = {
@@ -1657,7 +1796,7 @@ function renderAnnualCharts(mo) {
 // ═══════════════════════════════════════════════════════
 // TIMESERIES
 // ═══════════════════════════════════════════════════════
-let tsWindowDays = 7, tsData = [], tsOffset = 0;
+let tsWindowDays = 7, tsData = [], tsOffset = 0, gPpBase = [], gRawData = [];
 
 function tsWindow() { return tsWindowDays * 48; }
 
@@ -1760,10 +1899,166 @@ function mkTsChart(id, datasets, xMaxTicks, maxY) {
   });
 }
 
+// ── Per-period cost helpers ──────────────────────────────────────────────────
+// Merit-order marginal price: most expensive generator setting price this period
+function periodMarginalPrice(p) {
+  // Returns the SRMC of the most expensive generator running (price-setter)
+  if ((p.niDiesel||0) + (p.siDiesel||0) > 1)  return MARG.Diesel;  // 220
+  if ((p.niGas||0)    + (p.siGas||0)    > 1)  return MARG.Gas;     // 140
+  if ((p.niWood||0)   + (p.siWood||0)   > 1)  return MARG.Wood;    // 100
+  if ((p.niCoal||0)   + (p.siCoal||0)   > 1)  return MARG.Coal;    // 90
+  if ((p.niGeo||0)    + (p.siGeo||0)    > 1)  return MARG.Geo;     // 25
+  return MARG.Hydro;                                                  // 5
+}
+
+// Generation-weighted average LCOE of the mix generating this period
+function periodMixLCOE(p) {
+  let num = 0, den = 0;
+  const add = (mw, rate) => { if (mw > 0) { num += mw * rate; den += mw; } };
+  add((p.niGeo||0)     + (p.siGeo||0),     LCOE.Geo);
+  add((p.niWind||0)    + (p.siWind||0),     LCOE.Wind);
+  add((p.niSolar||0)   + (p.siSolar||0),    LCOE.Solar);
+  add((p.niStorage||0) + (p.siStorage||0),  LCOE.Storage);
+  add((p.niWood||0)    + (p.siWood||0),     LCOE.Wood);
+  add((p.niGas||0)     + (p.siGas||0),      160);
+  add((p.niCoal||0)    + (p.siCoal||0),     LCOE.Coal);
+  add((p.niDiesel||0)  + (p.siDiesel||0),   LCOE.Diesel);
+  return den > 0 ? Math.round(num / den) : 0;
+}
+
+function renderCostCharts() {
+  if (!gRawData.length) return;
+  const slice     = tsSlice();
+  const baseSlice = gRawData.slice(tsOffset, tsOffset + tsWindow());
+  const labels    = slice.map(p => p.dt.slice(11, 16));
+
+  const COST_BEFORE = '#94a3b8';
+  const COST_AFTER  = '#1a4d7a';
+  const opts = (yLabel) => ({
+    responsive:true, animation:false,
+    plugins:{ legend:{ position:'top', labels:{ usePointStyle:true, pointStyle:'line' } }, tooltip:{ mode:'index', intersect:false } },
+    scales:{
+      x:{ ticks:{ maxTicksLimit:12, maxRotation:0, font:{size:11} }, grid:{ color:'#f1f5f9' } },
+      y:{ min:0, title:{ display:true, text:yLabel, font:{size:11} },
+          ticks:{ font:{size:11} }, grid:{ color:'#f1f5f9' } }
+    }
+  });
+
+  charts['chart-cost-marg']?.destroy();
+  charts['chart-cost-marg'] = new Chart(document.getElementById('chart-cost-marg'), {
+    type:'line', data:{ labels, datasets:[
+      { label:'Before', data:baseSlice.map(periodMarginalPrice), borderColor:COST_BEFORE, fill:false, borderWidth:1.5, pointRadius:0, tension:.2 },
+      { label:'After',  data:slice.map(periodMarginalPrice),     borderColor:COST_AFTER,  fill:false, borderWidth:1.5, pointRadius:0, tension:.2 },
+    ]}, options:opts('Wholesale price (NZD/MWh)')
+  });
+
+  charts['chart-cost-lcoe']?.destroy();
+  charts['chart-cost-lcoe'] = new Chart(document.getElementById('chart-cost-lcoe'), {
+    type:'line', data:{ labels, datasets:[
+      { label:'Before', data:baseSlice.map(periodMixLCOE), borderColor:COST_BEFORE, fill:false, borderWidth:1.5, pointRadius:0, tension:.2 },
+      { label:'After',  data:slice.map(periodMixLCOE),     borderColor:COST_AFTER,  fill:false, borderWidth:1.5, pointRadius:0, tension:.2 },
+    ]}, options:opts('Mix LCOE (NZD/MWh)')
+  });
+}
+
+function renderBaseDispatch() {
+  if (!gRawData.length) return;
+  const base  = gRawData.slice(tsOffset, tsOffset + tsWindow());
+  const labels = tsXLabels();
+  const mob    = window.innerWidth < 600;
+  const xt     = mob ? (tsWindowDays <= 7 ? 5 : 8) : (tsWindowDays <= 7 ? 14 : 32);
+  const natAR  = mob ? 1.6 : 3;
+
+  function bd(label, keyNI, keySI, col) {
+    const data = base.map(p => +((p[keyNI]||0) + (p[keySI]||0)).toFixed(1));
+    return { label, type:'line', data, borderColor:col, backgroundColor:col+'40',
+      fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'g' };
+  }
+  function bdNat(label, keyNI, keySI, col) { return bd(label, keyNI, keySI, col); }
+  function bdIs(label, key, col) {
+    const data = base.map(p => +(p[key]||0).toFixed(1));
+    return { label, type:'line', data, borderColor:col, backgroundColor:col+'40',
+      fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'g' };
+  }
+  function bdDemand(keyNI, keySI) {
+    const data = base.map(p => +((p[keyNI]||0)+(p[keySI]||0)).toFixed(1));
+    return { label:'Demand', type:'line', data, borderColor:C.Demand, borderWidth:1.8,
+      borderDash:[4,3], fill:false, pointRadius:0, tension:.1 };
+  }
+  function bdDemandIs(key) {
+    const data = base.map(p => +(p[key]||0).toFixed(1));
+    return { label:'Demand', type:'line', data, borderColor:C.Demand, borderWidth:1.8,
+      borderDash:[4,3], fill:false, pointRadius:0, tension:.1 };
+  }
+  const baseOpts = (maxTicks, maxY) => ({
+    responsive:true, animation:false,
+    plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+      tooltip:{ mode:'index', intersect:false }},
+    scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:maxTicks, maxRotation:0, autoSkipPadding:6 } },
+      y:{ stacked:true, min:0, title:{ display:true, text:'MW' },
+          ...(maxY != null ? { max:maxY } : {}) } },
+  });
+
+  // National
+  charts['ts-base-nat']?.destroy();
+  charts['ts-base-nat'] = new Chart(document.getElementById('ts-base-nat'), {
+    data:{ labels, datasets: activeDs([
+      bdNat('Geothermal',       'niGeo',     'siGeo',     C.Geo),
+      bdNat('Residential solar','niDomSolar','siDomSolar',C.DomSolar),
+      bdNat('Solar',            'niSolar',   'siSolar',   C.Solar),
+      bdNat('Wind',             'niWind',    'siWind',    C.Wind),
+      bdNat('Hydro',            'niHydro',   'siHydro',   C.Hydro),
+      bdNat('Storage',          'niStorage', 'siStorage', C.Storage),
+      bdNat('Wood',             'niWood',    '',          C.Wood),
+      bdNat('Gas',              'niGas',     '',          C.Gas),
+      bdNat('Coal',             'niCoal',    '',          C.Coal),
+      bdDemand('niDemand','siDemand'),
+    ])},
+    options:{ ...baseOpts(xt), aspectRatio:natAR },
+  });
+
+  // NI
+  charts['ts-base-ni']?.destroy();
+  charts['ts-base-ni'] = new Chart(document.getElementById('ts-base-ni'), {
+    data:{ labels, datasets: activeDs([
+      bdIs('Geothermal',       'niGeo',      C.Geo),
+      bdIs('Residential solar','niDomSolar', C.DomSolar),
+      bdIs('Solar',            'niSolar',    C.Solar),
+      bdIs('Wind',             'niWind',     C.Wind),
+      bdIs('Hydro',            'niHydro',    C.Hydro),
+      bdIs('Storage',          'niStorage',  C.Storage),
+      bdIs('HVDC',             'hvdcSiNi',   C.HvdcNiSi),
+      bdIs('Wood',             'niWood',     C.Wood),
+      bdIs('Gas',              'niGas',      C.Gas),
+      bdIs('Coal',             'niCoal',     C.Coal),
+      bdDemandIs('niDemand'),
+    ])},
+    options: baseOpts(xt, 4500),
+  });
+
+  // SI
+  charts['ts-base-si']?.destroy();
+  charts['ts-base-si'] = new Chart(document.getElementById('ts-base-si'), {
+    data:{ labels, datasets: activeDs([
+      bdIs('Geothermal',       'siGeo',      C.Geo),
+      bdIs('Residential solar','siDomSolar', C.DomSolar),
+      bdIs('Solar',            'siSolar',    C.Solar),
+      bdIs('Wind',             'siWind',     C.Wind),
+      bdIs('Hydro',            'siHydro',    C.Hydro),
+      bdIs('Storage',          'siStorage',  C.Storage),
+      bdIs('HVDC',             'hvdcNiSi',   C.HvdcSiNi),
+      bdDemandIs('siDemand'),
+    ])},
+    options: baseOpts(xt, 4500),
+  });
+}
+
 function renderTsCharts() {
   const slice = tsSlice();
   document.getElementById('ts-label').textContent = tsLabel(slice);
-  const xt = tsWindowDays <= 7 ? 14 : 32;
+  const mob = window.innerWidth < 600;
+  const xt  = mob ? (tsWindowDays <= 7 ? 5 : 8) : (tsWindowDays <= 7 ? 14 : 32);
+  const natAR = mob ? 1.6 : 3;
 
   // Fixed shared y-axis for NI and SI generation dispatch charts
   const islandMax = 4500;
@@ -1829,7 +2124,7 @@ function renderTsCharts() {
       { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
         borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
     ])},
-    options:{ responsive:true, animation:false, aspectRatio:3,
+    options:{ responsive:true, animation:false, aspectRatio:natAR,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
@@ -1879,12 +2174,12 @@ function renderTsCharts() {
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ min:0, title:{ display:true, text:'kW' } } } };
+        y:{ stacked:true, min:0, title:{ display:true, text:'kW' } } } };
     const socOpts = { responsive:true, animation:false,
       plugins:{ legend:{ display:false },
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ min:0, title:{ display:true, text:'kWh' } } } };
+        y:{ min:0, max: gParams.domBattKWh + 1, title:{ display:true, text:'kWh' } } } };
     // Colours: solar=yellow, battery discharge=green, grid import=grey
     const DOM_SOL  = '#f59e0b';  // amber/yellow
     const DOM_BATT = '#16a34a';  // green
@@ -1897,15 +2192,15 @@ function renderTsCharts() {
       });
       return [
         { type:'line', label:'Solar → home',    data:slice.map(p=>p[selfKey]),
-          borderColor:DOM_SOL,  backgroundColor:DOM_SOL+'44',  fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+          borderColor:DOM_SOL,  backgroundColor:DOM_SOL+'88',  fill:true, stack:'supply', borderWidth:1, pointRadius:0, tension:.1 },
         { type:'line', label:'Solar → battery', data:slice.map(p=>p[chgKey]),
-          borderColor:DOM_CHG,  backgroundColor:DOM_CHG+'44',  fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+          borderColor:DOM_CHG,  backgroundColor:DOM_CHG+'88',  fill:true, stack:'supply', borderWidth:1, pointRadius:0, tension:.1 },
         { type:'line', label:'Battery → home',  data:slice.map(p=>p[battKey]),
-          borderColor:DOM_BATT, backgroundColor:DOM_BATT+'44', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+          borderColor:DOM_BATT, backgroundColor:DOM_BATT+'88', fill:true, stack:'supply', borderWidth:1, pointRadius:0, tension:.1 },
         { type:'line', label:'Grid import',     data:gridImport,
-          borderColor:DOM_GRID, backgroundColor:DOM_GRID+'44', fill:true, borderWidth:1, pointRadius:0, tension:.1 },
+          borderColor:DOM_GRID, backgroundColor:DOM_GRID+'88', fill:true, stack:'supply', borderWidth:1, pointRadius:0, tension:.1 },
         { type:'line', label:'Home load',       data:slice.map(p=>p[loadKey]),
-          borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+          borderColor:C.Demand, borderWidth:2, borderDash:[4,3], fill:false, stack:'load', pointRadius:0, tension:.1 },
       ];
     };
     charts['ts-dom-ni'] = new Chart(document.getElementById('ts-dom-ni'),
@@ -1971,7 +2266,7 @@ function renderTsCharts() {
   mkFirChart('ts-reserves-ni', 'niFIR', 'niSIR', 'niContingency', '#dc2626');
   mkFirChart('ts-reserves-si', 'siFIR', 'siSIR', 'siContingency', '#f97316');
 
-  // System inertia (MW·s) — NI and SI, full width
+  // System inertia (GVA·s) — synchronous + grid-forming battery synthetic inertia
   charts['ts-inertia']?.destroy();
   charts['ts-inertia'] = new Chart(document.getElementById('ts-inertia'), {
     type:'line',
@@ -1990,7 +2285,7 @@ function renderTsCharts() {
         tooltip:{ mode:'index', intersect:false,
           callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW·s` }}},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ title:{ display:true, text:'MW·s' }, min:0 } } },
+        y:{ title:{ display:true, text:'GVA·s' }, min:0 } } },
   });
 
   // Battery per island — SoC % (left axis) + charge/discharge MW (right axis)
@@ -2026,6 +2321,8 @@ function renderTsCharts() {
   }
   mkBattChart('ts-batt-ni', 'niSoCpct', 'niCharge', 'niStorage');
   mkBattChart('ts-batt-si', 'siBattPct', 'siCharge', 'siStorage');
+  renderBaseDispatch();
+  renderCostCharts();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2098,6 +2395,18 @@ async function runSim() {
 
     const [caps, rawData] = await Promise.all([loadCapacity(), loadIslandData(year)]);
 
+    // Pre-compute per-period transmission loss factors (NI and SI separately).
+    // Loss = 1 − metered_demand / gross_generation. Capped 0–10%.
+    // Attached to rawData rows so they propagate through the solar-correction spread below.
+    rawData.forEach(r => {
+      const niTot = (r.NI_Hydro||0)+(r.NI_Geo||0)+(r.NI_Gas||0)+(r.NI_Wind||0)+(r.NI_Solar||0)
+                   +(r.NI_Wood||0)+(r.NI_Coal||0)+(r.NI_Diesel||0)+(r.NI_Other||0);
+      const siTot = (r.SI_Hydro||0)+(r.SI_Geo||0)+(r.SI_Gas||0)+(r.SI_Wind||0)+(r.SI_Solar||0)
+                   +(r.SI_Wood||0)+(r.SI_Coal||0)+(r.SI_Diesel||0)+(r.SI_Other||0);
+      r.niLoss = niTot > 0 ? Math.max(0, Math.min(0.10, 1 - r.NI_Demand / niTot)) : 0;
+      r.siLoss = siTot > 0 ? Math.max(0, Math.min(0.10, 1 - r.SI_Demand / siTot)) : 0;
+    });
+
     // Solar fallback: if the selected year has no solar data, substitute the nearest year that does
     let data = rawData;
     const hasSolar = rawData.some(r => r.NI_Solar > 0);
@@ -2153,22 +2462,39 @@ async function runSim() {
     pBase.niSolarCorr = pUser.niSolarCorr;
     pBase.siSolarCorr = pUser.siSolarCorr;
     gCaps = caps; gParams = pUser;
-    const { mo: moBase }            = simulate(data, caps, pBase);
+    // Normalise raw historical data into period-shaped objects for "before" charts
+    gRawData = rawData.map(r => ({
+      dt: r.dt,
+      niHydro: r.NI_Hydro,  siHydro: r.SI_Hydro,
+      niGeo:   r.NI_Geo,    siGeo:   r.SI_Geo,
+      niGas:   r.NI_Gas,    siGas:   r.SI_Gas  || 0,
+      niWind:  r.NI_Wind,   siWind:  r.SI_Wind,
+      niSolar: r.NI_Solar,  siSolar: r.SI_Solar,
+      niWood:  r.NI_Wood,   siWood:  r.SI_Wood  || 0,
+      niCoal:  r.NI_Coal,   siCoal:  r.SI_Coal  || 0,
+      niDiesel:r.NI_Diesel, siDiesel:r.SI_Diesel|| 0,
+      niOther: r.NI_Other,  siOther: r.SI_Other || 0,
+      hvdcNiSi: r.HVDC_NI_to_SI, hvdcSiNi: r.HVDC_SI_to_NI,
+      niDemand: r.NI_Demand, siDemand: r.SI_Demand,
+      niStorage: 0, siStorage: 0, niDomSolar: 0, siDomSolar: 0,
+    }));
+    const { mo: moBase, pp: ppBase } = simulate(data, caps, pBase);
     const { mo: moUser, pp, pk }    = simulate(data, caps, pUser);
+    gPpBase = ppBase;
 
     tsData = pp;
     // Default to last week of May — representative of shoulder/autumn demand
     const mayIdx = pp.findIndex(p => p.dt.slice(5, 7) === '05');
     const juneIdx = pp.findIndex(p => p.dt.slice(5, 7) === '06');
     tsOffset = juneIdx > 48 ? Math.max(0, juneIdx - 7 * 48) : mayIdx >= 0 ? mayIdx : 0;
+    document.getElementById('results').hidden = false;
     killCharts();
     gMo = moUser;
     renderStats(moBase, moUser, caps, pBase, pUser);
     renderTables(moUser, pk);
     renderAnnualCharts(moUser);
+    renderCostCharts();
     renderTsCharts();
-
-    document.getElementById('results').hidden = false;
     status.textContent = `Done — ${data.length.toLocaleString()} periods for ${year}.`;
   } catch(e) {
     status.textContent = `Error: ${e.message}`;
@@ -2541,8 +2867,13 @@ async function generateReport() {
         {label:'South Island → North Island',data:sl.map(p=>+(p.hvdcSiNi||0).toFixed(1)),borderColor:C.HvdcSiNi,backgroundColor:C.HvdcSiNi+'33',fill:true,tension:.1,pointRadius:0,borderWidth:1.5},
       ]}, lineOpts('MW'), 200);
 
+      const resNote = document.createElement('p');
+      resNote.style.cssText = 'font-size:9px;color:#555;margin:8px 0 4px;line-height:1.5;';
+      resNote.textContent = 'The contingency line (dashed) is the reserve requirement — the largest single power loss each island must survive: the greater of the HVDC import volume at that moment or the largest single generating unit (~400 MW). FIR and SIR must stay above this line.';
+      body.appendChild(resNote);
+
       const resGrid = document.createElement('div');
-      resGrid.className = 'rpt-grid2'; resGrid.style.marginTop = '10px';
+      resGrid.className = 'rpt-grid2'; resGrid.style.marginTop = '4px';
       body.appendChild(resGrid);
       for (const [label, firK, sirK, contK, contCol] of [
         ['North Island — Frequency Reserves','niFIR','niSIR','niContingency','#dc2626'],
@@ -2567,7 +2898,7 @@ async function generateReport() {
       mkChart(inertWrap, 'line', { labels:lbl, datasets:[
         {label:'North Island inertia',data:sl.map(p=>+(p.niInertiaMWs??0)),borderColor:C.Hydro,fill:false,borderWidth:2,pointRadius:0,tension:.2},
         {label:'South Island inertia',data:sl.map(p=>+(p.siInertiaMWs??0)),borderColor:'#7dd3fc',borderDash:[4,3],fill:false,borderWidth:2,pointRadius:0,tension:.2},
-      ]}, lineOpts('MW·s'), 200);
+      ]}, lineOpts('GVA·s'), 200);
 
       const battLabel = document.createElement('div');
       battLabel.className = 'rpt-label'; battLabel.style.marginTop = '10px';
