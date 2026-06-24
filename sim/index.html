@@ -110,12 +110,20 @@
       border-radius:8px; padding:14px; min-width:0; overflow:hidden; }
     .chart-box canvas { display:block; }
     .chart-box h3 { font-size:11px; font-weight:600; color:var(--text); margin-bottom:8px; }
+    .heatmap { width:100%; height:210px; display:block; }
+    .hm-group-title { font-size:.9rem; font-weight:600; color:var(--text); margin:6px 0 10px; }
+    .hm-scale { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted); margin:8px 0 6px; }
+    .hm-scale-bar { height:10px; width:220px; border:1px solid var(--border); border-radius:2px;
+      background:linear-gradient(to right,#fff,#000); }
+    .hm-scale-ticks { display:flex; justify-content:space-between; width:220px; font-size:10px; margin-top:2px; }
+    @media(max-width:600px){ .heatmap{ height:150px; } }
 
     /* ── Chart sections ──────────────────────── */
     .ts-section { margin-bottom:32px; }
     #operability-section > summary::-webkit-details-marker, #operability-section > summary::marker,
     #base-dispatch-section > summary::-webkit-details-marker, #base-dispatch-section > summary::marker,
     #costs-section > summary::-webkit-details-marker, #costs-section > summary::marker,
+    #heatmap-section > summary::-webkit-details-marker, #heatmap-section > summary::marker,
     #reservoirs-section > summary::-webkit-details-marker, #reservoirs-section > summary::marker,
     #dom-energy-section > summary::-webkit-details-marker, #dom-energy-section > summary::marker,
     #battery-section > summary::-webkit-details-marker, #battery-section > summary::marker,
@@ -606,6 +614,44 @@
       });
     </script>
 
+    <!-- ── Patterns / heatmaps (collapsed by default) ── -->
+    <details class="ts-section" id="heatmap-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="heatmap-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Gas use</span>
+        <span style="font-size:11px;color:var(--muted);">— when gas runs across the year, with and without your blueprint</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p>Every half-hour of the year as a single cell. The <strong>x-axis runs January → December</strong>; the <strong>y-axis runs midnight (top) → midnight (bottom)</strong>, so you can read daily and seasonal patterns at a glance. <em>Without blueprint</em> is the historical record; <em>with blueprint</em> is your scenario.</p>
+      </div>
+
+      <h3 class="hm-group-title">Gas generation (MW) — darker means more gas running</h3>
+      <div class="hm-scale">
+        <span>Gas (MW):</span>
+        <div>
+          <div class="hm-scale-bar"></div>
+          <div class="hm-scale-ticks"><span>0</span><span id="hm-gas-mid">—</span><span id="hm-gas-max">—</span></div>
+        </div>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>Without blueprint</h3><canvas id="hm-gas-before" class="heatmap"></canvas></div>
+        <div class="chart-box"><h3>With blueprint</h3><canvas id="hm-gas-after" class="heatmap"></canvas></div>
+      </div>
+    </details>
+    <script>
+      document.getElementById('heatmap-section').addEventListener('toggle', function() {
+        document.getElementById('heatmap-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) renderHeatmaps();
+      });
+      let hmResizeT;
+      window.addEventListener('resize', () => {
+        clearTimeout(hmResizeT);
+        hmResizeT = setTimeout(() => {
+          if (document.getElementById('heatmap-section').open) renderHeatmaps();
+        }, 200);
+      });
+    </script>
+
     <!-- ── Grid Operability (collapsed by default) ── -->
     <details class="ts-section" id="operability-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -728,8 +774,9 @@
           <li style="margin-bottom:8px;"><strong>Variable renewables</strong> — scaled wind and solar (including residential net export) are added next. Output follows the historical shape and cannot be switched off, but surplus is curtailed if demand is fully met.</li>
           <li style="margin-bottom:8px;"><strong>Flexible hydro dispatch</strong> — remaining hydro (the reservoir portion) is held back initially. A virtual reservoir tracks accumulated inflow minus discharge. If the NI island has a deficit after wind/solar, flexible hydro is released up to the available reservoir level. SI hydro is managed similarly but with a much larger reservoir (Waitaki/Manapouri); SI reservoir losses (evaporation and spill) are proportionally higher. Reservoir is capped at configured maximum; overflow is spilled (curtailed).</li>
           <li style="margin-bottom:8px;"><strong>HVDC surplus transfer (first pass)</strong> — if one island has a surplus after renewables and flexible hydro, it sends power to the other island up to the HVDC capacity limit (default 1,200 MW each direction). Low-carbon surplus is transferred before thermal is committed on the receiving island.</li>
+          <li style="margin-bottom:8px;"><strong>Cross-island flexible hydro (HVDC)</strong> — if either island has idle flexible hydro left from <em>this period's flow</em>, it covers the other island's remaining deficit over spare HVDC headroom. This is the cheapest cross-island option because it spends no stored water.</li>
+          <li style="margin-bottom:8px;"><strong>Reservoir hydro — local then cross-island (HVDC)</strong> — stored water is then released to meet any deficit still outstanding. Crucially, hydro may now be pushed <em>above</em> the historical output for that half-hour, up to the fleet's demonstrated turbine capacity, drawing the reservoir down. If one island's lakes still have spare turbine capacity, that water serves the <em>other</em> island's deficit over remaining HVDC headroom — so a full South Island reservoir can displace North Island gas rather than being stranded behind the link. In a dry year, depleted storage falls back to thermal as before.</li>
           <li style="margin-bottom:8px;"><strong>Grid-scale battery</strong> — the NI utility battery charges from any remaining NI surplus (up to power rating and remaining capacity), then discharges to cover any remaining NI deficit. A separate SI battery can be configured. Battery round-trip efficiency is 92%.</li>
-          <li style="margin-bottom:8px;"><strong>HVDC second pass (post-battery)</strong> — if flexible hydro on one island can now cover the other island's remaining deficit via HVDC, it does so. This allows SI hydro to be dispatched specifically to serve NI thermal avoidance.</li>
           <li style="margin-bottom:8px;"><strong>Thermal dispatchables</strong> — NI thermal plant is committed in order: Wood/biomass → Gas → Diesel → Coal → Other. Each type is dispatched up to its installed capacity until the remaining deficit is met. Thermal plant can serve NI demand directly, or if SI has unmet demand it can export via the remaining HVDC headroom. There is no SI thermal in the model (Huntly is in NI; Tiwai-era SI thermal is not modelled).</li>
           <li><strong>Unserved energy</strong> — any demand not met after all plant is dispatched is recorded as unserved. This represents grid insecurity rather than modelled load shedding.</li>
         </ol>
@@ -1089,8 +1136,18 @@ function simulate(data, caps, p) {
   // Thresholds in MW·s (NI ~3 GVA·s, SI ~1.5 GVA·s per Transpower guidance).
   const INERTIA_CONSTRAINT  = false;
   const APPLY_LOSSES        = true;   // account for transmission losses per island per period
+  const HYDRO_FLEX_PLUS     = true;   // reservoir hydro can exceed the historical per-period
+                                      // flow (capped at turbine capacity) and serve the OTHER
+                                      // island over spare HVDC headroom — lets full SI lakes
+                                      // back out NI gas. Set false for the legacy local-only draw.
   const NI_MIN_INERTIA_MWS  = 3000;
   const SI_MIN_INERTIA_MWS  = 1500;
+
+  // Demonstrated maximum half-hourly hydro output over the year = physical turbine
+  // ceiling per island. Stored water can lift hydro above the historical flow for a
+  // period, but never above this (FIX 1).
+  const niHydroMaxMW = data.reduce((mx, r) => Math.max(mx, r.NI_Hydro || 0), 0);
+  const siHydroMaxMW = data.reduce((mx, r) => Math.max(mx, r.SI_Hydro || 0), 0);
 
   // ── Domestic solar & storage pre-computation ──────────────────────────
   // Simulates a SINGLE typical home with solar and storage, then scales by
@@ -1264,13 +1321,9 @@ function simulate(data, caps, p) {
     let niFlexAvail = niFlex - niFlexUsed;
     let siFlexAvail = siFlex - siFlexUsed;
 
-    // Reservoir draw for deficit still unmet after flex hydro
-    const niExMWh = Math.min(niDef * 0.5, niRes);
-    const siExMWh = Math.min(siDef * 0.5, siRes);
-    niDef = Math.max(niDef - niExMWh / 0.5, 0);
-    siDef = Math.max(siDef - siExMWh / 0.5, 0);
-
     // ── Phase 2b: cross-island idle flex hydro via HVDC ──────────────────
+    // This-period idle flow is moved before any reservoir draw — cheaper than
+    // spending stored water, and it can only ever be the historical flow.
     if (siFlexAvail > 0 && niDef > 0) {
       const x = Math.min(siFlexAvail, niDef, p.hvdcSiNi - hvdcSiNi);
       siFlexAvail -= x; siFlexUsed += x; niDef -= x; hvdcSiNi += x;
@@ -1280,7 +1333,44 @@ function simulate(data, caps, p) {
       niFlexAvail -= x; niFlexUsed += x; siDef -= x; hvdcNiSi += x;
     }
 
-    // Reservoir update after all hydro and cross-island decisions
+    // ── Phase 2c: reservoir hydro draw ───────────────────────────────────
+    let niExMWh, siExMWh;
+    if (HYDRO_FLEX_PLUS) {
+      // FIX 1: stored water lifts hydro ABOVE the historical per-period flow,
+      //        bounded by spare turbine capacity (fleet max) and storage.
+      // FIX 2: remaining HVDC headroom lets one island's reservoir serve the
+      //        OTHER island's deficit before any thermal — a full SI lake backs
+      //        out NI gas instead of being stranded behind the link.
+      let niHead = Math.max(0, niHydroMaxMW - niRoRmw - niFlexUsed);   // spare turbine MW
+      let siHead = Math.max(0, siHydroMaxMW - siRoRmw - siFlexUsed);
+
+      // local reservoir first — capped by deficit, turbine headroom, storage
+      const niLoc = Math.min(niDef, niHead, niRes / 0.5);
+      niDef -= niLoc; niHead -= niLoc;
+      const siLoc = Math.min(siDef, siHead, siRes / 0.5);
+      siDef -= siLoc; siHead -= siLoc;
+
+      // then cross-island reservoir over spare HVDC headroom
+      let siForNi = 0, niForSi = 0;
+      if (niDef > 0 && siHead > 0) {
+        siForNi = Math.min(niDef, siHead, siRes / 0.5 - siLoc, p.hvdcSiNi - hvdcSiNi);
+        niDef -= siForNi; hvdcSiNi += siForNi;
+      }
+      if (siDef > 0 && niHead > 0) {
+        niForSi = Math.min(siDef, niHead, niRes / 0.5 - niLoc, p.hvdcNiSi - hvdcNiSi);
+        siDef -= niForSi; hvdcNiSi += niForSi;
+      }
+      niExMWh = (niLoc + niForSi) * 0.5;   // total NI reservoir energy spent (local + exported)
+      siExMWh = (siLoc + siForNi) * 0.5;
+    } else {
+      // Legacy: local reservoir only, no turbine cap
+      niExMWh = Math.min(niDef * 0.5, niRes);
+      siExMWh = Math.min(siDef * 0.5, siRes);
+      niDef = Math.max(niDef - niExMWh / 0.5, 0);
+      siDef = Math.max(siDef - siExMWh / 0.5, 0);
+    }
+
+    // Reservoir update: bank unused flex hydro, drain baseline loss + extraction
     niRes = Math.min(Math.max(niRes + niFlexAvail * 0.5 - p.niLoss - niExMWh, 0), p.niResMax);
     siRes = Math.min(Math.max(siRes + siFlexAvail * 0.5 - p.siLoss - siExMWh, 0), p.siResMax);
 
@@ -1973,6 +2063,92 @@ function renderCostCharts() {
   });
 }
 
+// ── Year × time-of-day heatmaps ──────────────────────────────────────────────
+// gRawData = historical "before"; tsData = simulated "after". Both are full-year,
+// half-hourly. Rendered manually on canvas (no chart lib) for full grid control.
+function renderHeatmaps() {
+  if (!gRawData.length || !tsData.length) return;
+
+  const gasVal = p => (p.niGas||0) + (p.siGas||0);
+
+  // Shared, linear MW scale: white = 0, black = gasMax. Capped at the 99th pct
+  // so an odd diesel-backed spike doesn't wash out the everyday range.
+  const allGas = gRawData.map(gasVal).concat(tsData.map(gasVal)).sort((a, b) => a - b);
+  const gasMax = allGas[Math.floor(allGas.length * 0.99)] || 1;
+  const gasColor = v => {
+    const c = Math.round(255 * (1 - Math.min(1, v / gasMax)));
+    return `rgb(${c},${c},${c})`;
+  };
+
+  // Annotate the legend with real MW values (rounded to 50 MW)
+  const r50 = x => Math.round(x / 50) * 50;
+  const midEl = document.getElementById('hm-gas-mid');
+  const maxEl = document.getElementById('hm-gas-max');
+  if (midEl) midEl.textContent = r50(gasMax / 2);
+  if (maxEl) maxEl.textContent = r50(gasMax) + '+';
+
+  drawHeatmap('hm-gas-before', gRawData, gasVal, gasColor);
+  drawHeatmap('hm-gas-after',  tsData,   gasVal, gasColor);
+}
+
+function drawHeatmap(id, periods, valFn, colorFn) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const cssW = cv.clientWidth;
+  if (!cssW) return;                       // section collapsed — nothing laid out yet
+  const cssH = cv.clientHeight || 210;
+  const dpr  = window.devicePixelRatio || 1;
+  cv.width  = Math.round(cssW * dpr);
+  cv.height = Math.round(cssH * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  // Group periods by calendar day, preserving order within each day (DST-safe)
+  const days = [], idx = new Map();
+  for (const p of periods) {
+    const d = p.dt.slice(0, 10);
+    let i = idx.get(d);
+    if (i === undefined) { i = days.length; idx.set(d, i); days.push({ date: d, rows: [] }); }
+    days[i].rows.push(p);
+  }
+  const nDays = days.length, nRows = 48;
+  const mL = 34, mB = 16, mT = 4, mR = 6;
+  const plotW = cssW - mL - mR, plotH = cssH - mT - mB;
+  const cw = plotW / nDays, ch = plotH / nRows;
+
+  days.forEach((day, col) => {
+    const x = mL + col * cw;
+    day.rows.forEach((p, row) => {
+      if (row >= nRows) return;
+      ctx.fillStyle = colorFn(valFn(p));
+      ctx.fillRect(x, mT + row * ch, cw + 0.6, ch + 0.6);   // tiny overlap = no seams
+    });
+  });
+
+  // Y axis — time of day
+  ctx.fillStyle = '#475569';
+  ctx.font = '9px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  [['00:00',0],['06:00',12],['12:00',24],['18:00',36],['24:00',48]].forEach(([lab, hh]) => {
+    ctx.fillText(lab, mL - 4, mT + hh * ch);
+  });
+
+  // X axis — month boundaries
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  const M3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let lastMon = '';
+  days.forEach((day, col) => {
+    const mon = day.date.slice(5, 7);
+    if (mon !== lastMon) {
+      lastMon = mon;
+      ctx.fillText(M3[+mon - 1] || '', mL + col * cw + 1, cssH - mB + 3);
+    }
+  });
+}
+
 function renderBaseDispatch() {
   if (!gRawData.length) return;
   setChartScale(1.2);
@@ -2511,6 +2687,7 @@ async function runSim() {
     renderAnnualCharts(moUser);
     renderCostCharts();
     renderTsCharts();
+    renderHeatmaps();   // no-op while the section is collapsed; redraws on open
     status.textContent = `Done — ${data.length.toLocaleString()} periods for ${year}.`;
   } catch(e) {
     status.textContent = `Error: ${e.message}`;
