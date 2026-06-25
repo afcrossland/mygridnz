@@ -26,6 +26,16 @@
 
     /* ── Sliders ─────────────────────────────── */
     .slider-row { display:grid; grid-template-columns:1fr; gap:6px 20px; }
+    .slider-row.two-col { grid-template-columns:1fr 1fr; }
+    @media(max-width:600px){ .slider-row.two-col { grid-template-columns:1fr; } }
+    .year-range { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .year-sel { padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px;
+      font-family:inherit; background:#fff; width:100%; margin-top:4px; cursor:pointer; }
+    .year-presets { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .year-btn { padding:5px 13px; border:1px solid var(--border); border-radius:999px; background:#fff;
+      cursor:pointer; font-size:12px; font-family:inherit; color:var(--text); }
+    .year-btn:hover { border-color:var(--brand); }
+    .year-btn.active { background:var(--brand); color:#fff; border-color:var(--brand); }
     .sl { display:flex; flex-direction:column; gap:2px; margin-bottom:14px; }
     .sl-hd { display:flex; justify-content:space-between; font-size:13px; }
     .sl-hd span:first-child { color:var(--text); font-weight:600; }
@@ -150,6 +160,17 @@
 
     /* ── Hover term tooltip (spelled-out jargon) ── */
     .term { border-bottom:1px dotted var(--muted); cursor:help; }
+
+    /* ── Meeting the winter peak ─────────────── */
+    .peakcap-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:18px; }
+    .peakcap-card { border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+    .peakcap-card.bad { border-color:#ef4444; }
+    .peakcap-card h4 { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 6px; font-weight:700; }
+    .peakcap-firm { font-size:1.5rem; font-weight:300; line-height:1; color:var(--text); }
+    .peakcap-firm span { font-size:.7rem; color:var(--muted); }
+    .peakcap-margin { font-size:13px; font-weight:700; margin-top:6px; }
+    .peakcap-margin.ok { color:#15803d; } .peakcap-margin.bad { color:#dc2626; }
+    @media(max-width:600px){ .peakcap-summary { grid-template-columns:1fr; } }
 
     /* ── Build cost breakdown table ──────────── */
     .capex-tbl { width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
@@ -364,12 +385,20 @@
       <div class="re-group">
         <div class="re-group-hd">Wind</div>
         <div class="re-cols">
-          <div class="sl"><div class="sl-hd"><span>North Island</span><span id="ni-wind-v" class="sl-val">2.1 GW</span></div>
+          <div class="sl"><div class="sl-hd"><span>North Island capacity</span><span id="ni-wind-v" class="sl-val">2.1 GW</span></div>
             <div class="sl-sub">Total North Island wind farm capacity.</div>
             <input type="range" id="ni-wind" min="0" max="12" step="0.1" value="2.1" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
-          <div class="sl"><div class="sl-hd"><span>South Island</span><span id="si-wind-v" class="sl-val">0.9 GW</span></div>
-            <div class="sl-sub">Total South Island wind farm capacity (modelled at a 35% capacity factor).</div>
+          <div class="sl"><div class="sl-hd"><span>South Island capacity</span><span id="si-wind-v" class="sl-val">0.9 GW</span></div>
+            <div class="sl-sub">Total South Island wind farm capacity.</div>
             <input type="range" id="si-wind" min="0" max="6" step="0.1" value="0.9" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
+        </div>
+        <div class="re-cols">
+          <div class="sl"><div class="sl-hd"><span class="term" title="Average output as a share of nameplate capacity over the year — higher means windier or better turbines.">North Island capacity factor</span><span id="ni-wind-cf-v" class="sl-val">35%</span></div>
+            <div class="sl-sub">Average North Island wind output as a share of nameplate (the metered shape is rescaled to hit this).</div>
+            <input type="range" id="ni-wind-cf" min="20" max="55" step="1" value="35" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+          <div class="sl"><div class="sl-hd"><span class="term" title="Average output as a share of nameplate capacity over the year — higher means windier or better turbines.">South Island capacity factor</span><span id="si-wind-cf-v" class="sl-val">35%</span></div>
+            <div class="sl-sub">Average South Island wind output as a share of nameplate (the metered shape is rescaled to hit this).</div>
+            <input type="range" id="si-wind-cf" min="20" max="55" step="1" value="35" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         </div>
         <div class="sl"><div class="sl-hd"><span>Build cost</span><span id="cost-wind-v" class="sl-val">2500 $/kW</span></div>
           <div class="sl-sub">Capital cost per kW of new wind capacity — feeds the build-cost estimate.</div>
@@ -413,12 +442,14 @@
 
       <div class="re-group">
         <div class="re-group-hd">Geothermal</div>
-        <div class="sl"><div class="sl-hd"><span>New geothermal (North Island)</span><span id="ni-newgeo-v" class="sl-val">0 MW</span></div>
-          <div class="sl-sub">New North Island geothermal added on top of today’s plants — runs flat at ~90% of the time.</div>
-          <input type="range" id="ni-newgeo" min="0" max="500" step="25" value="0" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>Build cost</span><span id="cost-geo-v" class="sl-val">5500 $/kW</span></div>
-          <div class="sl-sub">Capital cost per kW of new geothermal capacity — feeds the build-cost estimate.</div>
-          <input type="range" id="cost-geo" min="3000" max="9000" step="100" value="5500" data-unit="$/kW" data-dp="0" oninput="syncSlider(this);renderCapex()"></div>
+        <div class="re-cols">
+          <div class="sl"><div class="sl-hd"><span>New geothermal (North Island)</span><span id="ni-newgeo-v" class="sl-val">0 MW</span></div>
+            <div class="sl-sub">New North Island geothermal added on top of today’s plants — runs flat at ~90% of the time.</div>
+            <input type="range" id="ni-newgeo" min="0" max="500" step="25" value="0" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+          <div class="sl"><div class="sl-hd"><span>Build cost</span><span id="cost-geo-v" class="sl-val">5500 $/kW</span></div>
+            <div class="sl-sub">Capital cost per kW of new geothermal capacity — feeds the build-cost estimate.</div>
+            <input type="range" id="cost-geo" min="3000" max="9000" step="100" value="5500" data-unit="$/kW" data-dp="0" oninput="syncSlider(this);renderCapex()"></div>
+        </div>
       </div>
     </details>
 
@@ -458,17 +489,15 @@
 
     <details class="ctrl-panel">
       <summary id="dom-solar-panel">Domestic Solar &amp; Storage</summary>
-      <div class="slider-row">
+      <div class="slider-row two-col">
         <div class="sl"><div class="sl-hd"><span>Enable residential solar &amp; storage</span>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
             <input type="checkbox" id="dom-solar-enabled" onchange="syncCheckbox('dom-solar-enabled')">
             <span id="dom-solar-enabled-v" class="sl-val">Off</span>
           </label></div></div>
-        <div class="sl"><div class="sl-hd"><span>% of demand that is residential — North Island</span><span id="ni-dom-pct-v" class="sl-val">38%</span></div>
-          <div class="sl-sub">Share of North Island electricity demand that comes from homes.</div>
+        <div class="sl" style="display:none;"><div class="sl-hd"><span>% of demand that is residential — North Island</span><span id="ni-dom-pct-v" class="sl-val">38%</span></div>
               <input type="range" id="ni-dom-pct" min="0" max="100" step="1" value="38" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-        <div class="sl"><div class="sl-hd"><span>% of demand that is residential — South Island</span><span id="si-dom-pct-v" class="sl-val">25%</span></div>
-          <div class="sl-sub">Share of South Island electricity demand that comes from homes.</div>
+        <div class="sl" style="display:none;"><div class="sl-hd"><span>% of demand that is residential — South Island</span><span id="si-dom-pct-v" class="sl-val">25%</span></div>
               <input type="range" id="si-dom-pct" min="0" max="100" step="1" value="25" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Panels per home</span><span id="dom-panels-v" class="sl-val">10</span></div>
           <div class="sl-sub">Number of rooftop panels on a typical solar home.</div>
@@ -493,10 +522,10 @@
 
     <details class="ctrl-panel">
       <summary>North Island on-demand power stations (capacity in megawatts)</summary>
-      <div class="slider-row">
+      <div class="slider-row two-col">
         <div class="sl"><div class="sl-hd"><span>Gas</span><span id="ni-gas-v" class="sl-val">1678 MW</span></div>
           <div class="sl-sub">North Island gas-fired power station capacity.</div>
-              <input type="range" id="ni-gas" min="0" max="4000" step="50" value="1678" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
+              <input type="range" id="ni-gas" min="0" max="4000" step="1" value="1678" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
         <div class="sl"><div class="sl-hd"><span>Coal</span><span id="ni-coal-v" class="sl-val">400 MW</span></div>
           <div class="sl-sub">North Island coal-fired power station capacity.</div>
               <input type="range" id="ni-coal" min="0" max="2000" step="50" value="400" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
@@ -513,19 +542,23 @@
     </details>
 
     <details class="ctrl-panel" id="data-year-panel">
-      <summary>Data Year</summary>
-      <div class="slider-row" style="padding:4px 16px 16px;">
-        <div class="sl" style="max-width:100%;">
-          <div class="sl-hd"><span>Select year(s)</span></div>
-          <select id="sim-year" multiple size="6" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;margin-top:6px;width:100%;"></select>
+      <summary>Weather Year(s)</summary>
+      <div style="padding:4px 16px 16px;">
+        <div class="year-range">
+          <div class="sl"><div class="sl-hd"><span>From</span></div>
+            <select id="year-from" class="year-sel" onchange="onYearRangeChange()"></select></div>
+          <div class="sl"><div class="sl-hd"><span>To</span></div>
+            <select id="year-to" class="year-sel" onchange="onYearRangeChange()"></select></div>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;">Weather year sets wind, solar and hydro inflows. A dry year is the hardest case. Hold Ctrl/Cmd to pick several years — results are averaged across them.</p>
+        <div class="sl-sub" style="margin-top:10px;">Choose a range to average across several years, or quick-pick a single year:</div>
+        <div id="year-presets" class="year-presets"></div>
+        <p style="font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.6;">Weather year sets wind, solar and hydro inflows. A dry year is the hardest case; a range smooths out year-to-year luck.</p>
       </div>
     </details>
 
     <details class="ctrl-panel">
       <summary>Grid Settings</summary>
-      <div class="slider-row">
+      <div class="slider-row two-col">
         <div class="sl"><div class="sl-hd"><span class="term" title="The 1,200 MW high-voltage direct-current cable across Cook Strait connecting the two islands.">HVDC Interisland Link</span><span style="font-weight:400;color:var(--muted);"> — North → South limit</span><span id="hvdc-ni-si-v" class="sl-val">1200 MW</span></div>
           <div class="sl-sub">Maximum power that can flow North → South across the interisland link.</div>
               <input type="range" id="hvdc-ni-si" min="0" max="3000" step="100" value="1200" data-unit="MW" data-dp="0" oninput="syncSlider(this)"></div>
@@ -615,6 +648,27 @@
       document.getElementById('island-detail-section').addEventListener('toggle', function() {
         document.getElementById('island-detail-arrow').textContent = this.open ? '▼' : '▶';
         if (this.open) { charts['chart-ni']?.resize(); charts['chart-si']?.resize(); }
+      });
+    </script>
+
+    <!-- ── Meeting the winter peak (collapsed by default) ── -->
+    <details class="ts-section" id="peakcap-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="peakcap-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Meeting the winter peak</span>
+        <span style="font-size:11px;color:var(--muted);">— firm capacity vs peak demand, with and without gas</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:14px;">
+        <p>Can the grid cover the highest demand of the year? Each technology counts only its <strong>firm (dependable) capacity</strong> — the share you can rely on during a winter evening peak. Wind counts for only 10% and solar 0% (the peak is after dark), while hydro, geothermal, gas and batteries count for most of their rating. The two bars compare the fleet <strong>with gas</strong> and <strong>without gas</strong> against peak demand — the gap between them is how much peak security still depends on gas.</p>
+      </div>
+      <div id="peakcap-summary" class="peakcap-summary"></div>
+      <div class="chart-box ts-full"><canvas id="peakcap-chart"></canvas></div>
+      <p class="sl-sub" id="peakcap-note" style="margin-top:10px;"></p>
+    </details>
+    <script>
+      document.getElementById('peakcap-section').addEventListener('toggle', function() {
+        document.getElementById('peakcap-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) renderPeakCapacity();
       });
     </script>
 
@@ -916,8 +970,8 @@
           <div class="slider-row">
             <div class="sl"><div class="sl-hd"><span>Gas</span><span id="cost-gas-v" class="sl-val">1500 $/kW</span></div>
               <input type="range" id="cost-gas" min="800" max="3000" step="50" value="1500" data-unit="$/kW" data-dp="0" oninput="syncSlider(this);renderCapex()"></div>
-            <div class="sl"><div class="sl-hd"><span>Battery</span><span id="cost-batt-v" class="sl-val">500 $/kWh</span></div>
-              <input type="range" id="cost-batt" min="100" max="1000" step="25" value="500" data-unit="$/kWh" data-dp="0" oninput="syncSlider(this);renderCapex()"></div>
+            <div class="sl"><div class="sl-hd"><span>Battery</span><span id="cost-batt-v" class="sl-val">300 $/kWh</span></div>
+              <input type="range" id="cost-batt" min="100" max="1000" step="25" value="300" data-unit="$/kWh" data-dp="0" oninput="syncSlider(this);renderCapex()"></div>
           </div>
         </div>
         <div>
@@ -1199,13 +1253,33 @@ function setSlider(id, val) {
   syncSlider(el);
 }
 
+function setYearRange(from, to) {
+  const f = document.getElementById('year-from'), t = document.getElementById('year-to');
+  if (f) f.value = from;
+  if (t) t.value = to;
+  onYearRangeChange();
+}
+
+function onYearRangeChange() {
+  const f = document.getElementById('year-from'), t = document.getElementById('year-to');
+  if (!f || !t) return;
+  // Don't let "to" precede "from" — clamp the one the user didn't touch is overkill;
+  // just highlight the single-year quick-pick when the range is one year.
+  const single = (+f.value === +t.value);
+  document.querySelectorAll('#year-presets .year-btn').forEach(b => {
+    b.classList.toggle('active', single && +b.textContent === +f.value);
+  });
+}
+
 // ═══════════════════════════════════════════════════════
 // BLUEPRINT PRELOAD
 // ═══════════════════════════════════════════════════════
 function preloadBlueprint() {
   // NZ 2030 Blueprint scenario: 2GW NI wind, 1.5GW NI solar, battery, phase out coal
-  setSlider('ni-wind',        2.0);
-  setSlider('si-wind',        1.5);
+  setSlider('ni-wind',        1.5);
+  setSlider('si-wind',        0.8);
+  setSlider('ni-wind-cf',      35);
+  setSlider('si-wind-cf',      35);
   setSlider('ni-solar',       1.5);
   setSlider('ni-solar-yield', 1200);
   setSlider('si-solar',       0.5);
@@ -1214,10 +1288,10 @@ function preloadBlueprint() {
   setSlider('si-ror',          20);
   setSlider('ni-newgeo',        0);
   setSlider('batt-power',    1000);
-  setSlider('batt-cap',      8000);
+  setSlider('batt-cap',      4000);
   setSlider('batt-eff',        85);
   setSlider('si-batt-power',  200);
-  setSlider('si-batt-cap',   800);
+  setSlider('si-batt-cap',   400);
   setSlider('si-batt-eff',     85);
   setSlider('ni-gas',        1678);  // keep gas as backup/reserve
   setSlider('ni-coal',          0);  // retire coal
@@ -1253,6 +1327,8 @@ function resetToToday() {
   // Wind/solar/dispatchables from actual 2025 installed capacity loaded on init
   setSlider('ni-wind',        gTodayCaps.niWindGW   || 2.1);
   setSlider('si-wind',        gTodayCaps.siWindGW   || 0.9);
+  setSlider('ni-wind-cf',      35);
+  setSlider('si-wind-cf',      35);
   setSlider('ni-solar',       gTodayCaps.niSolarGW  || 2.5);
   setSlider('ni-solar-yield', 1200);
   setSlider('si-solar',       gTodayCaps.siSolarGW  || 0.5);
@@ -1481,7 +1557,7 @@ function simulate(data, caps, p) {
     // ── Phase 1: fixed (must-run) generation ──────────────────────────────
     // New geothermal runs flat as must-run generation at ~90% capacity factor.
     const niGeo   = row.NI_Geo + (p.niNewGeo || 0) * 0.9;
-    const niWind  = row.NI_Wind  * niWindSc;
+    const niWind  = row.NI_Wind  * niWindSc * (p.niWindCorr ?? 1);
     const niSolar = row.NI_Solar * niSolarSc * p.niSolarCorr;
     const niHist  = row.NI_Hydro;
     const niRoRmw = niHist * (p.niRoR / 100);
@@ -1970,14 +2046,14 @@ function fmt(n, dp) { return (+n).toLocaleString('en-NZ', { minimumFractionDigit
 // Grid-scale capacity each preset applies (null = leave at today's installed level).
 // Keep in sync with the preload* functions. Used to show new-build cost on the cards.
 const SCENARIO_CAPS = {
-  'sc-blueprint': { windGW:3.5,  solarGW:2.0,  geoMW:0, gasMW:null, battE:8800 },
+  'sc-blueprint': { windGW:2.3,  solarGW:2.0,  geoMW:0, gasMW:null, battE:4400 },
   'sc-domsolar':  { windGW:null, solarGW:null, geoMW:0, gasMW:null, battE:8800 },
   'sc-utilityre': { windGW:3.0,  solarGW:2.5,  geoMW:0, gasMW:null, battE:8800 },
   'sc-lng':       { windGW:null, solarGW:null, geoMW:0, gasMW:3000, battE:0    },
 };
 // Default build-cost assumptions (must match the cost-* slider defaults).
 // Battery is priced on storage energy only ($ per kWh).
-const BUILD_COST = { wind:2500, solar:1200, geo:5500, gas:1500, batt:500 };
+const BUILD_COST = { wind:2500, solar:1200, geo:5500, gas:1500, batt:300 };
 
 function scenarioCapex(c) {
   const t = gTodayCaps || {};
@@ -2006,7 +2082,7 @@ function setTileMetric(scId, metric, value, pending) {
 // scenario through the model on the default 2025 dataset (see scratchpad/harness.js).
 // Regenerate if the model assumptions or the 2025 data change.
 const SCENARIO_METRICS = {
-  'sc-blueprint': { energy:67, price:95  },
+  'sc-blueprint': { energy:64, price:96  },
   'sc-domsolar':  { energy:61, price:95  },
   'sc-utilityre': { energy:66, price:95  },
   'sc-lng':       { energy:72, price:111 },
@@ -2056,16 +2132,126 @@ function renderCapex() {
 
   if (bd) {
     const m = v => `$${fmt(Math.round(v/1e6), 0)}`;
+    const built = rows.filter(r => r.cap > 0);   // only show technologies actually being built
     bd.innerHTML =
       `<thead><tr><th>Technology</th><th>New capacity</th><th>Unit cost</th><th>Cost</th></tr></thead><tbody>` +
-      rows.map(r => `<tr class="${r.cap > 0 ? '' : 'capex-zero'}">` +
-        `<td>${r.name}</td>` +
-        `<td>${fmt(r.cap, r.unit === 'GW' ? 1 : 0)} ${r.unit}</td>` +
-        `<td>${fmt(r.rate, 0)} ${r.ru}</td>` +
-        `<td>${m(r.nzd)}</td></tr>`).join('') +
+      (built.length
+        ? built.map(r =>
+            `<tr><td>${r.name}</td>` +
+            `<td>${fmt(r.cap, r.unit === 'GW' ? 1 : 0)} ${r.unit}</td>` +
+            `<td>${fmt(r.rate, 0)} ${r.ru}</td>` +
+            `<td>${m(r.nzd)}</td></tr>`).join('')
+        : `<tr class="capex-zero"><td colspan="4">No new generation or storage — your plan runs on today's fleet.</td></tr>`) +
       `</tbody><tfoot><tr><td>Total new build</td><td></td><td></td>` +
       `<td>${total >= 1e9 ? `$${(total/1e9).toFixed(2)} bn` : m(total)}</td></tr></tfoot>`;
   }
+}
+
+// Firm (dependable) capacity credits — the share of nameplate you can count on at peak.
+const CAP_CREDIT = { hydro:0.85, geo:0.90, gas:0.90, coal:0.90, diesel:0.90, wood:0.85, wind:0.10, solar:0.00 };
+const PEAK_HOURS = 4;   // assumed length of the evening peak, for battery de-rating
+
+function renderPeakCapacity() {
+  const cv = document.getElementById('peakcap-chart');
+  if (!cv) return;
+  const p = gParams, caps = gCaps;
+  if (!p || p.niWindGW == null || !tsData.length) return;
+
+  // National coincident peak demand (metered MW) for the displayed year.
+  const peakMW = Math.max(...tsData.map(r => (r.niDemand||0) + (r.siDemand||0)));
+
+  // Installed capacity by technology (MW).
+  const hydroMW  = (caps['Hydro']?.NI||0) + (caps['Hydro']?.SI||0);
+  const geoMW    = (caps['Geothermal']?.NI ?? caps['Geo']?.NI ?? 0) + (caps['Geothermal']?.SI ?? caps['Geo']?.SI ?? 0) + (p.niNewGeo||0);
+  const windMW   = (p.niWindGW + p.siWindGW) * 1000;
+  const battPow  = (p.battPower||0) + (p.siBattPower||0);
+  const battEn   = (p.battCap||0)   + (p.siBattCap||0);
+  const battDur  = battPow > 0 ? battEn / battPow : 0;
+  const battFirm = battPow * Math.min(1, battDur / PEAK_HOURS) * 0.95;
+
+  // Domestic (home) batteries — assumed always available at the peak (100% availability),
+  // de-rated only for duration. Fleet size derived as in simulate().
+  const AVG_HOME_MWH_YEAR = 7.5, HOME_BATT_KW = 5;   // must match simulate()
+  let domBattFirm = 0;
+  if (p.domSolarEnabled && gMo && gMo.length) {
+    const nHomesNI = Math.max(sum(gMo,'niDemand') * (p.niDomPct/100) * 1000 / AVG_HOME_MWH_YEAR, 0);
+    const nHomesSI = Math.max(sum(gMo,'siDemand') * (p.siDomPct/100) * 1000 / AVG_HOME_MWH_YEAR, 0);
+    const stoHomes = nHomesNI * (p.niDomSolarPct/100) * (p.domStoragePct/100)
+                   + nHomesSI * (p.siDomSolarPct/100) * (p.domStoragePct/100);
+    const domPowMW = stoHomes * HOME_BATT_KW / 1000;
+    const domDur   = p.domBattKWh / HOME_BATT_KW;
+    domBattFirm = domPowMW * Math.min(1, domDur / PEAK_HOURS);
+  }
+
+  const firm = {
+    Hydro:           hydroMW    * CAP_CREDIT.hydro,
+    Geothermal:      geoMW      * CAP_CREDIT.geo,
+    Wind:            windMW     * CAP_CREDIT.wind,
+    Battery:         battFirm,
+    'Home batteries':domBattFirm,
+    Wood:            (p.niWood||0)   * CAP_CREDIT.wood,
+    Coal:            (p.niCoal||0)   * CAP_CREDIT.coal,
+    Diesel:          (p.niDiesel||0) * CAP_CREDIT.diesel,
+    Gas:             (p.niGas||0)    * CAP_CREDIT.gas,
+  };   // solar omitted — 0% credit at the evening peak
+
+  // Today's fleet (no new geo, no grid batteries) — a fixed reference.
+  const t = gTodayCaps || {};
+  const geoTodayMW = (caps['Geothermal']?.NI ?? caps['Geo']?.NI ?? 0) + (caps['Geothermal']?.SI ?? caps['Geo']?.SI ?? 0);
+  const today = {
+    Hydro:           hydroMW    * CAP_CREDIT.hydro,
+    Geothermal:      geoTodayMW * CAP_CREDIT.geo,
+    Wind:            ((t.niWindGW||0) + (t.siWindGW||0)) * 1000 * CAP_CREDIT.wind,
+    Battery:         0,
+    'Home batteries':0,
+    Wood:            (t.niWoodMW||0)   * CAP_CREDIT.wood,
+    Coal:            (t.niCoalMW||0)   * CAP_CREDIT.coal,
+    Diesel:          (t.niDieselMW||0) * CAP_CREDIT.diesel,
+    Gas:             (t.niGasMW||0)    * CAP_CREDIT.gas,
+  };
+
+  const sumF = o => Object.values(o).reduce((a, b) => a + b, 0);
+  const firmToday   = sumF(today);
+  const firmWith    = sumF(firm);
+  const firmWithout = firmWith - firm.Gas;
+  const margin = f => (f - peakMW) / peakMW * 100;
+
+  const fmtMW = v => Math.round(v).toLocaleString('en-NZ');
+  const card = (title, firmV) => {
+    const m = margin(firmV), ok = m >= 0;
+    return `<div class="peakcap-card ${ok ? '' : 'bad'}"><h4>${title}</h4>` +
+      `<div class="peakcap-firm">${fmtMW(firmV)}<span> MW firm</span></div>` +
+      `<div class="peakcap-margin ${ok ? 'ok' : 'bad'}">${ok ? '+' : ''}${Math.round(m)}% vs peak ` +
+      `— ${ok ? 'covers it with' : 'short by'} ${fmtMW(Math.abs(firmV - peakMW))} MW</div></div>`;
+  };
+  document.getElementById('peakcap-summary').innerHTML =
+    card('Today', firmToday) + card('Your plan — with gas', firmWith) + card('Your plan — without gas', firmWithout);
+  document.getElementById('peakcap-note').textContent =
+    `Peak demand ${fmtMW(peakMW)} MW (${gYear}). Firm-capacity credits: hydro 85%, geothermal 90%, gas/coal/diesel 90%, wind 10%, solar 0%; grid batteries de-rated to a ${PEAK_HOURS}-hour peak; home batteries assumed always available (duration-limited only). Compares national totals; each island must also cover its own peak.`;
+
+  const order = [['Hydro',C.Hydro],['Geothermal',C.Geo],['Wind',C.Wind],['Battery',C.Storage],
+                 ['Home batteries',C.Charge],['Wood',C.Wood],['Coal',C.Coal],['Diesel',C.Diesel],['Gas',C.Gas]];
+  const datasets = order
+    .filter(([k]) => firm[k] > 0.5 || today[k] > 0.5)
+    .map(([k, col]) => ({
+      label: k === 'Wind' ? 'Wind (10% firm)' : k,
+      // [Today, plan with gas, plan without gas]
+      data: [ +today[k].toFixed(0), +firm[k].toFixed(0), k === 'Gas' ? 0 : +firm[k].toFixed(0) ],
+      backgroundColor: col, stack: 'f', borderWidth: 0,
+    }));
+  datasets.push({ type:'line', label:'Peak demand', data:[+peakMW.toFixed(0), +peakMW.toFixed(0), +peakMW.toFixed(0)],
+    borderColor:'#dc2626', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, stack:'peak' });
+
+  const mob = window.innerWidth < 600;
+  charts['peakcap-chart']?.destroy();
+  charts['peakcap-chart'] = new Chart(cv, {
+    type:'bar',
+    data:{ labels:['Today', 'Your plan — with gas', 'Your plan — without gas'], datasets },
+    options:{ responsive:true, animation:false, aspectRatio: mob ? 1.1 : 2.2,
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('en-NZ')} MW` } } },
+      scales:{ x:{ stacked:true }, y:{ stacked:true, min:0, title:{ display:true, text:'Firm capacity (MW)' } } } },
+  });
 }
 
 function renderHeadline(rows, leadHtml) {
@@ -3128,6 +3314,7 @@ function getParams() {
   const g = id => +document.getElementById(id).value;
   return {
     niWindGW:   g('ni-wind'),    siWindGW:   g('si-wind'),
+    niWindCF:   g('ni-wind-cf'), siWindCF:   g('si-wind-cf'),
     niSolarGW:  g('ni-solar'),   siSolarGW:  g('si-solar'),
     niSolarTargetYield: g('ni-solar-yield'), siSolarTargetYield: g('si-solar-yield'),
     niRoR:      g('ni-ror'),     siRoR:      g('si-ror'),
@@ -3159,6 +3346,7 @@ function buildBaselineParams(caps, pUser) {
   return {
     niWindGW:  (caps['Wind']?.NI  ?? 1120) / 1000,
     siWindGW:  (caps['Wind']?.SI  ?? 137)  / 1000,
+    niWindCF:  pUser.niWindCF,    siWindCF:  pUser.siWindCF,
     niSolarGW: (caps['Solar']?.NI ?? 141)  / 1000,
     siSolarGW: (caps['Solar']?.SI ?? 47)   / 1000,
     niSolarTargetYield: pUser.niSolarTargetYield, siSolarTargetYield: pUser.siSolarTargetYield,
@@ -3186,9 +3374,11 @@ async function runSim() {
   const status = document.getElementById('sim-status');
   btn.disabled = true;
   try {
-    const sel = document.getElementById('sim-year');
-    const years = [...sel.selectedOptions].map(o => +o.value).filter(Boolean);
-    if (!years.length) throw new Error('Select at least one data year in Simulation Settings first.');
+    const from = +document.getElementById('year-from').value;
+    const to   = +document.getElementById('year-to').value;
+    const lo = Math.min(from, to), hi = Math.max(from, to);
+    const years = gYears.filter(y => y >= lo && y <= hi);
+    if (!years.length) throw new Error('Select a weather year in Simulation Settings first.');
     gYear = years[0];
     status.textContent = `Loading data…`;
 
@@ -3234,18 +3424,23 @@ async function runSim() {
         data = data.map(r => ({ ...r, SI_Solar: r.SI_Solar > 0 ? r.SI_Solar : r.NI_Solar * ratio }));
       }
 
-      // Per-year solar-yield + SI-wind corrections, applied to param clones.
+      // Per-year solar-yield + per-island wind capacity-factor corrections.
       const niCapGW = (caps['Solar']?.NI || 1) / 1000, siCapGW = (caps['Solar']?.SI || 1) / 1000;
       const niRawYield = data.reduce((s,r) => s + r.NI_Solar, 0) * 0.5 / 1000 / niCapGW;
       const siRawYield = data.reduce((s,r) => s + r.SI_Solar, 0) * 0.5 / 1000 / siCapGW;
-      const siWindCapMW = Math.max(caps['Wind']?.SI || 1, 1);
-      const siWindRawCF = data.length > 0 ? (data.reduce((s,r) => s + (r.SI_Wind||0), 0) / data.length) / siWindCapMW : 0;
+      const niWindRawCF = data.length > 0 ? (data.reduce((s,r) => s + (r.NI_Wind||0), 0) / data.length) / Math.max(caps['Wind']?.NI || 1, 1) : 0;
+      const siWindRawCF = data.length > 0 ? (data.reduce((s,r) => s + (r.SI_Wind||0), 0) / data.length) / Math.max(caps['Wind']?.SI || 1, 1) : 0;
       const corr = {
         niSolarCorr: niRawYield > 1 ? pUser.niSolarTargetYield / niRawYield : 1,
         siSolarCorr: siRawYield > 1 ? pUser.siSolarTargetYield / siRawYield : 1,
-        siWindCorr:  siWindRawCF > 0 ? 0.35 / siWindRawCF : 1,
+        niWindCorr:  niWindRawCF > 0 ? (pUser.niWindCF / 100) / niWindRawCF : 1,
+        siWindCorr:  siWindRawCF > 0 ? (pUser.siWindCF / 100) / siWindRawCF : 1,
       };
-      const pu = { ...pUser, ...corr }, pb = { ...pBase, ...corr };
+      // Scenario gets the chosen corrections; the "today" baseline uses the raw
+      // historical wind/solar shapes (correction = 1) so it stays a fixed reference
+      // and never picks up the scenario's capacity-factor / yield inputs.
+      const pu = { ...pUser, ...corr };
+      const pb = { ...pBase, niSolarCorr:1, siSolarCorr:1, niWindCorr:1, siWindCorr:1 };
       const resBase = simulate(data, caps, pb);
       const resUser = simulate(data, caps, pu);
       return { rawData, moBase: resBase.mo, ppBase: resBase.pp, moUser: resUser.mo, pp: resUser.pp, pk: resUser.pk };
@@ -3303,6 +3498,7 @@ async function runSim() {
     gMo = moUser;
     renderStats(moBase, moUser, caps, pBase, pUser);
     renderCapex();
+    renderPeakCapacity();
     renderTables(moUser, pk);
     renderAnnualCharts(moUser);
     renderCostCharts();
@@ -3325,14 +3521,24 @@ async function runSim() {
     const [years, caps] = await Promise.all([loadYears(), loadCapacity()]);
     gCaps  = caps;
     gYears = years;
-    const sel = document.getElementById('sim-year');
     const defaultYear = years.includes(2025) ? 2025 : years[years.length - 1];
+    const fromSel = document.getElementById('year-from');
+    const toSel   = document.getElementById('year-to');
+    const presets = document.getElementById('year-presets');
     years.forEach(y => {
-      const opt = document.createElement('option');
-      opt.value = opt.textContent = y;
-      opt.selected = (y === defaultYear);
-      sel.appendChild(opt);
+      for (const sel of [fromSel, toSel]) {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = y;
+        if (y === defaultYear) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      const btn = document.createElement('button');
+      btn.className = 'year-btn';
+      btn.textContent = y;
+      btn.onclick = () => setYearRange(y, y);
+      presets.appendChild(btn);
     });
+    onYearRangeChange();   // sync the active quick-pick highlight
 
     // Helper: first matching key with a positive value
     const capVal = (island, ...keys) => {
