@@ -111,6 +111,17 @@ nav > ul > li > a.active {
   text-decoration: none;
 }
 
+nav > ul > li > a.nav-cta {
+  background: #f59e0b;
+  color: #0d1f35 !important;
+  font-weight: 700;
+}
+nav > ul > li > a.nav-cta:hover {
+  background: #d97706;
+  color: #0d1f35 !important;
+  text-decoration: none;
+}
+
 /* Dropdown */
 nav ul ul {
   display: none;
@@ -350,6 +361,82 @@ nav ul ul li a:hover {
   opacity: .88;
   line-height: 1.65;
   position: relative;
+}
+
+/* ===== SIM PROMO CARD ===== */
+.sim-promo {
+  background: #0d1f35;
+  color: #fff;
+  border-radius: 8px;
+  padding: 36px 44px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.sim-promo-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: #f59e0b;
+  margin-bottom: 10px;
+}
+
+.sim-promo-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: -.01em;
+  line-height: 1.25;
+  margin: 0 0 6px;
+  color: #fff;
+}
+
+.sim-promo-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,.55);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.sim-promo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sim-promo-btn {
+  display: inline-block;
+  padding: 11px 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+  text-decoration: none;
+  transition: background .15s, color .15s;
+}
+
+.sim-promo-btn--primary {
+  background: #f59e0b;
+  color: #0d1f35;
+}
+.sim-promo-btn--primary:hover { background: #d97706; color: #0d1f35; text-decoration: none; }
+
+.sim-promo-btn--secondary {
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.82);
+  border: 1px solid rgba(255,255,255,.18);
+}
+.sim-promo-btn--secondary:hover { background: rgba(255,255,255,.15); color: #fff; text-decoration: none; }
+
+@media (max-width: 700px) {
+  .sim-promo { flex-direction: column; align-items: flex-start; gap: 20px; padding: 28px 24px; }
 }
 
 .blog-grid {

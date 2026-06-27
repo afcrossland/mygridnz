@@ -11,6 +11,62 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    /* ── Simulator Hero ─────────────────────── */
+    .sim-hero {
+      position: relative;
+      background: #0d1117;
+      color: #fff;
+      padding: 56px 44px 68px;
+      border-radius: 10px 10px 0 0;
+      margin: -40px -44px 36px;
+      overflow: hidden;
+    }
+    .sim-hero h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(1.9rem, 4vw, 2.9rem);
+      font-weight: 400;
+      letter-spacing: -.02em;
+      line-height: 1.15;
+      margin: 0 0 18px;
+      color: #fff;
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+    }
+    .sim-hero p {
+      font-size: clamp(.9rem, 1.7vw, 1.05rem);
+      line-height: 1.75;
+      color: rgba(255,255,255,.72);
+      max-width: 660px;
+      position: relative;
+      z-index: 1;
+      margin: 0;
+    }
+    .sim-hero-fern {
+      position: absolute;
+      bottom: -40px;
+      right: -20px;
+      width: 300px;
+      height: auto;
+      opacity: .10;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .sim-hero-fern--left {
+      right: auto;
+      left: -20px;
+      bottom: -30px;
+      width: 190px;
+      opacity: .06;
+      transform: scaleX(-1) rotate(-6deg);
+      transform-origin: left bottom;
+    }
+    @media (max-width: 800px) {
+      .sim-hero { margin: -28px -22px 28px; padding: 38px 24px 52px; }
+      .sim-hero-fern { width: 180px; }
+      .sim-hero-fern--left { width: 110px; }
+    }
+
     /* ── Layout ─────────────────────────────── */
     .ctrl-grid { display:grid; grid-template-columns:1fr; gap:14px; margin-bottom:16px; }
     .ctrl-panel { border:1px solid var(--border); border-radius:8px; padding:16px; background:var(--surface); }
@@ -325,8 +381,42 @@
 </div>
 <div class="page-wrap">
 <main>
-  <h1 class="page-title">NZ Grid Simulator</h1>
-  <p class="page-intro">How much wind and solar does New Zealand need to get off fossil gas? What happens in a dry year when the lakes run low? This simulator lets you explore those questions using real half-hourly metered generation data — the same measurements that describe the actual grid. It models how the North and South Islands balance supply and demand every 30 minutes through a full year, routing renewable surplus between islands via the <span class="term" title="High-voltage direct-current cable across Cook Strait linking the two islands’ grids.">HVDC Interisland Link</span> before drawing on flexible hydro, battery storage or gas. Transmission losses are accounted for: gross generation is typically 3–5% higher than metered demand, and the simulator replicates this by scaling the generation target up by the historical loss factor for each island in each period.</p>
+  <div class="sim-hero">
+    <!-- Fern fronds — right -->
+    <svg class="sim-hero-fern" viewBox="0 0 200 510" xmlns="http://www.w3.org/2000/svg" fill="white" aria-hidden="true">
+      <defs>
+        <path id="pn" d="M 0 0 Q -20 -4 -40 4 Q -20 12 0 3 Z"/>
+      </defs>
+      <path d="M 100 505 C 95 360 75 200 55 5" stroke="white" stroke-width="2.5" fill="none"/>
+      <use href="#pn" transform="translate(57,40) rotate(90) scale(0.45)"/>
+      <use href="#pn" transform="translate(57,78)  scale(0.3)"/><use href="#pn" transform="translate(57,78)  scale(-0.3,0.3)"/>
+      <use href="#pn" transform="translate(63,125) scale(0.375)"/><use href="#pn" transform="translate(63,125) scale(-0.375,0.375)"/>
+      <use href="#pn" transform="translate(68,175) scale(0.5)"/><use href="#pn" transform="translate(68,175) scale(-0.5,0.5)"/>
+      <use href="#pn" transform="translate(74,222) scale(0.625)"/><use href="#pn" transform="translate(74,222) scale(-0.625,0.625)"/>
+      <use href="#pn" transform="translate(79,268) scale(0.75)"/><use href="#pn" transform="translate(79,268) scale(-0.75,0.75)"/>
+      <use href="#pn" transform="translate(84,315) scale(0.875)"/><use href="#pn" transform="translate(84,315) scale(-0.875,0.875)"/>
+      <use href="#pn" transform="translate(90,360) scale(1)"/><use href="#pn" transform="translate(90,360) scale(-1,1)"/>
+      <use href="#pn" transform="translate(94,405) scale(1.125)"/><use href="#pn" transform="translate(94,405) scale(-1.125,1.125)"/>
+      <use href="#pn" transform="translate(98,450) scale(1.25)"/><use href="#pn" transform="translate(98,450) scale(-1.25,1.25)"/>
+    </svg>
+    <!-- Fern fronds — left (mirrored) -->
+    <svg class="sim-hero-fern sim-hero-fern--left" viewBox="0 0 200 510" xmlns="http://www.w3.org/2000/svg" fill="white" aria-hidden="true">
+      <defs><path id="pn2" d="M 0 0 Q -20 -4 -40 4 Q -20 12 0 3 Z"/></defs>
+      <path d="M 100 505 C 95 360 75 200 55 5" stroke="white" stroke-width="2.5" fill="none"/>
+      <use href="#pn2" transform="translate(57,40) rotate(90) scale(0.45)"/>
+      <use href="#pn2" transform="translate(57,78)  scale(0.3)"/><use href="#pn2" transform="translate(57,78)  scale(-0.3,0.3)"/>
+      <use href="#pn2" transform="translate(63,125) scale(0.375)"/><use href="#pn2" transform="translate(63,125) scale(-0.375,0.375)"/>
+      <use href="#pn2" transform="translate(68,175) scale(0.5)"/><use href="#pn2" transform="translate(68,175) scale(-0.5,0.5)"/>
+      <use href="#pn2" transform="translate(74,222) scale(0.625)"/><use href="#pn2" transform="translate(74,222) scale(-0.625,0.625)"/>
+      <use href="#pn2" transform="translate(79,268) scale(0.75)"/><use href="#pn2" transform="translate(79,268) scale(-0.75,0.75)"/>
+      <use href="#pn2" transform="translate(84,315) scale(0.875)"/><use href="#pn2" transform="translate(84,315) scale(-0.875,0.875)"/>
+      <use href="#pn2" transform="translate(90,360) scale(1)"/><use href="#pn2" transform="translate(90,360) scale(-1,1)"/>
+      <use href="#pn2" transform="translate(94,405) scale(1.125)"/><use href="#pn2" transform="translate(94,405) scale(-1.125,1.125)"/>
+      <use href="#pn2" transform="translate(98,450) scale(1.25)"/><use href="#pn2" transform="translate(98,450) scale(-1.25,1.25)"/>
+    </svg>
+    <h1>NZ Grid Simulator</h1>
+    <p>Aotearoa New Zealand already generates most of its electricity from renewable sources — hydro, geothermal, and wind — but gas still plays a balancing role and the transition to 100% clean power is not yet complete. How much can expanded wind, solar and battery storage displace the remaining fossil generation? Can Aotearoa New Zealand keep the lights on through dry years and low-wind periods? How can Aotearoa New Zealand use its clean electricity advantage to decarbonise transport and industry?</p>
+  </div>
 
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:20px 0 28px;font-size:13px;line-height:1.75;">
     <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;">How to use</p>
