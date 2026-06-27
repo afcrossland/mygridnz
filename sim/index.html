@@ -386,6 +386,12 @@
     <span style="font-size:11px;font-weight:600;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px;">Build your own scenario / Edit a preconfigured scenario</span>
   </summary>
   <p class="cs-hint">Fine-tune every part of the grid below — generation, storage, the islands and the interisland link. Each control has a short explanation; values update live and feed straight into the simulation when you press Run.</p>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;">
+    <label for="scenario-name" style="font-size:13px;font-weight:600;color:var(--text);">Name your scenario</label>
+    <input type="text" id="scenario-name" maxlength="48" placeholder="e.g. My 2035 Plan"
+      style="flex:1;min-width:200px;max-width:360px;padding:7px 11px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);">
+    <span style="font-size:11px;color:var(--muted);">Used as the title on your PDF report.</span>
+  </div>
   <div class="ctrl-grid">
 
     <details class="ctrl-panel">
@@ -408,7 +414,7 @@
             <div class="sl-sub">Average South Island wind output as a share of nameplate (the metered shape is rescaled to hit this).</div>
             <input type="range" id="si-wind-cf" min="20" max="55" step="1" value="35" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         </div>
-        <div class="sl"><div class="sl-hd"><span>Build cost</span><span id="cost-wind-v" class="sl-val">2500 $/kW</span></div>
+        <div class="sl"><div class="sl-hd"><span>Build cost</span><span id="cost-wind-v" class="sl-val">2200 $/kW</span></div>
           <div class="sl-sub">Capital cost per kW of new wind capacity — feeds the build-cost estimate.</div>
           <input type="range" id="cost-wind" min="1500" max="4000" step="50" value="2200" data-unit="$/kW" data-dp="0" oninput="syncSlider(this);renderCapex()"></div>
       </div>
@@ -1363,7 +1369,7 @@ function preloadBlueprint() {
   setSlider('si-batt-power',  200);
   setSlider('si-batt-cap',   400);
   setSlider('si-batt-eff',     85);
-  setSlider('ni-gas',        1678);  // keep gas as backup/reserve
+  setSlider('ni-gas',        1000);  // right-sized dry-year reserve (covers a −40% drought)
   setSlider('ni-coal',          0);  // retire coal
   setSlider('ni-wood',        300);
   setSlider('ni-diesel',      156);
@@ -3901,6 +3907,8 @@ async function runSim(dry) {
 // PDF REPORT
 // ═══════════════════════════════════════════════════════
 function getScenarioName() {
+  const typed = document.getElementById('scenario-name')?.value?.trim();
+  if (typed) return typed;
   const a = document.querySelector('.scenario-card[style*="outline"]');
   return a?.querySelector('.sc-title')?.textContent?.trim() || 'Custom Scenario';
 }
@@ -3937,7 +3945,7 @@ function carbonIntensity(mo, totDem) {
 
 function scenBuildCost(p) {
   const g = id => { const el = document.getElementById(id); return el ? +el.value : 0; };
-  const c = { wind:g('cost-wind')||2500, solar:g('cost-solar')||1200, geo:g('cost-geo')||5500,
+  const c = { wind:g('cost-wind')||2200, solar:g('cost-solar')||1200, geo:g('cost-geo')||5500,
               gas:g('cost-gas')||1500, batt:g('cost-batt')||300 };
   const t = gTodayCaps || {}, mx = v => Math.max(0, v);
   return mx((p.niWindGW+p.siWindGW) - ((t.niWindGW||0)+(t.siWindGW||0))) * 1e6 * c.wind
@@ -4028,11 +4036,33 @@ function buildScenarioSet() {
   controlRestore(snap);
   if (statusEl) statusEl.textContent = statusTxt;
 
+  // If the user ran an unmodified preset, don't list it twice — keep only the
+  // version "they ran" (the custom entry), and drop the matching preset.
+  const sameParams = (a, b) => Object.keys(b).every(k =>
+    typeof b[k] === 'boolean' ? a[k] === b[k] : Math.abs((+a[k]||0) - (+b[k]||0)) < 1e-9);
+  const dupIdx = presets.findIndex(s => sameParams(userParams, s.params));
+  const shownPresets = dupIdx >= 0 ? presets.filter((_, i) => i !== dupIdx) : presets;
+  // If it matched a preset, title the user's run after that preset (unless they typed a name).
+  const customName = (dupIdx >= 0 && !document.getElementById('scenario-name')?.value?.trim())
+    ? presets[dupIdx].name : userName;
+
+  // Headline capacity per scenario (wind/solar GW, geothermal/gas MW, battery MWh).
+  const tGeo = (caps.Geo?.NI||0) + (caps.Geo?.SI||0);
+  const capSummary = p => ({
+    wind:  (p.niWindGW||0)  + (p.siWindGW||0),
+    solar: (p.niSolarGW||0) + (p.siSolarGW||0),
+    geo:   tGeo + (p.niNewGeo||0),
+    gas:   p.niGas||0,
+    coal:  p.niCoal||0,
+    batt:  (p.battCap||0)   + (p.siBattCap||0),
+    domSolar: !!p.domSolarEnabled,
+  });
+
   const todayP = buildBaselineParams(caps, userParams);
   const list = [
-    { name:'Today (current grid)', today:true, m: evalScenario(todayP, data, caps, ctx, true) },
-    ...presets.map(s => ({ name:s.name, m: evalScenario(s.params, data, caps, ctx) })),
-    { name:userName, custom:true, m: evalScenario(userParams, data, caps, ctx) },
+    { name:'Today (current grid)', today:true, cap: capSummary(todayP), m: evalScenario(todayP, data, caps, ctx, true) },
+    ...shownPresets.map(s => ({ name:s.name, cap: capSummary(s.params), m: evalScenario(s.params, data, caps, ctx) })),
+    { name:customName, custom:true, cap: capSummary(userParams), m: evalScenario(userParams, data, caps, ctx) },
   ];
   return { list, peakMW, niDemGWh, siDemGWh, year: gYear };
 }
@@ -4055,7 +4085,7 @@ async function generateReport() {
 
     const scenName = getScenarioName();
     const scenDesc = getScenarioDesc();
-    const dateStr  = new Date().toLocaleDateString('en-NZ', { day:'numeric', month:'long', year:'numeric' });
+    const dateStr  = new Date().toLocaleString('en-NZ', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const s = gStats, p = gParams;
     const f1 = v => (+v).toFixed(1), f0 = v => Math.round(+v).toLocaleString();
 
@@ -4188,7 +4218,7 @@ async function generateReport() {
       <div style="background:#1a4d7a;color:#fff;padding:40px 28px 30px;">
         <div style="font-size:38px;font-weight:700;letter-spacing:-.02em;line-height:1;">MyGridNZ</div>
         <div style="font-size:17px;margin-top:12px;opacity:.8;font-weight:300;">Electricity Grid Simulation Report</div>
-        <div style="font-size:10px;margin-top:8px;opacity:.5;">Aotearoa New Zealand &nbsp;·&nbsp; ${dateStr}</div>
+        <div style="font-size:10px;margin-top:8px;opacity:.5;">Aotearoa New Zealand &nbsp;·&nbsp; Simulation run ${dateStr}</div>
       </div>
       <div style="background:#f0f6ff;padding:16px 28px 14px;border-bottom:2px solid #d6e7f6;">
         <div style="font-size:20px;font-weight:700;color:#1a4d7a;">${scenName}</div>
@@ -4213,12 +4243,12 @@ async function generateReport() {
       carb: s.carbInt<30?'#0d9e6e':s.carbInt<100?'#d97706':'#dc2626',
       lcoe: s.lcoe<90?'#0d9e6e':s.lcoe<130?'#d97706':'#dc2626' };
     [
-      ['Total Demand', f1(s.totDemTWh), 'TWh', metricAccent.demand],
-      ['Renewables', f1(s.renPct), '%', metricAccent.ren],
-      ['Carbon Intensity', f0(s.carbInt), 'gCO₂/kWh', metricAccent.carb],
-      ['System LCOE', f0(s.lcoe), 'NZD/MWh', metricAccent.lcoe],
-      ['Avg Marginal', f0(s.marg), 'NZD/MWh', '#1a4d7a'],
-      ['Curtailment', f0(s.curtailGWh), 'GWh', '#d97706'],
+      ['Electricity used', f1(s.totDemTWh), 'TWh', metricAccent.demand],
+      ['Renewable electricity', f1(s.renPct), '%', metricAccent.ren],
+      ['Carbon emissions', f0(s.carbInt), 'gCO₂/kWh', metricAccent.carb],
+      ['Cost of grid electricity', f0(s.lcoe), 'NZD/MWh', metricAccent.lcoe],
+      ['Wholesale power price', f0(s.marg), 'NZD/MWh', '#1a4d7a'],
+      ['Wasted renewables', f0(s.curtailGWh), 'GWh', '#d97706'],
     ].forEach(([label, val, unit, color]) => {
       const el = document.createElement('div');
       el.style.cssText = `border:1px solid #e2e8f0;border-left:3px solid ${color};border-radius:4px;padding:10px 12px;background:#f8fafc;`;
@@ -4299,32 +4329,57 @@ async function generateReport() {
            <li>${sc.filter(x=>x.m.marginWithout>=0 && !x.today).map(x=>shortName(x.name)).join(', ')||'No'} scenario(s) can meet the winter peak without any gas.</li>
          </ul>`;
 
-      // ── SCENARIO COMPARISON ──
+      // ── SCENARIO COMPARISON (scenarios as columns) ──
       const cmp = pg('Scenario Comparison', `All pathways modelled on the same ${scen.year} weather year`);
-      const cols = [['Renewables', x=>`${Math.round(x.m.renPct)}%`],['Carbon', x=>`${Math.round(x.m.carbInt)} g`],
-        ['Cost ($/MWh)', x=>`$${Math.round(x.m.lcoe)}`],['Wholesale', x=>`$${Math.round(x.m.marg)}`],
-        ['New build', x=>fM(x.m.buildCost)],['Peak −gas', x=>ml(x.m.marginWithout)]];
-      const th = `<th style="text-align:left;padding:6px 8px;font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;border-bottom:2px solid #cbd5e1;">Scenario</th>` +
-        cols.map(c=>`<th style="text-align:center;padding:6px 6px;font-size:8.5px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;border-bottom:2px solid #cbd5e1;">${c[0]}</th>`).join('');
-      const trs = sc.map(x=>{
-        const hl = x.custom?'background:#eef5fc;font-weight:700;':x.today?'color:#64748b;':'';
-        return `<tr style="${hl}"><td style="text-align:left;padding:6px 8px;border-bottom:1px solid #e2e8f0;">${shortName(x.name)}${x.custom?' ★':''}</td>` +
-          cols.map(c=>`<td style="text-align:center;padding:6px 6px;border-bottom:1px solid #e2e8f0;">${c[1](x)}</td>`).join('')+`</tr>`;
+      const colName = x => x.custom ? (x.name.length > 15 ? x.name.slice(0,14)+'…' : x.name) : shortName(x.name);
+      const cmpCols = sc.filter(x => !x.today);          // drop the Today column — show change vs today
+      const tc = sc.find(x => x.today).cap;              // today's fleet = the baseline
+      // Capacity cells show the change vs today (+ built, − retired, "Retired" when removed entirely).
+      const capCell = (now, was, unit, dp) => {
+        if (now < 1e-6 && was > 0) return '<span style="color:#15803d;font-weight:600;">Retired</span>';
+        const d = now - was, eps = dp ? 0.05 : 1;
+        if (Math.abs(d) < eps) return '<span style="color:#94a3b8;">no change</span>';
+        const val = dp ? Math.abs(d).toFixed(dp) : Math.round(Math.abs(d)).toLocaleString();
+        return `${d>0?'+':'−'}${val} ${unit}`;
+      };
+      const rows = [
+        { sec:'New capacity built (vs today’s fleet)' },
+        { label:'Wind',            f:x=>capCell(x.cap.wind,  tc.wind,  'GW', 1) },
+        { label:'Solar (grid)',    f:x=>capCell(x.cap.solar, tc.solar, 'GW', 1) },
+        { label:'Battery storage', f:x=>capCell(x.cap.batt/1000, tc.batt/1000, 'GWh', 1) },
+        { label:'Geothermal',      f:x=>capCell(x.cap.geo,   tc.geo,   'MW', 0) },
+        { label:'Gas',             f:x=>capCell(x.cap.gas,   tc.gas,   'MW', 0) },
+        { label:'Coal',            f:x=>capCell(x.cap.coal,  tc.coal,  'MW', 0) },
+        { label:'Rooftop solar',   f:x=>x.cap.domSolar ? '<span style="color:#15803d;font-weight:600;">Added</span>' : '<span style="color:#94a3b8;">no change</span>' },
+        { sec:'Outcomes' },
+        { label:'Renewable electricity', f:x=>`${Math.round(x.m.renPct)}%` },
+        { label:'Carbon',                f:x=>`${Math.round(x.m.carbInt)} g` },
+        { label:'Cost of electricity',   f:x=>`$${Math.round(x.m.lcoe)}` },
+        { label:'Wholesale price',       f:x=>`$${Math.round(x.m.marg)}` },
+        { label:'New build',             f:x=>fM(x.m.buildCost) },
+        { label:'Winter peak, gas off',  f:x=>ml(x.m.marginWithout) },
+      ];
+      const colStyle = x => x.custom ? 'background:#eef5fc;font-weight:700;color:#1a4d7a;' : '';
+      const headCells = `<th style="text-align:left;padding:6px 8px;font-size:8.5px;text-transform:uppercase;letter-spacing:.03em;color:#64748b;border-bottom:2px solid #cbd5e1;">&nbsp;</th>` +
+        cmpCols.map(x=>`<th style="text-align:center;padding:6px 5px;font-size:8.5px;letter-spacing:.02em;color:#0f172a;border-bottom:2px solid #cbd5e1;${colStyle(x)}">${colName(x)}${x.custom?' ★':''}</th>`).join('');
+      const bodyRows = rows.map(r => {
+        if (r.sec) return `<tr><td colspan="${cmpCols.length+1}" style="padding:9px 8px 3px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:700;">${r.sec}</td></tr>`;
+        return `<tr><td style="text-align:left;padding:5px 8px;border-bottom:1px solid #eef2f6;color:#475569;">${r.label}</td>` +
+          cmpCols.map(x=>`<td style="text-align:center;padding:5px 5px;border-bottom:1px solid #eef2f6;${colStyle(x)}">${r.f(x)}</td>`).join('') + `</tr>`;
       }).join('');
       cmp.innerHTML = `<div style="font-size:10px;color:#64748b;margin-bottom:10px;line-height:1.6;">
-          Firm capacity counts only the share of each technology dependable at the winter evening peak (wind 10%, solar 0%, gas/hydro/geothermal high). “Peak −gas” is the capacity margin over peak demand once gas is removed.</div>
-        <table style="width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:16px;"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>
-        <div id="cmp-charts"></div>
+          The top block is the <b>new capacity each pathway builds beyond today’s fleet</b> (＋ built, − retired). Every pathway <b>retires all coal</b>. Firm capacity counts only the share dependable at the winter evening peak (wind 10%, solar 0%, gas/hydro/geothermal high); <b>“Winter peak, gas off”</b> is the headroom over peak demand with gas switched off — positive means the clean fleet alone holds the peak.</div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:14px;table-layout:fixed;"><thead><tr>${headCells}</tr></thead><tbody>${bodyRows}</tbody></table>
+        <div id="cmp-charts" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;"></div>
         <p id="cmp-narr" style="font-size:10.5px;color:#374151;line-height:1.65;margin-top:12px;"></p>`;
       const cc = cmp.querySelector('#cmp-charts');
       const mkBarCol = (title, vals, cols2, yt) => {
         const w = document.createElement('div'); w.style.marginBottom = '6px';
         w.innerHTML = `<div class="rpt-label" style="margin:0 0 2px;font-size:8.5px;">${title}</div>`;
         cc.appendChild(w);
-        mkChart(w, 'bar', { labels, datasets:[{ data:vals, backgroundColor:cols2, borderWidth:0 }] }, cmpOpts(yt), 108);
+        mkChart(w, 'bar', { labels, datasets:[{ data:vals, backgroundColor:cols2, borderWidth:0 }] }, cmpOpts(yt), 120);
       };
       mkBarCol('Cost of electricity', sc.map(x=>Math.round(x.m.lcoe)), barCol, '$/MWh');
-      mkBarCol('New build', sc.map(x=>+(x.m.buildCost/1e9).toFixed(1)), barCol, '$ billion');
       mkBarCol('Winter peak margin, no gas', sc.map(x=>Math.round(x.m.marginWithout)),
         sc.map(x=>x.m.marginWithout<0?'#dc2626':'#16a34a'), '% vs peak');
       const noGasOK = sc.filter(x=>x.m.marginWithout>=0 && !x.today).map(x=>shortName(x.name));
@@ -4601,7 +4656,7 @@ async function generateReport() {
       <div class="rpt-label">Firm-capacity credits (share dependable at the winter peak)</div>
       ${asmTbl(asmRow('Hydro','85%')+asmRow('Geothermal / Gas / Coal / Diesel','90%')+asmRow('Wind','10%')+asmRow('Solar','0% (peak is after dark)')+asmRow('Grid battery','rated power × min(1, hours ÷ 4-hour peak) × 95%')+asmRow('Home battery','always available, duration-limited only'))}
       <div class="rpt-label">Build cost (new capacity beyond today)</div>
-      ${asmTbl(asmRow('Wind / Solar','$2,500 / $1,200 per kW')+asmRow('Geothermal / Gas','$5,500 / $1,500 per kW')+asmRow('Battery','$300 per kWh')+asmRow('Wind capacity factor','35% per island (adjustable)'))}
+      ${asmTbl(asmRow('Wind / Solar','$2,200 / $1,200 per kW')+asmRow('Geothermal / Gas','$5,500 / $1,500 per kW')+asmRow('Battery','$300 per kWh')+asmRow('Wind capacity factor','35% per island (adjustable)'))}
       <p style="font-size:9px;color:#94a3b8;line-height:1.6;margin-top:8px;">Data: Electricity Authority EMI portal. Carbon factors: IPCC AR6 lifecycle values. Comparison scenarios are run on the same weather year as the chosen pathway. This is a planning model, not a market or security-of-supply study; each island must independently cover its own peak.</p>`;
 
     // ── ABOUT THE AUTHOR ───────────────────────────────────
