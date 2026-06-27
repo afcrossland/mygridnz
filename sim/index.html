@@ -42,29 +42,8 @@
       z-index: 1;
       margin: 0;
     }
-    .sim-hero-fern {
-      position: absolute;
-      bottom: -40px;
-      right: -20px;
-      width: 300px;
-      height: auto;
-      opacity: .10;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .sim-hero-fern--left {
-      right: auto;
-      left: -20px;
-      bottom: -30px;
-      width: 190px;
-      opacity: .06;
-      transform: scaleX(-1) rotate(-6deg);
-      transform-origin: left bottom;
-    }
     @media (max-width: 800px) {
       .sim-hero { margin: -28px -22px 28px; padding: 38px 24px 52px; }
-      .sim-hero-fern { width: 180px; }
-      .sim-hero-fern--left { width: 110px; }
     }
 
     /* ── Layout ─────────────────────────────── */
@@ -382,38 +361,6 @@
 <div class="page-wrap">
 <main>
   <div class="sim-hero">
-    <!-- Fern fronds — right -->
-    <svg class="sim-hero-fern" viewBox="0 0 200 510" xmlns="http://www.w3.org/2000/svg" fill="white" aria-hidden="true">
-      <defs>
-        <path id="pn" d="M 0 0 Q -20 -4 -40 4 Q -20 12 0 3 Z"/>
-      </defs>
-      <path d="M 100 505 C 95 360 75 200 55 5" stroke="white" stroke-width="2.5" fill="none"/>
-      <use href="#pn" transform="translate(57,40) rotate(90) scale(0.45)"/>
-      <use href="#pn" transform="translate(57,78)  scale(0.3)"/><use href="#pn" transform="translate(57,78)  scale(-0.3,0.3)"/>
-      <use href="#pn" transform="translate(63,125) scale(0.375)"/><use href="#pn" transform="translate(63,125) scale(-0.375,0.375)"/>
-      <use href="#pn" transform="translate(68,175) scale(0.5)"/><use href="#pn" transform="translate(68,175) scale(-0.5,0.5)"/>
-      <use href="#pn" transform="translate(74,222) scale(0.625)"/><use href="#pn" transform="translate(74,222) scale(-0.625,0.625)"/>
-      <use href="#pn" transform="translate(79,268) scale(0.75)"/><use href="#pn" transform="translate(79,268) scale(-0.75,0.75)"/>
-      <use href="#pn" transform="translate(84,315) scale(0.875)"/><use href="#pn" transform="translate(84,315) scale(-0.875,0.875)"/>
-      <use href="#pn" transform="translate(90,360) scale(1)"/><use href="#pn" transform="translate(90,360) scale(-1,1)"/>
-      <use href="#pn" transform="translate(94,405) scale(1.125)"/><use href="#pn" transform="translate(94,405) scale(-1.125,1.125)"/>
-      <use href="#pn" transform="translate(98,450) scale(1.25)"/><use href="#pn" transform="translate(98,450) scale(-1.25,1.25)"/>
-    </svg>
-    <!-- Fern fronds — left (mirrored) -->
-    <svg class="sim-hero-fern sim-hero-fern--left" viewBox="0 0 200 510" xmlns="http://www.w3.org/2000/svg" fill="white" aria-hidden="true">
-      <defs><path id="pn2" d="M 0 0 Q -20 -4 -40 4 Q -20 12 0 3 Z"/></defs>
-      <path d="M 100 505 C 95 360 75 200 55 5" stroke="white" stroke-width="2.5" fill="none"/>
-      <use href="#pn2" transform="translate(57,40) rotate(90) scale(0.45)"/>
-      <use href="#pn2" transform="translate(57,78)  scale(0.3)"/><use href="#pn2" transform="translate(57,78)  scale(-0.3,0.3)"/>
-      <use href="#pn2" transform="translate(63,125) scale(0.375)"/><use href="#pn2" transform="translate(63,125) scale(-0.375,0.375)"/>
-      <use href="#pn2" transform="translate(68,175) scale(0.5)"/><use href="#pn2" transform="translate(68,175) scale(-0.5,0.5)"/>
-      <use href="#pn2" transform="translate(74,222) scale(0.625)"/><use href="#pn2" transform="translate(74,222) scale(-0.625,0.625)"/>
-      <use href="#pn2" transform="translate(79,268) scale(0.75)"/><use href="#pn2" transform="translate(79,268) scale(-0.75,0.75)"/>
-      <use href="#pn2" transform="translate(84,315) scale(0.875)"/><use href="#pn2" transform="translate(84,315) scale(-0.875,0.875)"/>
-      <use href="#pn2" transform="translate(90,360) scale(1)"/><use href="#pn2" transform="translate(90,360) scale(-1,1)"/>
-      <use href="#pn2" transform="translate(94,405) scale(1.125)"/><use href="#pn2" transform="translate(94,405) scale(-1.125,1.125)"/>
-      <use href="#pn2" transform="translate(98,450) scale(1.25)"/><use href="#pn2" transform="translate(98,450) scale(-1.25,1.25)"/>
-    </svg>
     <h1>NZ Grid Simulator</h1>
     <p>Aotearoa New Zealand already generates most of its electricity from renewable sources — hydro, geothermal, and wind — but gas still plays a balancing role and the transition to 100% clean power is not yet complete. How much can expanded wind, solar and battery storage displace the remaining fossil generation? Can Aotearoa New Zealand keep the lights on through dry years and low-wind periods? How can Aotearoa New Zealand use its clean electricity advantage to decarbonise transport and industry?</p>
   </div>
