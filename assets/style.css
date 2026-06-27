@@ -328,6 +328,28 @@ nav ul ul li a:hover {
 .social-btn--researchgate { background: #00CCBB; }
 
 /* ===== HOME PAGE ===== */
+.hero-row {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
+.hero-row .home-hero,
+.hero-row .sim-promo {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.hero-row .sim-promo {
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+@media (max-width: 800px) {
+  .hero-row { flex-direction: column; }
+}
+
 .home-hero {
   background: linear-gradient(135deg, #2d7ab8 0%, #1a4d7a 100%);
   color: #fff;
@@ -369,7 +391,6 @@ nav ul ul li a:hover {
   color: #fff;
   border-radius: 8px;
   padding: 36px 44px;
-  margin-bottom: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
