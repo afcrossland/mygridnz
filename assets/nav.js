@@ -3,28 +3,28 @@
 const NAV_HTML = `
 <header id="site-header">
   <div class="header-inner">
-    <a class="logo" href="/index.html">MyGrid<span class="logo-accent">NZ</span> 🇳🇿</a>
+    <a class="logo" href="/">MyGrid<span class="logo-accent">NZ</span> 🇳🇿</a>
     <button id="nav-toggle" aria-label="Toggle menu">
       <span></span><span></span><span></span>
     </button>
     <nav id="main-nav">
       <ul>
-        <li><a href="/live/index.html">Live</a></li>
-        <li><a href="/sim/index.html" class="nav-cta">Grid Simulator</a></li>
+        <li><a href="/live/">Live</a></li>
+        <li><a href="/sim/" class="nav-cta">Grid Simulator</a></li>
         <li>
-          <a href="/last-28-days/index.html">Electricity Data ▾</a>
+          <a href="/last-28-days/">Electricity Data ▾</a>
           <ul>
-            <li><a href="/last-28-days/index.html">Last Month</a></li>
-            <li><a href="/last-12-months/index.html">Last 12 Months</a></li>
-            <li><a href="/historicaldata/index.html">Generation History</a></li>
+            <li><a href="/last-28-days/">Last Month</a></li>
+            <li><a href="/last-12-months/">Last 12 Months</a></li>
+            <li><a href="/historicaldata/">Generation History</a></li>
           </ul>
         </li>
-        <li><a href="/2030grid/index.html">2030 Blueprint</a></li>
+        <li><a href="/2030grid/">2030 Blueprint</a></li>
         <li>
-          <a href="/about/index.html">About ▾</a>
+          <a href="/about/">About ▾</a>
           <ul>
-            <li><a href="/about/index.html">About MyGridNZ</a></li>
-            <li><a href="/about-me/index.html">About Me</a></li>
+            <li><a href="/about/">About MyGridNZ</a></li>
+            <li><a href="/about-me/">About Me</a></li>
           </ul>
         </li>
       </ul>
