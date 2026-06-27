@@ -712,6 +712,34 @@
       });
     </script>
 
+    <!-- ── Energy-flow Sankey: today vs your plan (collapsed by default) ── -->
+    <style>
+      #sankey-pair { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+      #sankey-pair h3 { font-size:.9rem; font-weight:600; color:var(--text); margin:0 0 6px; text-align:center; }
+      .sankey-box { height:440px; width:100%; }
+      @media (max-width:760px){ #sankey-pair { grid-template-columns:1fr; } }
+    </style>
+    <details class="ts-section" id="sankey-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="sankey-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Where the energy flows — today vs your plan</span>
+        <span style="font-size:11px;color:var(--muted);">— fuel burned, conversion losses, and power delivered</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p><strong>Follow the energy.</strong> Each diagram traces a year of primary energy from the left — fuel burned in thermal power stations, plus hydro, wind and sun — through conversion losses to the electricity actually delivered. Fossil and geothermal plant shed most of their input as waste heat; wind, solar and hydro flow almost straight through. Compare <strong>today's grid</strong> with <strong>your plan</strong> to see the wasted heat disappear.</p>
+      </div>
+      <div id="sankey-pair">
+        <div><h3>Today's grid</h3><div id="sankey-today" class="sankey-box"></div></div>
+        <div><h3>Your plan</h3><div id="sankey-plan" class="sankey-box"></div></div>
+      </div>
+    </details>
+    <script>
+      document.getElementById('sankey-section').addEventListener('toggle', function() {
+        document.getElementById('sankey-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) renderSankeys();
+      });
+    </script>
+
     <!-- ── Timeseries nav ── -->
     <div class="ts-header">
       <h2>Generation over Time</h2>
@@ -2460,6 +2488,124 @@ function renderHeadline(rows, leadHtml) {
   el.innerHTML = html;
 }
 
+// ── Before/after Sankey (energy flow) — logic mirrored from the homepage ──
+let _plotlyPromise = null;
+function loadPlotly() {
+  if (window.Plotly) return Promise.resolve();
+  if (_plotlyPromise) return _plotlyPromise;
+  _plotlyPromise = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.plot.ly/plotly-2.27.0.min.js';
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  return _plotlyPromise;
+}
+
+// Collapse a monthly array into TWh-by-source (NI+SI, rooftop folded into Solar).
+function sankeySources(mo) {
+  const S = k => mo.reduce((s, x) => s + (x[k]||0), 0) / 1000;   // GWh → TWh
+  return {
+    Gas:        S('niGas'),
+    Coal:       S('niCoal'),
+    Diesel:     S('niDiesel'),
+    Wood:       S('niWood'),
+    Other:      S('niOther'),
+    Wind:       S('niWind')  + S('siWind'),
+    Solar:      S('niSolar') + S('siSolar') + S('niDomSolar') + S('siDomSolar'),
+    Hydro:      S('niHydro') + S('siHydro'),
+    Geothermal: S('niGeo')   + S('siGeo'),
+  };
+}
+
+function buildSankey(divId, gw) {
+  const EFF        = { Gas:0.57, Coal:0.35, Diesel:0.35, Geothermal:0.15, Wood:0.39 };
+  const FUEL_LABEL = { Gas:'Gas fuel', Coal:'Coal', Diesel:'Diesel', Geothermal:'Geothermal heat', Wood:'Wood' };
+  const GRID_LOSS  = 0.06;
+  const COL = {
+    Gas:'rgba(107,114,128,0.85)',   Coal:'rgba(17,24,39,0.85)',
+    Diesel:'rgba(156,163,175,0.85)', Wind:'rgba(13,158,110,0.85)',
+    Solar:'rgba(245,158,11,0.85)',  Hydro:'rgba(59,130,246,0.85)',
+    Geothermal:'rgba(239,68,68,0.85)', Wood:'rgba(130,78,26,0.85)',
+    Other:'rgba(168,162,158,0.85)',
+    Loss:'rgba(248,113,113,0.75)', Grid:'rgba(26,77,122,0.85)', Delivered:'rgba(26,77,122,0.95)',
+  };
+  const nodeLabels=[], nodeColors=[], nodeX=[], nodeY=[];
+  const lSrc=[], lTgt=[], lVal=[], lCol=[];
+  let nIdx = 0;
+  const addNode = (l,c,x,y) => { nodeLabels.push(l); nodeColors.push(c); nodeX.push(x); nodeY.push(y); return nIdx++; };
+  const addLink = (s,t,v,c) => { if (v > 0.001) { lSrc.push(s); lTgt.push(t); lVal.push(+v.toFixed(3)); lCol.push(c); } };
+
+  const combustionFuels = ['Gas','Coal','Diesel','Wood'].filter(n => gw[n] > 0);
+  const geoFuels        = ['Geothermal'].filter(n => gw[n] > 0);
+  const directSources   = ['Hydro','Wind','Solar','Other'].filter(n => gw[n] > 0);
+  const allLeft = [...geoFuels, ...combustionFuels, ...directSources];
+  const N = allLeft.length;
+  const leftY = allLeft.map((_, i) => N === 1 ? 0.45 : 0.05 + (i/(N-1))*0.85);
+
+  const fuelNodeIdx = {};
+  geoFuels.forEach((n,i) => { fuelNodeIdx[n] = addNode(FUEL_LABEL[n]||n, COL[n], 0.01, leftY[i]); });
+  combustionFuels.forEach((n,i) => { fuelNodeIdx[n] = addNode(FUEL_LABEL[n]||n, COL[n], 0.01, leftY[geoFuels.length+i]); });
+
+  const geoSpareHeat = geoFuels.reduce((s,n) => s + (EFF[n] ? gw[n]/EFF[n]-gw[n] : 0), 0);
+  const hasGeoSpare  = geoSpareHeat > 0.001;
+  const spareHeatNode = hasGeoSpare ? addNode('Approx. geothermal heat discharge', 'rgba(239,68,68,0.75)', 0.40, 0.05) : -1;
+
+  let thermalLossTotal = 0;
+  combustionFuels.forEach(n => { if (EFF[n]) thermalLossTotal += gw[n]/EFF[n]-gw[n]; });
+  const hasThermal     = thermalLossTotal > 0.001;
+  const thermalLossNode = hasThermal ? addNode('Thermal losses', COL.Loss, 0.40, 0.20) : -1;
+
+  const directNodeIdx = {};
+  directSources.forEach((n,i) => { directNodeIdx[n] = addNode(n, COL[n], 0.01, leftY[geoFuels.length+combustionFuels.length+i]); });
+
+  const gridNode = addNode('Electricity grid', COL.Grid,      0.40, 0.72);
+  const lossNode = addNode('Losses',            COL.Loss,      0.75, 0.10);
+  const totalGW  = Object.values(gw).reduce((s,v) => s+v, 0);
+  const delNode  = addNode('Delivered',         COL.Delivered, 0.99, 0.72);
+
+  geoFuels.forEach(n => {
+    const heat = EFF[n] ? gw[n]/EFF[n]-gw[n] : 0;
+    if (hasGeoSpare) addLink(fuelNodeIdx[n], spareHeatNode, heat, 'rgba(239,68,68,0.18)');
+    addLink(fuelNodeIdx[n], gridNode, gw[n], COL[n].replace('0.85','0.25'));
+  });
+  combustionFuels.forEach(n => {
+    const heat = EFF[n] ? gw[n]/EFF[n]-gw[n] : 0;
+    if (hasThermal) addLink(fuelNodeIdx[n], thermalLossNode, heat, COL.Loss.replace('0.75','0.18'));
+    addLink(fuelNodeIdx[n], gridNode, gw[n], COL[n].replace('0.85','0.25'));
+  });
+  directSources.forEach(n => { addLink(directNodeIdx[n], gridNode, gw[n], COL[n].replace('0.85','0.25')); });
+  if (hasThermal) addLink(thermalLossNode, lossNode, thermalLossTotal, COL.Loss.replace('0.75','0.18'));
+  addLink(gridNode, lossNode, totalGW * GRID_LOSS,       'rgba(160,175,190,0.25)');
+  addLink(gridNode, delNode,  totalGW * (1 - GRID_LOSS), 'rgba(26,77,122,0.22)');
+
+  Plotly.newPlot(divId, [{
+    type:'sankey', orientation:'h', arrangement:'fixed',
+    node: { pad:14, thickness:20, line:{ color:'#fff', width:0.5 },
+      label:nodeLabels, color:nodeColors, x:nodeX, y:nodeY,
+      hovertemplate:'<b>%{label}</b><br>%{value:.1f} TWh/yr<extra></extra>' },
+    link: { source:lSrc, target:lTgt, value:lVal, color:lCol,
+      hovertemplate:'%{source.label} → %{target.label}<br><b>%{value:.1f} TWh/yr</b><extra></extra>' },
+  }], {
+    font:{ family:"'DM Sans','Segoe UI',Arial,sans-serif", size:11.5, color:'#0F172A' },
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    margin:{ l:10, r:10, t:10, b:10 },
+  }, { responsive:true, displayModeBar:false });
+}
+
+function renderSankeys() {
+  if (!gMo || !gMo.length || !gMoBase || !gMoBase.length) return;
+  loadPlotly().then(() => {
+    buildSankey('sankey-today', sankeySources(gMoBase));
+    buildSankey('sankey-plan',  sankeySources(gMo));
+  }).catch(() => {
+    ['sankey-today','sankey-plan'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:20px;">Couldn\'t load the diagram (needs an internet connection).</p>';
+    });
+  });
+}
+
 function renderStats(moBase, moUser, capsRef, pBase, pUser) {
   const totDemB = sum(moBase,'niDemand') + sum(moBase,'siDemand');
   const totDemU = sum(moUser,'niDemand') + sum(moUser,'siDemand');
@@ -3665,6 +3811,7 @@ async function runSim(dry) {
     renderCapex();
     renderPeakCapacity();
     renderDryYear();
+    if (document.getElementById('sankey-section').open) renderSankeys();
     renderTables(moUser, pk);
     renderAnnualCharts(moUser);
     renderCostCharts();
