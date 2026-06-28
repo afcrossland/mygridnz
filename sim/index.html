@@ -103,7 +103,7 @@
     details.ctrl-panel > div { padding:0 16px 16px; }
 
     /* ── Run bar ─────────────────────────────── */
-    .run-bar { display:flex; flex-direction:column; align-items:stretch; gap:10px; margin:28px 0; max-width:320px; }
+    .run-bar { display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:10px; margin:28px 0; }
     .run-bar #sim-status { font-size:12px; color:var(--muted); }
     .btn-run { background:var(--brand); color:#fff; border:none; border-radius:6px;
       padding:10px 28px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
@@ -114,7 +114,7 @@
       font-family:inherit; cursor:pointer; }
     .btn-secondary:hover:not(:disabled) { background:#f0f6ff; }
     .btn-secondary:disabled { opacity:.45; cursor:default; }
-    .scenario-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }
+    .scenario-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:8px; }
     .scenario-card { border:1px solid var(--border); border-radius:8px; overflow:hidden; cursor:pointer; transition:box-shadow .15s,transform .1s; display:flex; flex-direction:column; }
     .scenario-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.1); transform:translateY(-1px); }
     .scenario-card.sc-active { outline:2px solid var(--sc-col); outline-offset:1px; }
@@ -133,7 +133,12 @@
     .sc-dryhd { margin-top:7px; padding-top:7px; border-top:1px dashed var(--border);
       font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#b45309; }
     .sc-dryhd ~ .sc-stat b { color:#b45309; }
-    @media (max-width:900px) { .scenario-grid { grid-template-columns:repeat(2,1fr); } }
+    @keyframes sim-spin { to { transform:rotate(360deg); } }
+    .sim-spinner { width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:#1a4d7a;border-radius:50%;animation:sim-spin .75s linear infinite;margin:0 auto; }
+    #sim-overlay { display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.45);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);align-items:center;justify-content:center; }
+    #sim-overlay.active { display:flex; }
+    @media (max-width:1100px) { .scenario-grid { grid-template-columns:repeat(3,1fr); } }
+    @media (max-width:700px)  { .scenario-grid { grid-template-columns:repeat(2,1fr); } }
     @media (max-width:500px) { .scenario-grid { grid-template-columns:1fr; } }
     .btn-blueprint { background:#0d9e6e; color:#fff; border:none; border-radius:6px;
       padding:10px 20px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
@@ -378,49 +383,63 @@
   <h2 style="font-size:1.4rem;font-weight:600;margin:32px 0 20px;color:var(--text);">Simulation Settings</h2>
   <h3 style="font-size:1rem;font-weight:600;margin:0 0 12px;color:var(--text);">Load preconfigured energy mix</h3>
   <div class="scenario-grid">
-    <div class="scenario-card" id="sc-blueprint" onclick="preloadBlueprint();setActiveScenario('sc-blueprint','#0d9e6e')">
+    <div class="scenario-card" id="sc-blueprint" onclick="selectPreset(preloadBlueprint,'sc-blueprint','#0d9e6e')">
       <div class="sc-stripe" style="background:#0d9e6e;"></div>
       <div class="sc-body">
-        <div class="sc-title">Blueprint 2030</div>
+        <div class="sc-title">My Blueprint 2030</div>
         <div class="sc-desc">NZ high-renewables future: 3.7 GW wind, grid + rooftop solar, home &amp; grid batteries, coal retired. Gas kept only as a dry-year reserve.</div>
-        <div class="sc-stats" id="stats-sc-blueprint"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
+        <div class="sc-stats" id="stats-sc-blueprint"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Firm capacity (before gas)</span><b data-k="capacity">—</b></div><div class="sc-stat"><span>Household solar adoption</span><b>50%</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-domsolar" onclick="preloadDomSolar();setActiveScenario('sc-domsolar','#f97316')">
+    <div class="scenario-card" id="sc-domsolar" onclick="selectPreset(preloadDomSolar,'sc-domsolar','#f97316')">
       <div class="sc-stripe" style="background:#f97316;"></div>
       <div class="sc-body">
         <div class="sc-title">Residential Solar Revolution</div>
         <div class="sc-desc">60% of homes with solar, 80% adding a home battery. Today's utility-scale generation unchanged.</div>
-        <div class="sc-stats" id="stats-sc-domsolar"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
+        <div class="sc-stats" id="stats-sc-domsolar"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Firm capacity (before gas)</span><b data-k="capacity">—</b></div><div class="sc-stat"><span>Household solar adoption</span><b>60%</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-utilityre" onclick="preloadUtilityVRE();setActiveScenario('sc-utilityre','#2563eb')">
+    <div class="scenario-card" id="sc-utilityre" onclick="selectPreset(preloadUtilityVRE,'sc-utilityre','#2563eb')">
       <div class="sc-stripe" style="background:#2563eb;"></div>
       <div class="sc-body">
         <div class="sc-title">Utility Solar &amp; Wind</div>
         <div class="sc-desc">2.0 GW North Island solar, 500 MW South Island solar, and 2.1 / 0.9 GW wind (North / South). Everything else at today’s installed capacity.</div>
-        <div class="sc-stats" id="stats-sc-utilityre"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
+        <div class="sc-stats" id="stats-sc-utilityre"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Firm capacity (before gas)</span><b data-k="capacity">—</b></div><div class="sc-stat"><span>Household solar adoption</span><b>10%</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
       </div>
     </div>
-    <div class="scenario-card" id="sc-lng" onclick="preloadLNG();setActiveScenario('sc-lng','#1e293b')">
+    <div class="scenario-card" id="sc-lng" onclick="selectPreset(preloadLNG,'sc-lng','#1e293b')">
       <div class="sc-stripe" style="background:#1e293b;"></div>
       <div class="sc-body">
         <div class="sc-title">LNG Import</div>
         <div class="sc-desc">Expand gas to 3 GW via LNG imports for dry-year security — at high cost.</div>
-        <div class="sc-stats" id="stats-sc-lng"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
+        <div class="sc-stats" id="stats-sc-lng"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Firm capacity (before gas)</span><b data-k="capacity">—</b></div><div class="sc-stat"><span>Household solar adoption</span><b>10%</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:14px 2px 0;max-width:900px;">
-      <b style="color:var(--text);">Reading these:</b> the <b>cost of grid electricity</b> is the all-in lifetime cost per MWh — the investment is <em>already paid off within it</em>, not on top. When that figure sits <em>below</em> the <b>power price</b> (what generators are paid), the new build produces electricity for less than the market pays — so the investment pays for itself.
-    </p>
+    <div class="scenario-card" id="sc-custom" style="border-style:dashed;"
+         onclick="setActiveScenario('sc-custom','#7c3aed');const ds=document.getElementById('detailed-settings');ds.style.display='';ds.open=true;ds.scrollIntoView({behavior:'smooth',block:'start'});">
+      <div class="sc-stripe" style="background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div>
+      <div class="sc-body" style="justify-content:center;align-items:center;text-align:center;padding:20px 14px;min-height:160px;">
+        <div style="font-size:28px;margin-bottom:8px;">⚙</div>
+        <div class="sc-title" style="font-size:14px;">Build Your Own</div>
+        <div class="sc-desc" style="margin-top:6px;font-size:11.5px;">Adjust any setting — wind, solar, batteries, gas, HVDC — then run your own scenario.</div>
+        <div style="margin-top:14px;font-size:11px;font-weight:700;color:#7c3aed;letter-spacing:.03em;">↓ Open settings</div>
+      </div>
+    </div>
   </div>
+  <details style="margin-top:10px;">
+    <summary style="cursor:pointer;font-size:11.5px;color:var(--muted);list-style:none;display:inline-flex;align-items:center;gap:5px;user-select:none;">
+      <span style="color:var(--brand);font-size:13px;">ⓘ</span> How to read these stats
+    </summary>
+    <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:8px 2px 0;">
+      <b style="color:var(--text);">Reading these:</b> the <b>cost of grid electricity</b> is the all-in lifetime cost per MWh — the investment is <em>already paid off within it</em>, not on top. When that figure sits <em>below</em> the <b>power price</b> (what generators are paid), the new build produces electricity for less than the market pays — so the investment pays for itself. The <b>firm capacity (before gas)</b> is the dependable output at the winter evening peak from all non-gas sources combined — hydro, geothermal, wind, batteries and biomass, each de-rated to their reliable share. The <b>dry-year</b> figures use 2024 weather data with a 20% cut to hydro inflows: <b>fuel burned</b> is the extra gas and coal needed to fill the shortfall, and <b>backup kept</b> is the peak thermal capacity still running.
+    </p>
+  </details>
 
   <!-- Controls -->
-  <details id="detailed-settings">
-  <summary style="cursor:pointer;list-style:none;font-weight:700;color:var(--text);margin:0;display:flex;align-items:center;gap:10px;">
-    <span id="detailed-settings-arrow" style="font-size:.7rem;color:var(--brand);">▶</span>
+  <details id="detailed-settings" style="display:none;">
+  <summary style="cursor:pointer;list-style:none;font-weight:700;color:var(--text);margin:16px 0 0;display:flex;align-items:center;gap:8px;line-height:1.3;">
+    <span style="font-size:.65rem;color:#7c3aed;line-height:1;position:relative;top:1px;">▶</span>
     <span>Customised Setup</span>
-    <span style="font-size:11px;font-weight:600;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px;">Build your own scenario / Edit a preconfigured scenario</span>
   </summary>
   <p class="cs-hint">Fine-tune every part of the grid below — generation, storage, the islands and the interisland link. Each control has a short explanation; values update live and feed straight into the simulation when you press Run.</p>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;">
@@ -444,12 +463,12 @@
             <input type="range" id="si-wind" min="0" max="6" step="0.1" value="0.9" data-unit="GW" data-dp="1" oninput="syncSlider(this)"></div>
         </div>
         <div class="re-cols">
-          <div class="sl"><div class="sl-hd"><span class="term" title="Average output as a share of nameplate capacity over the year — higher means windier or better turbines.">North Island capacity factor</span><span id="ni-wind-cf-v" class="sl-val">35%</span></div>
-            <div class="sl-sub">Average North Island wind output as a share of nameplate (the metered shape is rescaled to hit this).</div>
-            <input type="range" id="ni-wind-cf" min="20" max="55" step="1" value="35" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
-          <div class="sl"><div class="sl-hd"><span class="term" title="Average output as a share of nameplate capacity over the year — higher means windier or better turbines.">South Island capacity factor</span><span id="si-wind-cf-v" class="sl-val">35%</span></div>
-            <div class="sl-sub">Average South Island wind output as a share of nameplate (the metered shape is rescaled to hit this).</div>
-            <input type="range" id="si-wind-cf" min="20" max="55" step="1" value="35" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+          <div class="sl"><div class="sl-hd"><span class="term" title="Average output as a share of nameplate capacity over the year — higher means windier or better turbines.">North Island capacity factor</span><span id="ni-wind-cf-v" class="sl-val">38%</span></div>
+            <div class="sl-sub">Average North Island wind output as a share of nameplate (the metered shape is rescaled to hit this). Recent NZ projects such as Waipipi have achieved ~39%.</div>
+            <input type="range" id="ni-wind-cf" min="20" max="55" step="1" value="38" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
+          <div class="sl"><div class="sl-hd"><span class="term" title="Average output as a share of nameplate capacity over the year — higher means windier or better turbines.">South Island capacity factor</span><span id="si-wind-cf-v" class="sl-val">38%</span></div>
+            <div class="sl-sub">Average South Island wind output as a share of nameplate (the metered shape is rescaled to hit this). Recent NZ projects such as Waipipi have achieved ~39%.</div>
+            <input type="range" id="si-wind-cf" min="20" max="55" step="1" value="38" data-unit="%" data-dp="0" oninput="syncSlider(this)"></div>
         </div>
         <div class="sl"><div class="sl-hd"><span>Build cost</span><span id="cost-wind-v" class="sl-val">2200 $/kW</span></div>
           <div class="sl-sub">Capital cost per kW of new wind capacity — feeds the build-cost estimate.</div>
@@ -648,10 +667,10 @@
   </details><!-- /detailed-settings -->
 
   <div class="run-bar">
-    <button class="btn-run" id="btn-run" onclick="runSim(false)" disabled>▶ Run Simulation</button>
-    <button class="btn-run" id="btn-run-dry" onclick="runSim(true)" disabled
+    <button class="btn-run" id="btn-run" onclick="document.getElementById('detailed-settings').style.display='';runSim(false)" disabled>▶ Run Simulation</button>
+    <button class="btn-run" id="btn-run-dry" onclick="document.getElementById('detailed-settings').style.display='';runSim(true)" disabled
       style="background:#b45309;">▶ Run vs Dry Year</button>
-    <button class="btn-secondary" id="btn-report" onclick="generateReport()" disabled>⬇ PDF Report</button>
+    <button class="btn-secondary" id="btn-report" onclick="generateReport()" disabled style="display:none">⬇ PDF Report</button>
     <span id="sim-status">Loading data…</span>
   </div>
 
@@ -686,7 +705,7 @@
         <span style="font-size:11px;color:var(--muted);">— North and South Islands simulated independently, connected by the HVDC Interisland Link</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:14px;">
-        <p>This simulator runs New Zealand as two separate islands — North Island and South Island — each with their own generation fleet, demand and storage. The HVDC Interisland Link (up to 1,200 MW each way) transfers surplus between islands before flexible hydro or on-demand stations are called on. Running the islands separately matters: a wet year in the South Island fills its lakes but doesn't automatically fix North Island gas use unless the link has room to send that power north.</p>
+        <p>This simulator runs New Zealand as two separate islands — North Island and South Island — each with their own generation fleet, demand and storage. The HVDC Interisland Link (up to 1,200 MW each way) transfers surplus between islands before flexible hydro or on-demand stations are called on. Crucially, transfer is constrained by available spinning reserve on the sending island — if the cable trips, the receiving island must be able to replace that import from its own reserves immediately. Running the islands separately matters: a wet year in the South Island fills Lake Pukaki and the Waitaki system but doesn't automatically fix North Island gas use unless the link has both the physical headroom and the reserve cover to send that power north.</p>
       </div>
       <div class="island-grid">
         <div>
@@ -721,7 +740,7 @@
         <span style="font-size:11px;color:var(--muted);">— firm capacity vs peak demand, with and without gas</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:14px;">
-        <p>Can the grid cover the highest demand of the year? Each technology counts only its <strong>firm (dependable) capacity</strong> — the share you can rely on during a winter evening peak. Wind counts for only 10% and solar 0% (the peak is after dark), while hydro, geothermal, gas and batteries count for most of their rating. The two bars compare the fleet <strong>with gas</strong> and <strong>without gas</strong> against peak demand — the gap between them is how much peak security still depends on gas.</p>
+        <p>Can your scenario cover the highest demand of the year? Each technology counts only its <strong>firm (dependable) capacity</strong> — the share you can rely on during a winter evening peak. Wind counts for only 10% and solar 0% (the peak is after dark), while hydro, geothermal, gas and batteries count for most of their rating. The two bars show what firm capacity <strong>your scenario can provide</strong> — with and without gas — against the historical metered peak. Note: historical metered demand underestimates the true system peak because it does not include load served behind-the-meter by distributed generation; the real peak the grid must serve could be somewhat higher.</p>
       </div>
       <div id="peakcap-summary" class="peakcap-summary"></div>
       <div class="chart-box ts-full"><canvas id="peakcap-chart"></canvas></div>
@@ -742,7 +761,7 @@
         <span style="font-size:11px;color:var(--muted);">— can the plan survive a drought without burning fossil fuel?</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p><strong>Hydro is rain-fed; wind and sun are not.</strong> In a dry year the lakes deliver less, and today's grid fills the gap by burning gas and coal. Use <strong>“Run vs Dry Year”</strong> at the top to re-run everything with reduced hydro — this section then compares how much fossil backup <strong>today's grid</strong> needs versus <strong>your plan</strong> to keep the lights on.</p>
+        <p><strong>Hydro is rain-fed; wind and sun are not.</strong> In a dry year — when inflows to Lake Pukaki and the Waitaki catchment are low — South Island storage delivers far less, and today's grid fills the gap by burning gas and coal. (North Island hydro is largely run-of-river; the Waikato chain has limited storage.) Use <strong>”Run vs Dry Year”</strong> at the top to re-run everything with reduced hydro — this section then compares how much fossil backup <strong>today's grid</strong> needs versus <strong>your plan</strong> to keep the lights on.</p>
       </div>
       <div id="dryyear-summary" class="dry-summary"></div>
       <div class="chart-box ts-full"><h3>Fossil backup needed (GWh of gas + coal) — today's grid vs your plan</h3><canvas id="dryyear-chart"></canvas></div>
@@ -1241,10 +1260,11 @@
         <h3 style="font-size:1rem;font-weight:700;margin:0 0 8px;color:var(--text);">Key assumptions and limitations</h3>
         <ul style="margin:0;padding-left:20px;font-size:14px;color:var(--muted);">
           <li style="margin-bottom:6px;"><strong>Single historical weather year</strong> — wind, solar and hydro output use one year of real data. Results depend on how wet, windy or sunny that year was. Use the Year selector to compare different weather years.</li>
-          <li style="margin-bottom:6px;"><strong>Demand is unchanged</strong> — the model does not simulate demand growth, EV charging, or electrification. Future scenarios should be interpreted as "how the grid would perform in this weather year if these assets existed, at today's demand."</li>
-          <li style="margin-bottom:6px;"><strong>Transmission is simplified</strong> — the model treats each island as a single node. Intra-island congestion (e.g. upper North Island constraints) is not modelled. HVDC is modelled as a controllable link with a configurable capacity limit.</li>
+          <li style="margin-bottom:6px;"><strong>Demand is unchanged</strong> — the model does not simulate demand growth, EV fleet charging, or industrial electrification. Future scenarios should be interpreted as "how the grid would perform in this weather year if these assets existed, at today's demand." EV batteries are a known future addition: as a load, unmanaged EV charging would increase evening peak demand; as a flexibility resource, vehicle-to-grid (V2G) discharge could reduce it. Both effects are omitted here.</li>
+          <li style="margin-bottom:6px;"><strong>Transmission is simplified</strong> — the model treats each island as a single node. Intra-island congestion (e.g. upper North Island constraints) is not modelled. HVDC is modelled as a reserve-constrained link: actual transfer each period is limited by both the configured capacity cap and the sending island's available spinning reserve (a cable trip must be coverable by local reserves instantly). Intra-island thermal or transmission constraints that further limit practical HVDC loading are not modelled.</li>
           <li style="margin-bottom:6px;"><strong>Geothermal is fixed</strong> — geothermal output is taken from the historical metered record and is not scalable (it is capacity-constrained at actual plant levels). A future version may allow new geothermal capacity to be specified.</li>
-          <li style="margin-bottom:6px;"><strong>Hydro reservoir is simplified</strong> — the model uses a single reservoir per island rather than modelling individual catchments or water rights constraints. Inflow equals metered actual hydro output; there is no separate hydrology model. In a wet year the reservoir overflows; in a dry year it empties.</li>
+          <li style="margin-bottom:6px;"><strong>Hydro reservoir is simplified</strong> — the model uses a single reservoir per island. The South Island store represents the Waitaki/Lake Pukaki system, which dominates NZ hydro storage; the North Island store represents the Waikato chain, which has far smaller storage. Individual catchments, water rights constraints, and spill rules are not modelled. Inflow equals metered actual hydro output; there is no separate hydrology model.</li>
+          <li style="margin-bottom:6px;"><strong>Dry-year data coverage</strong> — the dry-year analysis applies a configurable inflow cut (default 20%) to the selected weather year. Historically significant drought years (e.g. early 2021, 2017) are not yet available as separate data inputs; a 20% cut on 2024 data is the current worst-case baseline.</li>
           <li style="margin-bottom:6px;"><strong>Transmission losses</strong> — gross generation exceeds metered demand by typically 3–5% due to resistive losses in the transmission network. The simulator accounts for this by deriving a per-period, per-island loss factor from historical data (gross generation ÷ metered demand, capped at 10%) and scaling the generation dispatch target up accordingly. Domestic rooftop solar and home batteries are exempt — they generate and consume power at the home, bypassing the transmission network entirely.</li>
           <li style="margin-bottom:6px;"><strong>No market price modelling</strong> — the LCOE and marginal cost figures use fixed assumed cost parameters (capital/fuel cost per fuel type) and do not reflect the actual spot market.</li>
           <li><strong>Carbon factors</strong> — lifecycle emission factors are used (gCO₂/kWh): Hydro 24, Geo 46, Wind 12, Solar 45, Wood 230, Gas 490, Coal 820, Diesel 800. These include upstream and construction emissions.</li>
@@ -1261,7 +1281,7 @@
         <dt style="font-weight:700;color:var(--text);margin-top:8px;">Inertia (GVA·s)</dt>
         <dd style="margin:2px 0 0 16px;">Kinetic energy stored in spinning generators plus synthetic inertia from grid-forming batteries. Higher inertia slows the rate-of-change-of-frequency (RoCoF) after a fault, giving protection systems more time to respond.</dd>
         <dt style="font-weight:700;color:var(--text);margin-top:8px;">HVDC (High Voltage Direct Current)</dt>
-        <dd style="margin:2px 0 0 16px;">The Cook Strait cable linking the North and South Islands. Capacity is 1,200 MW in each direction. Used to export South Island hydro surplus northward and North Island thermal surplus southward during dry years.</dd>
+        <dd style="margin:2px 0 0 16px;">The Cook Strait cable linking the North and South Islands. Rated at 1,200 MW in each direction. In this model, actual transfer each half-hour is also constrained by available spinning reserve on the sending island — a sudden cable trip must be recoverable without a shortfall on the receiving end. South Island hydro surplus flows north; North Island thermal surplus flows south during dry years.</dd>
         <dt style="font-weight:700;color:var(--text);margin-top:8px;">Run-of-river hydro (RoR)</dt>
         <dd style="margin:2px 0 0 16px;">Hydro generation that cannot be stored — output is directly determined by water flow. NI hydro is modelled as 70% RoR (Waikato chain is storage-limited); SI hydro as 20% RoR (Waitaki/Manapouri have large storage).</dd>
         <dt style="font-weight:700;color:var(--text);margin-top:8px;">Curtailment</dt>
@@ -1391,8 +1411,8 @@ function preloadBlueprint() {
   // batteries, retire coal, gas kept only as a dry-year reserve.
   setSlider('ni-wind',        2.5);
   setSlider('si-wind',        1.2);
-  setSlider('ni-wind-cf',      35);
-  setSlider('si-wind-cf',      35);
+  setSlider('ni-wind-cf',      38);
+  setSlider('si-wind-cf',      38);
   setSlider('ni-solar',       1.5);
   setSlider('ni-solar-yield', 1200);
   setSlider('si-solar',       0.5);
@@ -1422,6 +1442,14 @@ function preloadBlueprint() {
   document.getElementById('sim-status').textContent = 'Blueprint scenario loaded — click Run to simulate.';
 }
 
+function selectPreset(fn, id, col) {
+  const ds = document.getElementById('detailed-settings');
+  ds.style.display = 'none';
+  ds.open = false;
+  fn();
+  setActiveScenario(id, col);
+}
+
 function setActiveScenario(id, colour) {
   document.querySelectorAll('.scenario-card').forEach(c => {
     c.style.outline = '';
@@ -1442,8 +1470,8 @@ function resetToToday() {
   // Wind/solar/dispatchables from actual 2025 installed capacity loaded on init
   setSlider('ni-wind',        gTodayCaps.niWindGW   || 2.1);
   setSlider('si-wind',        gTodayCaps.siWindGW   || 0.9);
-  setSlider('ni-wind-cf',      35);
-  setSlider('si-wind-cf',      35);
+  setSlider('ni-wind-cf',      38);
+  setSlider('si-wind-cf',      38);
   setSlider('ni-solar',       gTodayCaps.niSolarGW  || 2.5);
   setSlider('ni-solar-yield', 1200);
   setSlider('si-solar',       gTodayCaps.siSolarGW  || 0.5);
@@ -1490,6 +1518,9 @@ function preloadUtilityVRE() {
   setSlider('si-solar', 0.5);
   setSlider('ni-wind',  2.1);
   setSlider('si-wind',  0.9);
+  setCheck('dom-solar-enabled', true);
+  setSlider('ni-dom-solar-pct', 10);
+  setSlider('si-dom-solar-pct', 10);
   document.getElementById('sim-status').textContent = 'Utility Solar & Wind scenario loaded — click Run to simulate.';
 }
 
@@ -1499,6 +1530,9 @@ function preloadLNG() {
   // No new grid batteries in this scenario — gas covers flexibility
   setSlider('batt-power', 0);    setSlider('batt-cap', 0);
   setSlider('si-batt-power', 0); setSlider('si-batt-cap', 0);
+  setCheck('dom-solar-enabled', true);
+  setSlider('ni-dom-solar-pct', 10);
+  setSlider('si-dom-solar-pct', 10);
   document.getElementById('sim-status').textContent = 'LNG Import scenario loaded — click Run to simulate.';
 }
 
@@ -2189,6 +2223,31 @@ function calcSystemLCOE(mo, p) {
   return gwh > 0 ? Math.round(cost / gwh) : 0;
 }
 
+function calcLCOEBreakdown(mo, p) {
+  const gasGWh = sum(mo,'niGas');
+  const gasCapGW = (p.niGas||1)/1000;
+  const gaslf  = gasGWh > 0 ? Math.min(1, gasGWh/(gasCapGW*8760)) : 0.01;
+  const gasRate = gasGWh > 0 ? Math.min(400, Math.round(31/Math.max(0.01,gaslf)+62)) : 160;
+  const carb = key => (CF[key]||0)*CARBON_PRICE/1000;
+  const geoG = sum(mo,'niGeo')+sum(mo,'siGeo'), hydG = sum(mo,'niHydro')+sum(mo,'siHydro');
+  const wndG = sum(mo,'niWind')+sum(mo,'siWind'), solG = sum(mo,'niSolar')+sum(mo,'siSolar');
+  const stoG = sum(mo,'niStorage')+sum(mo,'siStorage');
+  const wdG = sum(mo,'niWood'), coG = sum(mo,'niCoal'), diG = sum(mo,'niDiesel');
+  const totGWh = geoG+hydG+wndG+solG+stoG+wdG+gasGWh+coG+diG;
+  if (totGWh <= 0) return { renewables:0, storage:0, thermal:0, carbon:0 };
+  const rCost = geoG*LCOE.Geo + hydG*LCOE.Hydro + wndG*LCOE.Wind + solG*LCOE.Solar;
+  const sCost = stoG*LCOE.Storage;
+  const tCost = wdG*LCOE.Wood + gasGWh*gasRate + coG*LCOE.Coal + diG*LCOE.Diesel;
+  const cCost = geoG*carb('geo')+hydG*carb('hydro')+wndG*carb('wind')+solG*carb('solar')
+              + stoG*carb('storage')+wdG*carb('wood')+gasGWh*carb('gas')+coG*carb('coal')+diG*carb('diesel');
+  return {
+    renewables: Math.round(rCost/totGWh),
+    storage:    Math.round(sCost/totGWh),
+    thermal:    Math.round(tCost/totGWh),
+    carbon:     Math.round(cCost/totGWh),
+  };
+}
+
 function calcMarginalPrice(mo) {
   // Generation-weighted average marginal cost — shows real savings as gas is displaced
   const fuels = [
@@ -2215,14 +2274,35 @@ function fmt(n, dp) { return (+n).toLocaleString('en-NZ', { minimumFractionDigit
 // Grid-scale capacity each preset applies (null = leave at today's installed level).
 // Keep in sync with the preload* functions. Used to show new-build cost on the cards.
 const SCENARIO_CAPS = {
-  'sc-blueprint': { windGW:3.7,  solarGW:2.0,  geoMW:0, gasMW:null, battE:4400 },
-  'sc-domsolar':  { windGW:null, solarGW:null, geoMW:0, gasMW:null, battE:8800 },
-  'sc-utilityre': { windGW:3.0,  solarGW:2.5,  geoMW:0, gasMW:null, battE:8800 },
-  'sc-lng':       { windGW:null, solarGW:null, geoMW:0, gasMW:3000, battE:0    },
+  'sc-blueprint': { windGW:3.7,  solarGW:2.0,  geoMW:0, gasMW:null,  battE:4400, battP:1200, coalMW:0,    woodMW:300  },
+  'sc-domsolar':  { windGW:null, solarGW:null,  geoMW:0, gasMW:null,  battE:8800, battP:1200, coalMW:null, woodMW:null },
+  'sc-utilityre': { windGW:3.0,  solarGW:2.5,  geoMW:0, gasMW:null,  battE:8800, battP:1200, coalMW:null, woodMW:null },
+  'sc-lng':       { windGW:null, solarGW:null,  geoMW:0, gasMW:3000,  battE:0,    battP:0,    coalMW:null, woodMW:null },
 };
 // Default build-cost assumptions (must match the cost-* slider defaults).
 // Battery is priced on storage energy only ($ per kWh).
 const BUILD_COST = { wind:2200, solar:1200, geo:5500, gas:1500, batt:300 };
+
+function scenarioFirmWithoutGasMW(c) {
+  const t = gTodayCaps || {}, caps = gCaps || {};
+  const hydroMW  = (caps['Hydro']?.NI       || 0) + (caps['Hydro']?.SI       || 0);
+  const geoMW    = (caps['Geothermal']?.NI  ?? caps['Geo']?.NI  ?? 900)
+                 + (caps['Geothermal']?.SI  ?? caps['Geo']?.SI  ?? 200);
+  const windGW   = c.windGW == null ? (t.niWindGW||2.1) + (t.siWindGW||0.9) : c.windGW;
+  const battPow  = c.battP  || 0;
+  const battDur  = battPow > 0 ? (c.battE||0) / battPow : 0;
+  const battFirm = battPow * Math.min(1, battDur / PEAK_HOURS) * 0.95;
+  const coalMW   = c.coalMW == null ? (t.niCoalMW||400)  : c.coalMW;
+  const woodMW   = c.woodMW == null ? (t.niWoodMW||200)  : c.woodMW;
+  const dieselMW = t.niDieselMW || 156;
+  return hydroMW  * CAP_CREDIT.hydro
+       + geoMW    * CAP_CREDIT.geo
+       + windGW * 1000 * CAP_CREDIT.wind
+       + battFirm
+       + coalMW   * CAP_CREDIT.coal
+       + woodMW   * CAP_CREDIT.wood
+       + dieselMW * CAP_CREDIT.diesel;
+}
 
 function scenarioCapex(c) {
   const t = gTodayCaps || {};
@@ -2266,6 +2346,7 @@ function renderScenarioCosts() {
   const f0 = v => Math.round(v).toLocaleString('en-NZ');
   for (const id in SCENARIO_CAPS) {
     setTileMetric(id, 'build', fmt$(scenarioCapex(SCENARIO_CAPS[id])));
+    setTileMetric(id, 'capacity', `${(scenarioFirmWithoutGasMW(SCENARIO_CAPS[id])/1000).toFixed(1)} GW`);
     const m = SCENARIO_METRICS[id];
     if (m) {
       setTileMetric(id, 'energy', `$${m.energy}/MWh`);
@@ -2403,7 +2484,7 @@ function renderPeakCapacity() {
   document.getElementById('peakcap-summary').innerHTML =
     card('Today', firmToday) + card('Your plan — with gas', firmWith) + card('Your plan — without gas', firmWithout);
   document.getElementById('peakcap-note').textContent =
-    `Peak demand ${fmtMW(peakMW)} MW (${gYear}). Firm-capacity credits: hydro 85%, geothermal 90%, gas/coal/diesel 90%, wind 10%, solar 0%; grid batteries de-rated to a ${PEAK_HOURS}-hour peak; home batteries assumed always available (duration-limited only). Compares national totals; each island must also cover its own peak.`;
+    `Metered peak demand ${fmtMW(peakMW)} MW (${gYear}) — historical metered figure; actual system peak including behind-the-meter load served by distributed generation may be higher. Firm-capacity credits: hydro 85%, geothermal 90%, gas/coal/diesel 90%, wind 10%, solar 0%; grid batteries de-rated to a ${PEAK_HOURS}-hour peak; home batteries assumed always available (duration-limited only). Compares national totals; each island must also cover its own peak.`;
 
   const order = [['Hydro',C.Hydro],['Geothermal',C.Geo],['Wind',C.Wind],['Battery',C.Storage],
                  ['Home batteries',C.Charge],['Wood',C.Wood],['Coal',C.Coal],['Diesel',C.Diesel],['Gas',C.Gas]];
@@ -2749,7 +2830,9 @@ function renderStats(moBase, moUser, capsRef, pBase, pUser) {
     unsPct:    unsPctU,
     fossilPct: (fossilU / totDemU * 100),
   };
-  document.getElementById('btn-report').disabled = false;
+  const rptBtn = document.getElementById('btn-report');
+  rptBtn.disabled = false;
+  rptBtn.style.display = '';
 }
 
 // rows: [name, gwh, dot, peakMW, instGW|null, isTotal]
@@ -3698,12 +3781,13 @@ function getParams() {
 }
 
 function buildBaselineParams(caps, pUser) {
+  const r1 = v => Math.round(v * 10) / 10;  // round to 0.1 GW — matches slider step
   return {
-    niWindGW:  (caps['Wind']?.NI  ?? 1120) / 1000,
-    siWindGW:  (caps['Wind']?.SI  ?? 137)  / 1000,
+    niWindGW:  r1((caps['Wind']?.NI  ?? 1120) / 1000),
+    siWindGW:  r1((caps['Wind']?.SI  ?? 137)  / 1000),
     niWindCF:  pUser.niWindCF,    siWindCF:  pUser.siWindCF,
-    niSolarGW: (caps['Solar']?.NI ?? 141)  / 1000,
-    siSolarGW: (caps['Solar']?.SI ?? 47)   / 1000,
+    niSolarGW: r1((caps['Solar']?.NI ?? 141)  / 1000),
+    siSolarGW: r1((caps['Solar']?.SI ?? 47)   / 1000),
     niSolarTargetYield: pUser.niSolarTargetYield, siSolarTargetYield: pUser.siSolarTargetYield,
     niRoR: 70, siRoR: 20,
     niNewGeo: 0,
@@ -3729,6 +3813,25 @@ async function runSim(dry) {
   const btnDry = document.getElementById('btn-run-dry');
   const status = document.getElementById('sim-status');
   btn.disabled = true; btnDry.disabled = true;
+
+  // Loading overlay with cycling messages
+  const overlay = document.getElementById('sim-overlay');
+  const overlayMsg = document.getElementById('sim-overlay-msg');
+  const loadMsgs = [
+    'Loading weather data…', 'Charging the batteries…', 'Making a coffee ☕',
+    'Calculating hydro spill…', 'Modelling frequency reserves…',
+    'Dispatching geothermal…', 'Forecasting winter demand…',
+    'Negotiating with the HVDC link…', 'Running the merit order…',
+    'Spinning up the turbines…', 'Counting the curtailment…',
+  ];
+  let overlayIdx = 0;
+  overlayMsg.textContent = loadMsgs[0];
+  overlay.classList.add('active');
+  const overlayTimer = setInterval(() => {
+    overlayIdx = (overlayIdx + 1) % loadMsgs.length;
+    overlayMsg.textContent = loadMsgs[overlayIdx];
+  }, 1400);
+
   // Dry-year mode: scale hydro inflows down by the chosen severity.
   gDryRun = !!dry;
   gDryCut = dry ? (+document.getElementById('dry-cut').value || 0) : 0;
@@ -3866,6 +3969,8 @@ async function runSim(dry) {
     status.textContent = `Error: ${e.message}`;
     console.error(e);
   } finally {
+    clearInterval(overlayTimer);
+    overlay.classList.remove('active');
     btn.disabled = false; btnDry.disabled = false;
   }
 }
@@ -3933,7 +4038,7 @@ async function runSim(dry) {
     preloadBlueprint();
     setActiveScenario('sc-blueprint', '#0d9e6e');
     document.getElementById('sim-status').textContent =
-      'Blueprint 2030 preloaded — click ▶ Run Simulation to see results.';
+      'My Blueprint 2030 preloaded — click ▶ Run Simulation to see results.';
   } catch(e) {
     document.getElementById('sim-status').textContent =
       'Could not load data — check the sheet is publicly accessible.';
@@ -4023,6 +4128,7 @@ function evalScenario(p, data, caps, ctx, rawShapes) {
     renPct: Math.max(0, Math.min(100, (totDem-fossil-unserv)/totDem*100)),
     carbInt: carbonIntensity(mo, totDem),
     lcoe: calcSystemLCOE(mo, p),
+    lcoeBreakdown: calcLCOEBreakdown(mo, p),
     marg: avgMarginalPrice(pp),
     curtailGWh: sum(mo,'niCurtail')+sum(mo,'siCurtail'),
     unsPct: totDem>0 ? unserv/totDem*100 : 0,
@@ -4064,7 +4170,7 @@ function buildScenarioSet() {
   const statusEl = document.getElementById('sim-status');
   const statusTxt = statusEl ? statusEl.textContent : '';
   const defs = [
-    ['Blueprint 2030', preloadBlueprint],
+    ['My Blueprint 2030', preloadBlueprint],
     ['Residential Solar Revolution', preloadDomSolar],
     ['Utility Solar & Wind', preloadUtilityVRE],
     ['LNG Import', preloadLNG],
@@ -4085,15 +4191,25 @@ function buildScenarioSet() {
 
   // Headline capacity per scenario (wind/solar GW, geothermal/gas MW, battery MWh).
   const tGeo = (caps.Geo?.NI||0) + (caps.Geo?.SI||0);
-  const capSummary = p => ({
-    wind:  (p.niWindGW||0)  + (p.siWindGW||0),
-    solar: (p.niSolarGW||0) + (p.siSolarGW||0),
-    geo:   tGeo + (p.niNewGeo||0),
-    gas:   p.niGas||0,
-    coal:  p.niCoal||0,
-    batt:  (p.battCap||0)   + (p.siBattCap||0),
-    domSolar: !!p.domSolarEnabled,
-  });
+  const AVG_H = 7.5;
+  const capSummary = p => {
+    const nNI = ctx.niDemGWh * ((p.niDomPct||35)/100) * 1000 / AVG_H;
+    const nSI = ctx.siDemGWh * ((p.siDomPct||30)/100) * 1000 / AVG_H;
+    const solNI = nNI * ((p.niDomSolarPct||0)/100), solSI = nSI * ((p.siDomSolarPct||0)/100);
+    const kWp = ((p.domPanels||10) * (p.domPanelWatts||500)) / 1000;
+    const domSolarGW = p.domSolarEnabled ? (solNI + solSI) * kWp / 1e6 : 0;
+    const stoHomes = p.domSolarEnabled ? (solNI + solSI) * ((p.domStoragePct||80)/100) : 0;
+    const domBattGWh = stoHomes * (p.domBattKWh||10) / 1e6;
+    return {
+      wind:      (p.niWindGW||0)  + (p.siWindGW||0),
+      solar:     (p.niSolarGW||0) + (p.siSolarGW||0),
+      geo:       tGeo + (p.niNewGeo||0),
+      gas:       p.niGas||0,
+      coal:      p.niCoal||0,
+      batt:      (p.battCap||0)   + (p.siBattCap||0),
+      domSolarGW, domBattGWh,
+    };
+  };
 
   const todayP = buildBaselineParams(caps, userParams);
   const list = [
@@ -4259,7 +4375,6 @@ async function generateReport() {
       </div>
       <div style="background:#f0f6ff;padding:16px 28px 14px;border-bottom:2px solid #d6e7f6;">
         <div style="font-size:20px;font-weight:700;color:#1a4d7a;">${scenName}</div>
-        <div style="font-size:11px;color:#64748b;margin-top:5px;line-height:1.5;">${scenDesc}</div>
       </div>
       <div style="padding:20px 28px 0;">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:10px;">Key Results</div>
@@ -4267,7 +4382,7 @@ async function generateReport() {
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:8px;">About This Simulation</div>
         <div style="font-size:10.5px;color:#374151;line-height:1.75;margin-bottom:18px;">
           This report presents the results of an NZ electricity grid simulation using real half-hourly generation and demand data.
-          The model dispatches the North Island and South Island independently, connected via the 1,200 MW HVDC Interisland Link, and evaluates
+          The model dispatches the North Island and South Island independently, connected via the HVDC Interisland Link, and evaluates
           grid performance across a full calendar year. Dispatch follows a merit order: geothermal and must-run hydro first, then variable
           renewables, HVDC surplus transfer, utility battery storage, and finally dispatchable thermal plant.
         </div>
@@ -4280,7 +4395,6 @@ async function generateReport() {
       carb: s.carbInt<30?'#0d9e6e':s.carbInt<100?'#d97706':'#dc2626',
       lcoe: s.lcoe<90?'#0d9e6e':s.lcoe<130?'#d97706':'#dc2626' };
     [
-      ['Electricity used', f1(s.totDemTWh), 'TWh', metricAccent.demand],
       ['Renewable electricity', f1(s.renPct), '%', metricAccent.ren],
       ['Carbon emissions', f0(s.carbInt), 'gCO₂/kWh', metricAccent.carb],
       ['Cost of grid electricity', f0(s.lcoe), 'NZD/MWh', metricAccent.lcoe],
@@ -4295,22 +4409,45 @@ async function generateReport() {
       cover.querySelector('#rpt-metrics').appendChild(el);
     });
 
+    // Residential solar GW and battery GWh from params + monthly demand totals
+    let resiSolarGW = 0, resiBattGWh = 0;
+    if (p.domSolarEnabled && gMo && gMo.length) {
+      const AVG_H = 7.5;
+      const niDem = gMo.reduce((a,m) => a + (m.niDemand||0), 0);
+      const siDem = gMo.reduce((a,m) => a + (m.siDemand||0), 0);
+      const nNI = Math.max(niDem * (p.niDomPct/100) * 1000 / AVG_H, 0);
+      const nSI = Math.max(siDem * (p.siDomPct/100) * 1000 / AVG_H, 0);
+      const solNI = nNI * (p.niDomSolarPct/100), solSI = nSI * (p.siDomSolarPct/100);
+      const solarKWp = (p.domPanels||10) * (p.domPanelWatts||500) / 1000;
+      resiSolarGW = (solNI + solSI) * solarKWp / 1e6;
+      const stoHomes = solNI * (p.domStoragePct/100) + solSI * (p.domStoragePct/100);
+      resiBattGWh = stoHomes * (p.domBattKWh||10) / 1e6;
+    }
     const paramsData = [
-      ['Data year', gYear||'—'], ['NI wind capacity', (p.niWindGW||0).toFixed(1)+' GW'],
+      ['Weather data year', gYear||'—'], ['NI wind capacity', (p.niWindGW||0).toFixed(1)+' GW'],
       ['SI wind capacity', (p.siWindGW||0).toFixed(1)+' GW'], ['NI solar capacity', (p.niSolarGW||0).toFixed(1)+' GW'],
       ['SI solar capacity', (p.siSolarGW||0).toFixed(1)+' GW'],
       ['NI utility battery', `${p.battPower||0} MW / ${(p.battCap||0).toLocaleString()} MWh`],
       ['NI gas capacity', `${p.niGas||0} MW`], ['NI coal capacity', `${p.niCoal||0} MW`],
       ['HVDC', `${p.hvdcNiSi||0} MW (North→South) / ${p.hvdcSiNi||0} MW (South→North)`],
-      ['Domestic solar', p.domSolarEnabled ? `Enabled — NI ${p.niDomSolarPct}% / SI ${p.siDomSolarPct}% of homes` : 'Not modelled'],
+      ['Residential solar', p.domSolarEnabled
+        ? `${resiSolarGW.toFixed(1)} GW (NI ${p.niDomSolarPct}% / SI ${p.siDomSolarPct}% of homes)`
+        : 'Not modelled'],
+      ['Residential batteries', p.domSolarEnabled && resiBattGWh > 0
+        ? `${resiBattGWh.toFixed(1)} GWh (${p.domStoragePct}% of solar homes, ${p.domBattKWh} kWh each)`
+        : 'Not modelled'],
     ];
     const tbl = cover.querySelector('#rpt-params');
-    paramsData.forEach(([label, val], i) => {
+    tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:10.5px;';
+    for (let i = 0; i < paramsData.length; i += 2) {
       const tr = tbl.insertRow();
-      tr.style.background = i%2===0 ? '#f8fafc' : '#fff';
-      tr.innerHTML = `<td style="padding:5px 8px;color:#64748b;width:145px;">${label}</td>
-        <td style="padding:5px 8px;font-weight:600;color:#0f172a;">${val}</td>`;
-    });
+      tr.style.background = Math.floor(i/2)%2===0 ? '#f8fafc' : '#fff';
+      const a = paramsData[i], b = paramsData[i+1];
+      tr.innerHTML = `<td style="padding:5px 8px;color:#64748b;width:115px;">${a[0]}</td>
+        <td style="padding:5px 8px;font-weight:600;color:#0f172a;width:130px;">${a[1]}</td>` +
+        (b ? `<td style="padding:5px 8px;color:#64748b;width:115px;border-left:1px solid #e2e8f0;">${b[0]}</td>
+        <td style="padding:5px 8px;font-weight:600;color:#0f172a;">${b[1]}</td>` : `<td colspan="2"></td>`);
+    }
 
     // ══ POLICY PAGES: scenario comparison + cost / investment / resilience ══
     const scen = buildScenarioSet();
@@ -4318,7 +4455,7 @@ async function generateReport() {
       const sc = scen.list;
       const cur = sc.find(x => x.custom).m, today = sc.find(x => x.today).m;
       const fM = v => v>=1e9 ? `$${(v/1e9).toFixed(1)} bn` : v>0 ? `$${Math.round(v/1e6)} m` : '$0';
-      const shortName = n => ({ 'Today (current grid)':'Today','Blueprint 2030':'Blueprint',
+      const shortName = n => ({ 'Today (current grid)':'Today','My Blueprint 2030':'My Blueprint',
         'Residential Solar Revolution':'Resi solar','Utility Solar & Wind':'Utility VRE','LNG Import':'LNG' }[n] || 'Your plan');
       const ml = m => `${m>=0?'+':''}${Math.round(m)}%`;
       const byCost = [...sc].sort((a,b)=>a.m.lcoe-b.m.lcoe);
@@ -4350,12 +4487,11 @@ async function generateReport() {
       ex.innerHTML = authorStrip + verdict +
         block('Cost', `The cost of grid electricity is <b>$${Math.round(cur.lcoe)}/MWh</b> including an $80/t carbon price —
           ${dCost<=0?`$${Math.abs(Math.round(dCost))} lower than`:`$${Math.round(dCost)} higher than`} today's $${Math.round(today.lcoe)}/MWh,
-          with an average wholesale price of $${Math.round(cur.marg)}/MWh.
-          ${byCost[0].custom?'It is the lowest-cost pathway compared here.':`The lowest-cost pathway compared is ${shortName(byCost[0].name)} at $${Math.round(byCost[0].m.lcoe)}/MWh.`}`) +
+          with an average wholesale price of $${Math.round(cur.marg)}/MWh.`) +
         block('Investment', `Delivering this pathway requires about <b>${fM(cur.buildCost)}</b> of new generation and storage beyond today's fleet.
-          Existing hydro, geothermal and gas plant are already built and are not re-counted; residential rooftop solar is excluded from the public-investment figure.`) +
-        block('Resilience', `At the winter peak of <b>${f0(scen.peakMW)} MW</b>, firm capacity covers demand with a <b>${ml(cur.marginWith)}</b> margin with gas.
-          Remove gas and the margin is <b style="color:${cur.marginWithout>=0?'#15803d':'#dc2626'};">${ml(cur.marginWithout)}</b> —
+          Existing hydro, geothermal and gas plant are already built and are not re-counted.`) +
+        block('Resilience', `Firm capacity covers the winter peak with a <b>${ml(cur.marginWith)}</b> margin including gas.
+          Before gas, the margin is <b style="color:${cur.marginWithout>=0?'#15803d':'#dc2626'};">${ml(cur.marginWithout)}</b> —
           ${cur.marginWithout>=0?'the clean fleet (hydro, geothermal, batteries) can hold the winter peak on its own.':'gas remains load-bearing for winter security.'}
           Renewables supply <b>${Math.round(cur.renPct)}%</b> of annual electricity; unmet demand is <b>${cur.unsPct.toFixed(2)}%</b>.`) +
         `<div class="rpt-label" style="margin-top:4px;">Key findings</div>
@@ -4363,7 +4499,6 @@ async function generateReport() {
            <li>Renewable share moves from ${Math.round(today.renPct)}% today to <b>${Math.round(cur.renPct)}%</b> under this pathway.</li>
            <li>Carbon intensity changes from ${Math.round(today.carbInt)} to <b>${Math.round(cur.carbInt)} gCO₂/kWh</b>.</li>
            <li>Winter-peak security ${cur.marginWithout>=0?'no longer depends on gas':'still depends on gas'} (margin without gas: ${ml(cur.marginWithout)}).</li>
-           <li>${sc.filter(x=>x.m.marginWithout>=0 && !x.today).map(x=>shortName(x.name)).join(', ')||'No'} scenario(s) can meet the winter peak without any gas.</li>
          </ul>`;
 
       // ── SCENARIO COMPARISON (scenarios as columns) ──
@@ -4380,14 +4515,15 @@ async function generateReport() {
         return `${d>0?'+':'−'}${val} ${unit}`;
       };
       const rows = [
-        { sec:'New capacity built (vs today’s fleet)' },
-        { label:'Wind',            f:x=>capCell(x.cap.wind,  tc.wind,  'GW', 1) },
-        { label:'Solar (grid)',    f:x=>capCell(x.cap.solar, tc.solar, 'GW', 1) },
-        { label:'Battery storage', f:x=>capCell(x.cap.batt/1000, tc.batt/1000, 'GWh', 1) },
-        { label:'Geothermal',      f:x=>capCell(x.cap.geo,   tc.geo,   'MW', 0) },
-        { label:'Gas',             f:x=>capCell(x.cap.gas,   tc.gas,   'MW', 0) },
-        { label:'Coal',            f:x=>capCell(x.cap.coal,  tc.coal,  'MW', 0) },
-        { label:'Rooftop solar',   f:x=>x.cap.domSolar ? '<span style="color:#15803d;font-weight:600;">Added</span>' : '<span style="color:#94a3b8;">no change</span>' },
+        { sec:"New capacity built (vs today's fleet)" },
+        { label:'Wind',                f:x=>capCell(x.cap.wind,  tc.wind,  'GW', 1) },
+        { label:'Solar (grid)',        f:x=>capCell(x.cap.solar, tc.solar, 'GW', 1) },
+        { label:'Battery (grid)',      f:x=>capCell(x.cap.batt/1000, tc.batt/1000, 'GWh', 1) },
+        { label:'Geothermal',          f:x=>capCell(x.cap.geo,   tc.geo,   'MW', 0) },
+        { label:'Gas',                 f:x=>capCell(x.cap.gas,   tc.gas,   'MW', 0) },
+        { label:'Coal',                f:x=>capCell(x.cap.coal,  tc.coal,  'MW', 0) },
+        { label:'Rooftop solar',       f:x=>x.cap.domSolarGW > 0.05 ? `${x.cap.domSolarGW.toFixed(1)} GW` : '<span style="color:#94a3b8;">none</span>' },
+        { label:'Battery (residential)',f:x=>x.cap.domBattGWh > 0.05 ? `${x.cap.domBattGWh.toFixed(1)} GWh` : '<span style="color:#94a3b8;">none</span>' },
         { sec:'Outcomes' },
         { label:'Renewable electricity', f:x=>`${Math.round(x.m.renPct)}%` },
         { label:'Carbon',                f:x=>`${Math.round(x.m.carbInt)} g` },
@@ -4456,7 +4592,16 @@ async function generateReport() {
           <tbody>${invTbl || '<tr><td colspan="4" style="padding:8px;color:#64748b;">No new generation or storage — runs on today’s fleet.</td></tr>'}</tbody>
           <tfoot><tr style="font-weight:700;"><td style="padding:6px 8px;">Total new build</td><td></td><td></td><td style="text-align:right;padding:6px 8px;">${fM(invTot)}</td></tr></tfoot>
         </table>`;
-      mkChart(ci.querySelector('#ci-cost'), 'bar', { labels, datasets:[{ data:sc.map(x=>Math.round(x.m.lcoe)), backgroundColor:barCol, borderWidth:0 }] }, cmpOpts('$/MWh'), 150);
+      const stackOpts = JSON.parse(JSON.stringify(cmpOpts('$/MWh')));
+      stackOpts.scales.x.stacked = true; stackOpts.scales.y.stacked = true;
+      stackOpts.plugins.legend = { display:true, position:'top', labels:{ font:{size:8}, boxWidth:10 } };
+      const lcoeDs = (label, key, color) => ({ label, data:sc.map(x=>x.m.lcoeBreakdown[key]||0), backgroundColor:color, borderWidth:0, stack:'s' });
+      mkChart(ci.querySelector('#ci-cost'), 'bar', { labels, datasets:[
+        lcoeDs('Renewables', 'renewables', '#0d9e6e'),
+        lcoeDs('Storage',    'storage',    '#f59e0b'),
+        lcoeDs('Thermal',    'thermal',    '#64748b'),
+        lcoeDs('Carbon',     'carbon',     '#dc2626'),
+      ] }, stackOpts, 150);
 
       // ── MEETING THE WINTER PEAK ──
       const pkB = pg('Meeting the Winter Peak', 'Firm capacity vs the highest demand of the year');
@@ -4476,6 +4621,50 @@ async function generateReport() {
         ] },
         { plugins:{legend:{display:false},tooltip:{enabled:false}},
           scales:{ x:{ ticks:{font:{size:9}}, grid:{display:false} }, y:{ title:{display:true,text:'Firm capacity (MW)',font:{size:9}}, ticks:{font:{size:9}}, min:0, grid:{color:'#f1f5f9'} } } }, 200);
+
+      // ── DRY-YEAR RESILIENCE ──
+      const dryB = pg('Dry-year Resilience', 'Hydro inflows 20% below average — what happens to fuel use?');
+      if (gDryRun && gMoBase && gMoBase.length) {
+        const dryFossil = mo => sum(mo,'niGas') + sum(mo,'niCoal');
+        const dryPeakFossil = pp => { let m=0; for (const x of (pp||[])) { const f=(x.niGas||0)+(x.niCoal||0); if(f>m) m=f; } return m; };
+        const dryHydroPct = mo => { const d=sum(mo,'niDemand')+sum(mo,'siDemand'); return d>0 ? (sum(mo,'niHydro')+sum(mo,'siHydro'))/d*100:0; };
+        const todayFossil = dryFossil(gMoBase), planFossil = dryFossil(gMo);
+        const todayPeak   = dryPeakFossil(gPpBase), planPeak = dryPeakFossil(tsData);
+        const avoided = Math.max(0, todayFossil - planFossil);
+        const avoidPct = todayFossil > 0 ? Math.round(avoided/todayFossil*100) : 0;
+        const statBox = (label, val, sub, accent) =>
+          `<div style="border:1px solid #e2e8f0;border-left:3px solid ${accent};border-radius:4px;padding:10px 12px;background:#f8fafc;">
+             <div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:3px;">${label}</div>
+             <div style="font-size:22px;font-weight:700;color:#0f172a;line-height:1;">${val}</div>
+             <div style="font-size:8.5px;color:#64748b;margin-top:2px;">${sub}</div></div>`;
+        dryB.innerHTML = `
+          <p style="font-size:10.5px;color:#374151;line-height:1.65;margin:0 0 12px;">
+            In a dry year, hydro inflows are modelled at 80% of average. South Island hydro — roughly 55% of NZ electricity — is most affected.
+            This section compares gas and coal use under today's grid versus your chosen pathway in that drought scenario.
+            The dry-year simulation uses 2024 actual hydro data, already a below-average year, then applies a further 20% reduction.</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+            ${statBox('Fuel burned — your plan', `${Math.round(planFossil).toLocaleString()} GWh`, `${avoidPct}% less than today's grid`, avoidPct>0?'#0d9e6e':'#dc2626')}
+            ${statBox('Fuel burned — today', `${Math.round(todayFossil).toLocaleString()} GWh`, 'gas + coal in a dry year', '#475569')}
+            ${statBox('Backup capacity needed', `${Math.round(planPeak).toLocaleString()} MW`, `peak thermal kept (today: ${Math.round(todayPeak).toLocaleString()} MW)`, '#d97706')}
+          </div>
+          <div id="dry-rpt-chart"></div>
+          <p style="font-size:9.5px;color:#64748b;line-height:1.6;margin-top:10px;">
+            Hydro as share of annual generation: today ${Math.round(dryHydroPct(gMoBase))}% → this pathway ${Math.round(dryHydroPct(gMo))}%.
+            Reduced hydro dependence directly lowers the fuel risk in drought years.</p>`;
+        mkChart(dryB.querySelector('#dry-rpt-chart'), 'bar',
+          { labels:[`Today's grid`, curName],
+            datasets:[
+              { label:'Gas',  data:[+sum(gMoBase,'niGas').toFixed(0),  +sum(gMo,'niGas').toFixed(0)],  backgroundColor:'#475569', stack:'f', borderWidth:0 },
+              { label:'Coal', data:[+sum(gMoBase,'niCoal').toFixed(0), +sum(gMo,'niCoal').toFixed(0)], backgroundColor:'#0f172a', stack:'f', borderWidth:0 },
+            ] },
+          { plugins:{legend:{display:true,position:'top',labels:{font:{size:9},boxWidth:10}},tooltip:{enabled:false}},
+            scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},y:{stacked:true,min:0,title:{display:true,text:'GWh',font:{size:9}},ticks:{font:{size:9}}}}},
+          200);
+      } else {
+        dryB.innerHTML = `<p style="font-size:11px;color:#64748b;line-height:1.7;padding:16px 0;">
+          This section requires a dry-year run. Before generating the report, click <b>Run vs Dry Year</b>
+          to re-run the simulation with reduced hydro inflows (2024 data − 20%).</p>`;
+      }
     }
 
     // ── PAGE 2: NATIONAL MIX ──────────────────────────────
@@ -4517,17 +4706,17 @@ async function generateReport() {
       fuelListEl.appendChild(row);
     });
 
-    // ── Island monthly charts appended to page 2 (natBody) ─
+    // ── NI/SI ISLAND MIXES (appended below pie on national page) ──
     if (gMo.length) {
       const annMax = Math.ceil(Math.max(...gMo.map(m=>m.niDemand+m.niCurtail), ...gMo.map(m=>m.siDemand+m.siCurtail)) / 500) * 500;
       const annOpts = { plugins:{ legend:{ position:'top', labels:RF.legend } },
         scales:{ x:{stacked:true, ticks:{...RF.tick,maxRotation:45}},
           y:{stacked:true, max:annMax, title:{display:true,text:'GWh',...RF.title}, ticks:RF.tick} } };
 
-      const islandSub = document.createElement('div');
-      islandSub.className = 'rpt-label'; islandSub.style.marginTop = '16px';
-      islandSub.textContent = 'Monthly Generation by Island';
-      natBody.appendChild(islandSub);
+      const islandHd = document.createElement('div');
+      islandHd.className = 'rpt-label'; islandHd.style.marginTop = '16px';
+      islandHd.textContent = 'Monthly Generation by Island';
+      natBody.appendChild(islandHd);
       const islandGrid = document.createElement('div');
       islandGrid.className = 'rpt-grid2';
       natBody.appendChild(islandGrid);
@@ -4716,7 +4905,7 @@ async function generateReport() {
       </div>
       <div style="background:#f0f6ff;border:1px solid #d6e7f6;border-left:4px solid #1a4d7a;border-radius:6px;padding:10px 13px;margin-top:13px;">
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1a4d7a;margin-bottom:4px;">New Zealand — eight years (since 2018)</div>
-        <div style="font-size:10px;color:#374151;line-height:1.65;">At <b>Infratec</b> he built a 200&nbsp;MW project pipeline in 12 months and took <b>New Zealand's first utility-scale battery from concept to final investment decision</b>; delivered the country's first grid-scale battery frequency-response services; ran Pacific Islands microgrid programmes (Tonga, Solomon Islands, Tuvalu); piloted with Transpower; and advised the New Zealand Government, including the Minister of Energy. Through Future Zero he develops community-energy investment models in New Zealand, and built the MyGridNZ model.</div>
+        <div style="font-size:10px;color:#374151;line-height:1.65;">At <b>Infratec</b> he developed a utility-scale solar and storage pipeline; delivered <b>New Zealand's first grid-scale battery frequency-response services</b>; ran Pacific Islands microgrid programmes (Tonga, Solomon Islands, Tuvalu); piloted with Transpower; and advised the New Zealand Government, including the Minister of Energy. Through Future Zero he develops community-energy investment models in New Zealand, and built the MyGridNZ model.</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:4px;">
         <div>
@@ -4739,6 +4928,20 @@ async function generateReport() {
         </div>
       </div>
       <p style="font-size:8.5px;color:#94a3b8;margin-top:14px;line-height:1.5;">This report and the MyGridNZ model are provided for analysis and discussion. Figures are modelled estimates based on historical New Zealand metered data and the documented assumptions.</p>`;
+
+    // Reorder report pages: desired sequence differs from creation order
+    // Created order: Cover, ExecSumm, ScenComp, Cost, Peak, DryYear, NatMix, Islands, Dispatch…
+    // Desired order: Cover, ExecSumm, NatMix, ScenComp, Cost, Islands, Peak, DryYear, Dispatch…
+    {
+      const findPgEl = title => [...rpt.querySelectorAll('.rpt-hd-title')]
+        .find(el => el.textContent.trim() === title)?.closest('.rpt-pg');
+      [
+        ['National Generation Mix', 'Scenario Comparison'],
+      ].forEach(([move, before]) => {
+        const a = findPgEl(move), b = findPgEl(before);
+        if (a && b) rpt.insertBefore(a, b);
+      });
+    }
 
     // ── Generate and download PDF ──────────────────────────
     // Give Chart.js time to complete all synchronous draws before capture
@@ -4787,5 +4990,12 @@ document.getElementById('docs-section').addEventListener('toggle', function() {
   document.getElementById('docs-arrow').style.transform = this.open ? 'rotate(90deg)' : '';
 });
 </script>
+  <div id="sim-overlay" role="status" aria-live="polite">
+    <div style="background:#fff;border-radius:16px;padding:36px 44px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.35);min-width:260px;">
+      <div class="sim-spinner"></div>
+      <div id="sim-overlay-msg" style="font-size:15px;font-weight:700;color:#1a4d7a;margin-top:18px;line-height:1.4;"></div>
+      <div style="font-size:11.5px;color:#94a3b8;margin-top:6px;">Simulating a full year of NZ electricity…</div>
+    </div>
+  </div>
 </body>
 </html>

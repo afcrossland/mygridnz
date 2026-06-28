@@ -1,5 +1,18 @@
 /* nav.js — injects header + footer into every page */
 
+// Google Analytics 4
+(function() {
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-T4S9C4N12S';
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+  gtag('config', 'G-T4S9C4N12S');
+})();
+
 const NAV_HTML = `
 <header id="site-header">
   <div class="header-inner">
@@ -10,7 +23,6 @@ const NAV_HTML = `
     <nav id="main-nav">
       <ul>
         <li><a href="/live/">Live</a></li>
-        <li><a href="/sim/" class="nav-cta">Grid Simulator</a></li>
         <li>
           <a href="/last-28-days/">Electricity Data ▾</a>
           <ul>
@@ -20,6 +32,7 @@ const NAV_HTML = `
           </ul>
         </li>
         <li><a href="/2030grid/">2030 Blueprint</a></li>
+        <li><a href="/sim/" class="nav-cta">Simulator</a></li>
         <li>
           <a href="/about/">About ▾</a>
           <ul>
