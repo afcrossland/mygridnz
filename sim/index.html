@@ -133,6 +133,18 @@
     .sc-dryhd { margin-top:7px; padding-top:7px; border-top:1px dashed var(--border);
       font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#b45309; }
     .sc-dryhd ~ .sc-stat b { color:#b45309; }
+    /* ── Results sticky jump-nav ─────────────────────────────────── */
+    /* ── Results tabs ────────────────────────────────────────── */
+    .res-tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin:0 0 24px; overflow-x:auto; scrollbar-width:none; }
+    .res-tabs::-webkit-scrollbar { display:none; }
+    .res-tab { flex-shrink:0; padding:10px 18px; font-size:13px; font-weight:600; border:none; background:none; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:color .15s, border-color .15s; }
+    .res-tab:hover { color:var(--text); }
+    .res-tab.active { color:var(--brand); border-bottom-color:var(--brand); }
+    .res-tab-panel { display:none; }
+    .res-tab-panel.active { display:block; }
+    .ts-mini-nav { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:-4px 0 16px; }
+    .ts-mini-nav .btn-nav { font-size:11px; padding:3px 9px; }
+    .ts-mini-lbl { font-size:11px; color:var(--muted); min-width:80px; text-align:center; }
     @keyframes sim-spin { to { transform:rotate(360deg); } }
     .sim-spinner { width:44px;height:44px;border:4px solid #e2e8f0;border-top-color:#1a4d7a;border-radius:50%;animation:sim-spin .75s linear infinite;margin:0 auto; }
     #sim-overlay { display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.45);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);align-items:center;justify-content:center; }
@@ -677,6 +689,15 @@
   <!-- Results -->
   <div id="results" hidden>
 
+    <div class="res-tabs" role="tablist">
+      <button class="res-tab active" data-tab="tab-summary"    onclick="showTab('tab-summary')">Summary</button>
+      <button class="res-tab"        data-tab="tab-dispatch"   onclick="showTab('tab-dispatch')">Dispatch</button>
+      <button class="res-tab"        data-tab="tab-storage"    onclick="showTab('tab-storage')">Storage &amp; Flex</button>
+      <button class="res-tab"        data-tab="tab-resilience" onclick="showTab('tab-resilience')">Resilience</button>
+      <button class="res-tab"        data-tab="tab-costs"      onclick="showTab('tab-costs')">Costs</button>
+    </div>
+
+    <div id="tab-summary" class="res-tab-panel active">
     <!-- ── Plain-language Today vs Your Plan headline ── -->
     <div class="headline-band" id="headline-band"></div>
 
@@ -731,49 +752,9 @@
         if (this.open) { charts['chart-ni']?.resize(); charts['chart-si']?.resize(); }
       });
     </script>
+    </div><!-- /tab-summary -->
 
-    <!-- ── Meeting the winter peak (collapsed by default) ── -->
-    <details class="ts-section" id="peakcap-section">
-      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-size:12px;color:var(--muted);" id="peakcap-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Meeting the winter peak</span>
-        <span style="font-size:11px;color:var(--muted);">— firm capacity vs peak demand, with and without gas</span>
-      </summary>
-      <div class="ts-section-hd" style="margin-bottom:14px;">
-        <p>Can your scenario cover the highest demand of the year? Each technology counts only its <strong>firm (dependable) capacity</strong> — the share you can rely on during a winter evening peak. Wind counts for only 10% and solar 0% (the peak is after dark), while hydro, geothermal, gas and batteries count for most of their rating. The two bars show what firm capacity <strong>your scenario can provide</strong> — with and without gas — against the historical metered peak. Note: historical metered demand underestimates the true system peak because it does not include load served behind-the-meter by distributed generation; the real peak the grid must serve could be somewhat higher.</p>
-      </div>
-      <div id="peakcap-summary" class="peakcap-summary"></div>
-      <div class="chart-box ts-full"><canvas id="peakcap-chart"></canvas></div>
-      <p class="sl-sub" id="peakcap-note" style="margin-top:10px;"></p>
-    </details>
-    <script>
-      document.getElementById('peakcap-section').addEventListener('toggle', function() {
-        document.getElementById('peakcap-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) renderPeakCapacity();
-      });
-    </script>
-
-    <!-- ── Dry-year resilience (collapsed by default) ── -->
-    <details class="ts-section" id="dryyear-section">
-      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-size:12px;color:var(--muted);" id="dryyear-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Dry-year resilience</span>
-        <span style="font-size:11px;color:var(--muted);">— can the plan survive a drought without burning fossil fuel?</span>
-      </summary>
-      <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p><strong>Hydro is rain-fed; wind and sun are not.</strong> In a dry year — when inflows to Lake Pukaki and the Waitaki catchment are low — South Island storage delivers far less, and today's grid fills the gap by burning gas and coal. (North Island hydro is largely run-of-river; the Waikato chain has limited storage.) Use <strong>”Run vs Dry Year”</strong> at the top to re-run everything with reduced hydro — this section then compares how much fossil backup <strong>today's grid</strong> needs versus <strong>your plan</strong> to keep the lights on.</p>
-      </div>
-      <div id="dryyear-summary" class="dry-summary"></div>
-      <div class="chart-box ts-full"><h3>Fossil backup needed (GWh of gas + coal) — today's grid vs your plan</h3><canvas id="dryyear-chart"></canvas></div>
-      <p class="sl-sub" id="dryyear-narr" style="margin-top:12px;"></p>
-    </details>
-    <script>
-      document.getElementById('dryyear-section').addEventListener('toggle', function() {
-        document.getElementById('dryyear-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) renderDryYear();
-      });
-    </script>
-
+    <div id="tab-dispatch" class="res-tab-panel">
     <!-- ── Energy-flow Sankey: today vs your plan (collapsed by default) ── -->
     <style>
       #sankey-pair { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
@@ -808,8 +789,9 @@
       <div class="ts-view">
         <button class="btn-nav btn-nav--on" id="btn-7d"  data-days="7"  onclick="setTsView(7)">7 days</button>
         <button class="btn-nav"             id="btn-30d" data-days="30" onclick="setTsView(30)">Month</button>
+        <button class="btn-nav"             id="btn-yr"  data-days="0"  onclick="setTsView(0)">Full year</button>
       </div>
-      <div class="ts-nav">
+      <div class="ts-nav" id="ts-nav-arrows">
         <button class="btn-nav" onclick="shiftTs(-1)">◀ Prev</button>
         <span id="ts-label"></span>
         <button class="btn-nav" onclick="shiftTs(1)">Next ▶</button>
@@ -859,10 +841,12 @@
     <script>
       document.getElementById('base-dispatch-section').addEventListener('toggle', function() {
         document.getElementById('base-dispatch-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) renderTsCharts();
+        if (this.open) withNav(makeTsNavWidget('base-dispatch-section', renderBaseDispatch), renderBaseDispatch);
       });
     </script>
+    </div><!-- /tab-dispatch -->
 
+    <div id="tab-storage" class="res-tab-panel">
     <!-- ── Residential Energy Supply (collapsed by default) ── -->
     <details class="ts-section" id="dom-energy-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -889,6 +873,7 @@
     <script>
       document.getElementById('dom-energy-section').addEventListener('toggle', function() {
         document.getElementById('dom-energy-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) withNav(makeTsNavWidget('dom-energy-section', renderDomEnergyCharts), renderDomEnergyCharts);
       });
     </script>
 
@@ -910,6 +895,7 @@
     <script>
       document.getElementById('battery-section').addEventListener('toggle', function() {
         document.getElementById('battery-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) withNav(makeTsNavWidget('battery-section', renderBatteryCharts), renderBatteryCharts);
       });
     </script>
 
@@ -930,7 +916,7 @@
     <script>
       document.getElementById('flex-section').addEventListener('toggle', function() {
         document.getElementById('flex-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) renderTsCharts();
+        if (this.open) withNav(makeTsNavWidget('flex-section', renderFlexCharts), renderFlexCharts);
       });
     </script>
 
@@ -948,35 +934,64 @@
       <div class="ts-charts">
         <div class="chart-box"><h3>Hydro reservoir levels — monthly average (GWh)</h3><canvas id="chart-res"></canvas></div>
         <div class="chart-box"><h3>Unserved energy and curtailment (GWh)</h3><canvas id="chart-unserved"></canvas></div>
-        <div class="chart-box"><h3>Wind &amp; solar spilled — North Island (MW)</h3><canvas id="ts-curtail-ni"></canvas></div>
-        <div class="chart-box"><h3>Wind &amp; solar spilled — South Island (MW)</h3><canvas id="ts-curtail-si"></canvas></div>
+      </div>
+      <div id="curtail-nav-host"></div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3 id="curtail-ni-hd">Wind &amp; solar spilled — North Island (MW)</h3><canvas id="ts-curtail-ni"></canvas></div>
+        <div class="chart-box"><h3 id="curtail-si-hd">Wind &amp; solar spilled — South Island (MW)</h3><canvas id="ts-curtail-si"></canvas></div>
       </div>
     </details>
     <script>
       document.getElementById('reservoirs-section').addEventListener('toggle', function() {
         document.getElementById('reservoirs-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) { charts['chart-res']?.resize(); charts['chart-unserved']?.resize(); }
+        if (this.open) {
+          charts['chart-res']?.resize(); charts['chart-unserved']?.resize();
+          withNav(makeTsNavWidget('reservoirs-section', renderCurtailCharts, 'curtail-nav-host'), renderCurtailCharts);
+        }
+      });
+    </script>
+    </div><!-- /tab-storage -->
+
+    <div id="tab-resilience" class="res-tab-panel">
+    <!-- ── Meeting the winter peak ── -->
+    <details class="ts-section" id="peakcap-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="peakcap-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Meeting the winter peak</span>
+        <span style="font-size:11px;color:var(--muted);">— firm capacity vs peak demand, with and without gas</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:14px;">
+        <p>Can your scenario cover the highest demand of the year? Each technology counts only its <strong>firm (dependable) capacity</strong> — the share you can rely on during a winter evening peak. Wind counts for only 10% and solar 0% (the peak is after dark), while hydro, geothermal, gas and batteries count for most of their rating. The two bars show what firm capacity <strong>your scenario can provide</strong> — with and without gas — against the historical metered peak. Note: historical metered demand underestimates the true system peak because it does not include load served behind-the-meter by distributed generation; the real peak the grid must serve could be somewhat higher.</p>
+      </div>
+      <div id="peakcap-summary" class="peakcap-summary"></div>
+      <div class="chart-box ts-full"><canvas id="peakcap-chart"></canvas></div>
+      <p class="sl-sub" id="peakcap-note" style="margin-top:10px;"></p>
+    </details>
+    <script>
+      document.getElementById('peakcap-section').addEventListener('toggle', function() {
+        document.getElementById('peakcap-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) renderPeakCapacity();
       });
     </script>
 
-    <!-- ── Costs (collapsed by default) ── -->
-    <details class="ts-section" id="costs-section">
+    <!-- ── Dry-year resilience ── -->
+    <details class="ts-section" id="dryyear-section">
       <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-size:12px;color:var(--muted);" id="costs-arrow">▶</span>
-        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Energy costs</span>
-        <span style="font-size:11px;color:var(--muted);">— monthly cost of generating power, before and after your scenario</span>
+        <span style="font-size:12px;color:var(--muted);" id="dryyear-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Dry-year resilience</span>
+        <span style="font-size:11px;color:var(--muted);">— can the plan survive a drought without burning fossil fuel?</span>
       </summary>
       <div class="ts-section-hd" style="margin-bottom:12px;">
-        <p>Two cost methods compared month by month. <strong>Marginal price</strong> is the generation-weighted average short-run variable cost — it falls when cheap renewables dominate and rises when gas sets the price. <strong>System LCOE</strong> spreads the full capital and operating cost of every asset across the electricity delivered — it captures the true cost of building and running the grid, including wind and solar whose low marginal cost still requires large capital investment.</p>
+        <p><strong>Hydro is rain-fed; wind and sun are not.</strong> In a dry year — when inflows to Lake Pukaki and the Waitaki catchment are low — South Island storage delivers far less, and today's grid fills the gap by burning gas and coal. (North Island hydro is largely run-of-river; the Waikato chain has limited storage.) Use <strong>"Run vs Dry Year"</strong> at the top to re-run everything with reduced hydro — this section then compares how much fossil backup <strong>today's grid</strong> needs versus <strong>your plan</strong> to keep the lights on.</p>
       </div>
-      <div class="ts-charts">
-        <div class="chart-box"><h3>Wholesale price — before and after (NZD/MWh)</h3><canvas id="chart-cost-marg"></canvas></div>
-        <div class="chart-box"><h3>Mix LCOE — before and after (NZD/MWh)</h3><canvas id="chart-cost-lcoe"></canvas></div>
-      </div>
+      <div id="dryyear-summary" class="dry-summary"></div>
+      <div class="chart-box ts-full"><h3>Fossil backup needed (GWh of gas + coal) — today's grid vs your plan</h3><canvas id="dryyear-chart"></canvas></div>
+      <p class="sl-sub" id="dryyear-narr" style="margin-top:12px;"></p>
     </details>
     <script>
-      document.getElementById('costs-section').addEventListener('toggle', function() {
-        document.getElementById('costs-arrow').textContent = this.open ? '▼' : '▶';
+      document.getElementById('dryyear-section').addEventListener('toggle', function() {
+        document.getElementById('dryyear-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) renderDryYear();
       });
     </script>
 
@@ -1078,9 +1093,31 @@
     <script>
       document.getElementById('operability-section').addEventListener('toggle', function() {
         document.getElementById('operability-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) withNav(makeTsNavWidget('operability-section', renderOperabilityCharts), renderOperabilityCharts);
       });
-      document.getElementById('detailed-settings').addEventListener('toggle', function() {
-        document.getElementById('detailed-settings-arrow').textContent = this.open ? '▼' : '▶';
+    </script>
+    </div><!-- /tab-resilience -->
+
+    <div id="tab-costs" class="res-tab-panel">
+    <!-- ── Energy costs ── -->
+    <details class="ts-section" id="costs-section">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--muted);" id="costs-arrow">▶</span>
+        <span style="font-size:.95rem;font-weight:600;color:var(--text);">Energy costs</span>
+        <span style="font-size:11px;color:var(--muted);">— monthly cost of generating power, before and after your scenario</span>
+      </summary>
+      <div class="ts-section-hd" style="margin-bottom:12px;">
+        <p>Two cost methods compared month by month. <strong>Marginal price</strong> is the generation-weighted average short-run variable cost — it falls when cheap renewables dominate and rises when gas sets the price. <strong>System LCOE</strong> spreads the full capital and operating cost of every asset across the electricity delivered — it captures the true cost of building and running the grid, including wind and solar whose low marginal cost still requires large capital investment.</p>
+      </div>
+      <div class="ts-charts">
+        <div class="chart-box"><h3>Wholesale price — before and after (NZD/MWh)</h3><canvas id="chart-cost-marg"></canvas></div>
+        <div class="chart-box"><h3>Mix LCOE — before and after (NZD/MWh)</h3><canvas id="chart-cost-lcoe"></canvas></div>
+      </div>
+    </details>
+    <script>
+      document.getElementById('costs-section').addEventListener('toggle', function() {
+        document.getElementById('costs-arrow').textContent = this.open ? '▼' : '▶';
+        if (this.open) withNav(makeTsNavWidget('costs-section', renderCostCharts), renderCostCharts);
       });
     </script>
 
@@ -1126,6 +1163,7 @@
       </p>
     </div>
 
+    </div><!-- /tab-costs -->
   </div><!-- /results -->
 
   <!-- ═══════════════════════════════════════════════════════
@@ -1440,6 +1478,15 @@ function preloadBlueprint() {
   setSlider('dom-storage-pct',   90);   // 90% of solar homes add a battery
   setSlider('dom-batt-kwh',      15);
   document.getElementById('sim-status').textContent = 'Blueprint scenario loaded — click Run to simulate.';
+}
+
+function showTab(id) {
+  document.querySelectorAll('.res-tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.res-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+  const panel = document.getElementById(id);
+  if (panel) panel.classList.add('active');
+  // Dispatch tab needs charts resized after becoming visible
+  if (id === 'tab-dispatch') setTimeout(renderTsCharts, 50);
 }
 
 function selectPreset(fn, id, col) {
@@ -3008,9 +3055,23 @@ function renderAnnualCharts(mo) {
 // ═══════════════════════════════════════════════════════
 let tsWindowDays = 7, tsData = [], tsOffset = 0, gPpBase = [], gRawData = [], gSimData = [];
 
+// Aggregate half-hourly data into 12 monthly records (values summed — MW×0.5h = MWh)
+function tsYrAgg(data) {
+  if (!data.length) return [];
+  const keys = Object.keys(data[0]).filter(k => k !== 'dt');
+  const months = {};
+  for (const p of data) {
+    const m = p.dt.slice(0, 7);
+    if (!months[m]) { months[m] = { dt: m + '-01 00:00' }; for (const k of keys) months[m][k] = 0; }
+    for (const k of keys) months[m][k] += (p[k] || 0);
+  }
+  return Object.keys(months).sort().map(m => months[m]);
+}
+
 function tsWindow() { return tsWindowDays * 48; }
 
 function tsSlice() {
+  if (tsWindowDays === 0)  return tsYrAgg(tsData);
   if (tsWindowDays === 30) {
     const ym = (tsData[tsOffset]?.dt || '').slice(0, 7);
     if (!ym) return [];
@@ -3029,12 +3090,14 @@ function fmtDtDay(dt) {
 
 function tsXLabels() {
   const s = tsSlice();
-  if (tsWindowDays <= 7) return s.map(p => fmtDtFull(p.dt));
+  if (tsWindowDays === 0)  return s.map(p => MONS3[+p.dt.slice(5, 7) - 1] || '');
+  if (tsWindowDays <= 7)   return s.map(p => fmtDtFull(p.dt));
   return s.map((p, i) => i % 48 === 0 ? fmtDtDay(p.dt) : '');
 }
 
 function tsLabel(slice) {
   if (!slice.length) return '';
+  if (tsWindowDays === 0)  return 'Full year — GWh by month';
   if (tsWindowDays === 30) {
     const dt = tsData[tsOffset]?.dt || '';
     return MONS3[+dt.slice(5,7)-1] || '';
@@ -3046,11 +3109,14 @@ function setTsView(days) {
   tsWindowDays = days;
   document.getElementById('btn-7d').classList.toggle('btn-nav--on',  days === 7);
   document.getElementById('btn-30d').classList.toggle('btn-nav--on', days === 30);
-  tsOffset = Math.min(tsOffset, Math.max(0, tsData.length - tsWindow()));
+  document.getElementById('btn-yr').classList.toggle('btn-nav--on',  days === 0);
+  document.getElementById('ts-nav-arrows').style.visibility = days === 0 ? 'hidden' : '';
+  if (days !== 0) tsOffset = Math.min(tsOffset, Math.max(0, tsData.length - tsWindow()));
   renderTsCharts();
 }
 
 function shiftTs(dir) {
+  if (tsWindowDays === 0) return;
   if (tsWindowDays === 30) {
     const ym = (tsData[tsOffset]?.dt || '').slice(0, 7);
     if (!ym) return;
@@ -3066,22 +3132,27 @@ function shiftTs(dir) {
 }
 
 function mkTsDs(label, key, colour, fill) {
-  const alpha = fill ? colour + '40' : colour + '00';
+  const yr = tsWindowDays === 0;
+  const sc = yr ? 0.5 / 1000 : 1;   // MW half-hours → GWh in year mode
   return {
-    label, type:'line',
-    data: tsSlice().map(p => +(p[key] ?? 0).toFixed(1)),
-    borderColor: colour, backgroundColor: alpha,
-    fill: fill ? 'stack' : false, borderWidth: fill ? 0.5 : 1.8,
-    pointRadius: 0, tension: 0.1, stack: fill ? 'g' : undefined,
+    label, type: yr ? 'bar' : 'line',
+    data: tsSlice().map(p => +((p[key] ?? 0) * sc).toFixed(yr ? 0 : 1)),
+    borderColor: colour,
+    backgroundColor: yr ? colour + 'cc' : (fill ? colour + '40' : colour + '00'),
+    fill: yr ? undefined : (fill ? 'stack' : false),
+    borderWidth: yr ? 0 : (fill ? 0.5 : 1.8),
+    pointRadius: 0, tension: 0.1,
+    stack: (fill || yr) ? 'g' : undefined,
   };
 }
 function mkDemand(key) {
+  const yr = tsWindowDays === 0;
+  const sc = yr ? 0.5 / 1000 : 1;
   return {
     label:'Demand', type:'line',
-    data: tsSlice().map(p => +(p[key] ?? 0).toFixed(1)),
-    borderColor: C.Demand, borderWidth: 1.8, borderDash:[4,3],
-    fill:false, pointRadius:0, tension:0.1,
-    // no stack — renders on top after all stacked layers
+    data: tsSlice().map(p => +((p[key] ?? 0) * sc).toFixed(yr ? 0 : 1)),
+    borderColor: C.Demand, borderWidth: yr ? 2 : 1.8, borderDash:[4,3],
+    fill:false, pointRadius: yr ? 3 : 0, tension:0.1,
   };
 }
 
@@ -3091,6 +3162,7 @@ function activeDs(datasets) {
 }
 
 function mkTsChart(id, datasets, xMaxTicks, maxY) {
+  const yr = tsWindowDays === 0;
   charts[id]?.destroy();
   charts[id] = new Chart(document.getElementById(id), {
     data:{ labels: tsXLabels(), datasets },
@@ -3098,12 +3170,12 @@ function mkTsChart(id, datasets, xMaxTicks, maxY) {
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10},
           filter: item => item.text !== '' } },
         tooltip:{ mode:'index', intersect:false, callbacks:{
-          label: ctx => ctx.dataset.label ? `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` : null
+          label: ctx => ctx.dataset.label ? `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} ${yr ? 'GWh' : 'MW'}` : null
         }}},
       scales:{
-        x:{ ticks:{ maxTicksLimit: xMaxTicks, maxRotation:0, autoSkipPadding:6 } },
-        y:{ stacked:true, title:{ display:true, text:'MW' },
-            ...(maxY != null ? { min:0, max:maxY } : {}) },
+        x:{ ticks:{ maxTicksLimit: yr ? 12 : xMaxTicks, maxRotation:0, autoSkipPadding:6 } },
+        y:{ stacked:true, title:{ display:true, text: yr ? 'GWh' : 'MW' },
+            min: 0, ...(maxY != null && !yr ? { max:maxY } : {}) },
       },
     },
   });
@@ -3153,9 +3225,10 @@ function renderCostCharts() {
   if (!gRawData.length) return;
   setChartScale(1.2);
   const mob       = window.innerWidth < 600;
+  const yr        = tsWindowDays === 0;
   const slice     = tsSlice();
-  const baseSlice = gRawData.slice(tsOffset, tsOffset + tsWindow());
-  const labels    = slice.map(p => p.dt.slice(11, 16));
+  const baseSlice = yr ? tsYrAgg(gRawData) : gRawData.slice(tsOffset, tsOffset + tsWindow());
+  const labels    = yr ? slice.map(p => p.dt.slice(0, 7)) : slice.map(p => p.dt.slice(11, 16));
 
   const COST_BEFORE = '#94a3b8';
   const COST_AFTER  = '#1a4d7a';
@@ -3411,6 +3484,71 @@ function renderBaseDispatch() {
   });
 }
 
+function withNav(nav, fn) {
+  const pd = tsWindowDays, po = tsOffset;
+  tsWindowDays = nav.days; tsOffset = nav.offset;
+  try { fn(); } finally { tsWindowDays = pd; tsOffset = po; }
+}
+
+function makeTsNavWidget(sectionId, renderFn, targetId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return { days:7, offset:0 };
+  if (section._tsNav) return section._tsNav;
+  const nav = { days:7, offset:0 };
+  section._tsNav = nav;
+  const el = document.createElement('div');
+  el.className = 'ts-mini-nav';
+  el.innerHTML =
+    '<button class="btn-nav btn-nav--on" data-d="7">7 days</button>' +
+    '<button class="btn-nav" data-d="30">Month</button>' +
+    '<button class="btn-nav" data-d="0">Full year</button>' +
+    '<span class="ts-mini-arrows" style="display:flex;align-items:center;gap:4px;">' +
+    '<button class="btn-nav" data-dir="-1">◄</button>' +
+    '<span class="ts-mini-lbl"></span>' +
+    '<button class="btn-nav" data-dir="1">►</button>' +
+    '</span>';
+  function updateNav() {
+    el.querySelectorAll('[data-d]').forEach(b => b.classList.toggle('btn-nav--on', +b.dataset.d === nav.days));
+    el.querySelector('.ts-mini-arrows').style.visibility = nav.days === 0 ? 'hidden' : '';
+    if (tsData.length) {
+      const pd = tsWindowDays, po = tsOffset;
+      tsWindowDays = nav.days; tsOffset = nav.offset;
+      el.querySelector('.ts-mini-lbl').textContent = tsLabel(tsSlice());
+      tsWindowDays = pd; tsOffset = po;
+    }
+  }
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-d],[data-dir]');
+    if (!b || !tsData.length) return;
+    if (b.dataset.d !== undefined) {
+      nav.days = +b.dataset.d;
+      if (nav.days !== 0) nav.offset = Math.min(nav.offset, Math.max(0, tsData.length - nav.days * 48));
+    } else {
+      const dir = +b.dataset.dir;
+      if (nav.days === 0) return;
+      if (nav.days === 30) {
+        const ym = (tsData[nav.offset]?.dt || '').slice(0, 7);
+        if (!ym) return;
+        const [y, m] = ym.split('-').map(Number);
+        const d = new Date(y, m - 1 + dir, 1);
+        const nYm = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        const idx = tsData.findIndex(p => p.dt.startsWith(nYm));
+        if (idx >= 0) nav.offset = idx;
+      } else {
+        nav.offset = Math.max(0, Math.min(tsData.length - nav.days * 48, nav.offset + dir * nav.days * 48));
+      }
+    }
+    updateNav();
+    withNav(nav, renderFn);
+  });
+  const target = targetId ? document.getElementById(targetId) : null;
+  if (target) { target.innerHTML = ''; target.appendChild(el); }
+  else { const summary = section.querySelector('summary');
+    if (summary) summary.after(el); else section.prepend(el); }
+  updateNav();
+  return nav;
+}
+
 function renderTsCharts() {
   setChartScale(1.2);
   const slice = tsSlice();
@@ -3462,11 +3600,15 @@ function renderTsCharts() {
     natCharge:  p.niCharge + p.siCharge,
     natCurtail: p.niCurtail+ p.siCurtail,
   }));
+  const yr = tsWindowDays === 0;
+  const sc = yr ? 0.5 / 1000 : 1;
   function nd(label, key, col, fill) {
-    return { label, type:'line', data:nat.map(p=>+(p[key]??0).toFixed(1)),
-      borderColor:col, backgroundColor:col+(fill?'40':'00'),
-      fill:fill?'stack':false, borderWidth:fill?.5:1.8,
-      pointRadius:0, tension:.1, stack:fill?'g':undefined };
+    return { label, type: yr ? 'bar' : 'line',
+      data: nat.map(p => +((p[key]??0)*sc).toFixed(yr?0:1)),
+      borderColor:col, backgroundColor: yr ? col+'cc' : col+(fill?'40':'00'),
+      fill: yr ? undefined : (fill?'stack':false),
+      borderWidth: yr ? 0 : (fill?.5:1.8),
+      pointRadius:0, tension:.1, stack: (fill||yr) ? 'g' : undefined };
   }
   charts['ts-nat']?.destroy();
   charts['ts-nat'] = new Chart(document.getElementById('ts-nat'), {
@@ -3480,55 +3622,69 @@ function renderTsCharts() {
       nd('Wood',      'natWood',    C.Wood,     true),
       nd('Gas',       'natGas',     C.Gas,      true),
       nd('Coal',      'natCoal',    C.Coal,     true),
-      { label:'Demand', type:'line', data:nat.map(p=>+p.natDemand.toFixed(1)),
-        borderColor:C.Demand, borderWidth:1.8, borderDash:[4,3], fill:false, pointRadius:0, tension:.1 },
+      { label:'Demand', type:'line', data:nat.map(p=>+(p.natDemand*sc).toFixed(yr?0:1)),
+        borderColor:C.Demand, borderWidth: yr?2:1.8, borderDash:[4,3],
+        fill:false, pointRadius: yr?3:0, tension:.1 },
     ])},
     options:{ responsive:true, animation:false, aspectRatio: mob ? 1.2 : natAR * 1.5,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false }},
-      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit: mob ? 4 : xt,
+        tooltip:{ mode:'index', intersect:false, callbacks:{
+          label: ctx => ctx.dataset.label ? `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} ${yr?'GWh':'MW'}` : null
+        }}},
+      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit: yr ? 12 : (mob ? 4 : xt),
           maxRotation: mob ? 45 : 0, minRotation: mob ? 45 : 0,
           autoSkipPadding:6, font:{ size: mob ? 9 : 12 } } },
-        y:{ stacked:true, min:0, title:{ display:true, text:'MW' } } } },
+        y:{ stacked:true, min:0, title:{ display:true, text: yr?'GWh':'MW' } } } },
   });
 
-  // Curtailment by generation type — NI and SI
+}
+
+function renderCurtailCharts() {
+  const slice = tsSlice();
+  const mob = window.innerWidth < 600;
+  const yr = tsWindowDays === 0;
+  const sc = yr ? 0.5 / 1000 : 1;
+  const unit = yr ? 'GWh' : 'MW';
+  const xt = mob ? (tsWindowDays <= 7 ? 5 : 8) : (tsWindowDays <= 7 ? 14 : 32);
   function mkCurtDs(label, key, colour) {
-    return { label, type:'line',
-      data: slice.map(p => +(p[key] ?? 0).toFixed(1)),
-      borderColor:colour, backgroundColor:colour+'40',
-      fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'c' };
+    return { label, type: yr ? 'bar' : 'line',
+      data: slice.map(p => +((p[key] ?? 0) * sc).toFixed(1)),
+      borderColor:colour, backgroundColor: yr ? colour+'cc' : colour+'40',
+      fill: yr ? undefined : 'stack',
+      borderWidth: yr ? 0 : 0.5, pointRadius:0, tension:.1,
+      stack: yr ? 'g' : 'c' };
   }
   ['ts-curtail-ni','ts-curtail-si'].forEach(id => charts[id]?.destroy());
+  const curtOpts = { responsive:true, animation:false,
+    plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+      tooltip:{ mode:'index', intersect:false, callbacks:{
+        label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(yr ? 1 : 0)} ${unit}` }}},
+    scales:{ x:{ stacked:true, ticks:{ maxTicksLimit: yr ? 12 : xt, maxRotation:0, autoSkipPadding:6 } },
+      y:{ stacked:true, title:{ display:true, text:unit }, min:0 } } };
   charts['ts-curtail-ni'] = new Chart(document.getElementById('ts-curtail-ni'), {
-    type:'line',
-    data:{ labels:tsXLabels(), datasets: activeDs([
-      mkCurtDs('Solar',  'niSolarCurtail', C.Solar),
-      mkCurtDs('Wind',   'niWindCurtail',  C.Wind),
-    ])},
-    options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false, callbacks:{
-          label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
-      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
-  });
+    type: yr ? 'bar' : 'line', data:{ labels:tsXLabels(), datasets: activeDs([
+      mkCurtDs('Solar', 'niSolarCurtail', C.Solar),
+      mkCurtDs('Wind',  'niWindCurtail',  C.Wind),
+    ])}, options:curtOpts });
   charts['ts-curtail-si'] = new Chart(document.getElementById('ts-curtail-si'), {
-    type:'line',
-    data:{ labels:tsXLabels(), datasets: activeDs([
-      mkCurtDs('Solar',  'siSolarCurtail', C.Solar),
-      mkCurtDs('Wind',   'siWindCurtail',  C.Wind),
-    ])},
-    options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false, callbacks:{
-          label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
-      scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
-  });
+    type: yr ? 'bar' : 'line', data:{ labels:tsXLabels(), datasets: activeDs([
+      mkCurtDs('Solar', 'siSolarCurtail', C.Solar),
+      mkCurtDs('Wind',  'siWindCurtail',  C.Wind),
+    ])}, options:curtOpts });
+  const sfx = ` (${unit})`;
+  const niHd = document.getElementById('curtail-ni-hd');
+  const siHd = document.getElementById('curtail-si-hd');
+  if (niHd) niHd.textContent = 'Wind & solar spilled — North Island' + sfx;
+  if (siHd) siHd.textContent = 'Wind & solar spilled — South Island' + sfx;
+}
 
-  // Domestic energy supply — per-home kW, same x-axis as dispatch
-  ['ts-dom-ni','ts-dom-si','ts-dom-soc-ni','ts-dom-soc-si'].forEach(id => charts[id]?.destroy());
+function renderDomEnergyCharts() {
+  const slice = tsSlice();
+  const mob = window.innerWidth < 600;
+  const xt = mob ? (tsWindowDays <= 7 ? 5 : 8) : (tsWindowDays <= 7 ? 14 : 32);
+  const ssYearEl = document.getElementById('dom-selfsuff-year');
+  const ssWrap   = document.getElementById('dom-selfsuff-wrap');
+  ['ts-dom-ni','ts-dom-si','ts-dom-soc-ni','ts-dom-soc-si','ts-dom-selfsuff'].forEach(id => charts[id]?.destroy());
   if (gParams.domSolarEnabled) {
     const lbl = tsXLabels();
     const domOpts = { responsive:true, animation:false,
@@ -3541,11 +3697,10 @@ function renderTsCharts() {
         tooltip:{ mode:'index', intersect:false }},
       scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
         y:{ min:0, max: gParams.domBattKWh + 1, title:{ display:true, text:'kWh' } } } };
-    // Colours: solar=yellow, battery discharge=green, grid import=grey
-    const DOM_SOL  = '#f59e0b';  // amber/yellow
-    const DOM_BATT = '#16a34a';  // green
-    const DOM_GRID = '#94a3b8';  // slate grey
-    const DOM_CHG  = '#f97316';  // orange (solar going to battery)
+    const DOM_SOL  = '#f59e0b';
+    const DOM_BATT = '#16a34a';
+    const DOM_GRID = '#94a3b8';
+    const DOM_CHG  = '#f97316';
     const mkDomDs = (selfKey, chgKey, battKey, loadKey) => {
       const gridImport = slice.map(p => {
         const served = p[selfKey] + p[battKey];
@@ -3578,78 +3733,34 @@ function renderTsCharts() {
         { type:'line', label:'Home battery SoC', data:slice.map(p=>p.siHomeSoCkWh),
           borderColor:C.Storage, backgroundColor:C.Storage+'22', fill:true, borderWidth:1.5, pointRadius:0, tension:.2 },
       ]}, options:socOpts });
-  }
-
-  // HVDC
-  charts['ts-hvdc']?.destroy();
-  charts['ts-hvdc'] = new Chart(document.getElementById('ts-hvdc'), {
-    type:'line',
-    data:{ labels:tsXLabels(), datasets:[
-      { label:'North Island → South Island', data:slice.map(p=>+p.hvdcNiSi.toFixed(1)),
-        borderColor:C.HvdcNiSi, backgroundColor:C.HvdcNiSi+'33', fill:true, borderWidth:1.5, pointRadius:0, tension:.1 },
-      { label:'South Island → North Island', data:slice.map(p=>+p.hvdcSiNi.toFixed(1)),
-        borderColor:C.HvdcSiNi, backgroundColor:C.HvdcSiNi+'33', fill:true, borderWidth:1.5, pointRadius:0, tension:.1 },
-    ]},
-    options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false }},
-      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ title:{ display:true, text:'MW' } } } },
-  });
-
-  // FIR and SIR — separate NI and SI charts
-  function mkFirChart(id, firKey, sirKey, contingencyKey, contingencyColor) {
-    charts[id]?.destroy();
-    charts[id] = new Chart(document.getElementById(id), {
+    let cov = 0, ld = 0;
+    tsData.forEach(p => { cov += p.domCoverMW || 0; ld += p.domLoadMW || 0; });
+    if (ssYearEl) ssYearEl.textContent = (ld > 0 ? Math.round(cov / ld * 100) : 0) + '%';
+    if (ssWrap)   ssWrap.style.display = '';
+    charts['ts-dom-selfsuff'] = new Chart(document.getElementById('ts-dom-selfsuff'), {
       type:'line',
       data:{ labels:tsXLabels(), datasets:[
-        { label:'Fast reserve (0–6 s)',
-          data: slice.map(p=>+(p[firKey]??0)),
-          borderColor:'#059669', backgroundColor:'#05966950',
-          fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'r' },
-        { label:'Sustained reserve (6–60 s)',
-          data: slice.map(p=>+(p[sirKey]??0)),
-          borderColor:'#2563eb', backgroundColor:'#2563eb40',
-          fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'r' },
-        { label:'Largest risk to cover',
-          data: slice.map(p=>+(p[contingencyKey]??0)),
-          borderColor:contingencyColor, borderDash:[5,3],
-          fill:false, borderWidth:1.8, pointRadius:0, tension:.0 },
+        { label:'Own solar & battery share',
+          data: slice.map(p => p.domLoadMW > 0 ? +(p.domCoverMW / p.domLoadMW * 100).toFixed(1) : 0),
+          borderColor:'#f59e0b', backgroundColor:'#f59e0b30', fill:true, borderWidth:1.5, pointRadius:0, tension:.2 },
       ]},
-      options:{ responsive:true, animation:false,
-        plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+      options:{ responsive:true, animation:false, aspectRatio: mob ? 1.6 : 3,
+        plugins:{ legend:{ display:false },
           tooltip:{ mode:'index', intersect:false,
-            callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
-        scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-          y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
+            callbacks:{ label: ctx => `${(ctx.parsed.y||0).toFixed(0)}% from own solar & battery` }}},
+        scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation: mob?45:0, minRotation: mob?45:0, autoSkipPadding:6 } },
+          y:{ min:0, max:100, title:{ display:true, text:'%' } } } },
     });
+  } else {
+    if (ssYearEl) ssYearEl.textContent = 'n/a';
+    if (ssWrap)   ssWrap.style.display = 'none';
   }
-  mkFirChart('ts-reserves-ni', 'niFIR', 'niSIR', 'niContingency', '#dc2626');
-  mkFirChart('ts-reserves-si', 'siFIR', 'siSIR', 'siContingency', '#f97316');
+}
 
-  // System inertia (GVA·s) — synchronous + grid-forming battery synthetic inertia
-  charts['ts-inertia']?.destroy();
-  charts['ts-inertia'] = new Chart(document.getElementById('ts-inertia'), {
-    type:'line',
-    data:{ labels:tsXLabels(), datasets:[
-      { label:'North Island inertia',
-        data: slice.map(p=>+(p.niInertiaMWs??0)),
-        borderColor:C.Hydro,
-        fill:false, borderWidth:2, pointRadius:0, tension:.2 },
-      { label:'South Island inertia',
-        data: slice.map(p=>+(p.siInertiaMWs??0)),
-        borderColor:'#7dd3fc', borderDash:[4,3],
-        fill:false, borderWidth:2, pointRadius:0, tension:.2 },
-    ]},
-    options:{ responsive:true, animation:false,
-      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
-        tooltip:{ mode:'index', intersect:false,
-          callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW·s` }}},
-      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
-        y:{ title:{ display:true, text:'GVA·s' }, min:0 } } },
-  });
-
-  // Battery per island — SoC % (left axis) + charge/discharge MW (right axis)
+function renderBatteryCharts() {
+  const slice = tsSlice();
+  const mob = window.innerWidth < 600;
+  const xt = mob ? (tsWindowDays <= 7 ? 5 : 8) : (tsWindowDays <= 7 ? 14 : 32);
   function mkBattChart(id, socKey, chargeKey, dischargeKey) {
     charts[id]?.destroy();
     charts[id] = new Chart(document.getElementById(id), {
@@ -3682,37 +3793,12 @@ function renderTsCharts() {
   }
   mkBattChart('ts-batt-ni', 'niSoCpct', 'niCharge', 'niStorage');
   mkBattChart('ts-batt-si', 'siBattPct', 'siCharge', 'siStorage');
+}
 
-  // ── Residential self-supply: % of a solar+battery home's power from its own system ──
-  const ssYearEl = document.getElementById('dom-selfsuff-year');
-  const ssWrap   = document.getElementById('dom-selfsuff-wrap');
-  charts['ts-dom-selfsuff']?.destroy();
-  if (gParams.domSolarEnabled) {
-    let cov = 0, ld = 0;
-    tsData.forEach(p => { cov += p.domCoverMW || 0; ld += p.domLoadMW || 0; });
-    if (ssYearEl) ssYearEl.textContent = (ld > 0 ? Math.round(cov / ld * 100) : 0) + '%';
-    if (ssWrap)   ssWrap.style.display = '';
-    charts['ts-dom-selfsuff'] = new Chart(document.getElementById('ts-dom-selfsuff'), {
-      type:'line',
-      data:{ labels:tsXLabels(), datasets:[
-        { label:'Own solar & battery share',
-          data: slice.map(p => p.domLoadMW > 0 ? +(p.domCoverMW / p.domLoadMW * 100).toFixed(1) : 0),
-          borderColor:'#f59e0b', backgroundColor:'#f59e0b30', fill:true, borderWidth:1.5, pointRadius:0, tension:.2 },
-      ]},
-      options:{ responsive:true, animation:false, aspectRatio: mob ? 1.6 : 3,
-        plugins:{ legend:{ display:false },
-          tooltip:{ mode:'index', intersect:false,
-            callbacks:{ label: ctx => `${(ctx.parsed.y||0).toFixed(0)}% from own solar & battery` }}},
-        scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation: mob?45:0, minRotation: mob?45:0, autoSkipPadding:6 } },
-          y:{ min:0, max:100, title:{ display:true, text:'%' } } } },
-    });
-  } else {
-    if (ssYearEl) ssYearEl.textContent = 'n/a';
-    if (ssWrap)   ssWrap.style.display = 'none';
-  }
-
-  // ── Flexibility available — turn up (+) / turn down (−) (MW) ──
-  // Symmetric y-axis so zero sits in the middle; positives stack above, negatives below.
+function renderFlexCharts() {
+  const slice = tsSlice();
+  const mob = window.innerWidth < 600;
+  const xt = mob ? (tsWindowDays <= 7 ? 5 : 8) : (tsWindowDays <= 7 ? 14 : 32);
   charts['ts-flexibility']?.destroy();
   let flexMax = 0;
   slice.forEach(p => {
@@ -3740,9 +3826,89 @@ function renderTsCharts() {
       scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation: mob?45:0, minRotation: mob?45:0, autoSkipPadding:6 } },
         y:{ stacked:true, min:-flexMax, max:flexMax, title:{ display:true, text:'MW  (turn up + / turn down −)' } } } },
   });
+}
 
-  renderBaseDispatch();
-  renderCostCharts();
+function renderOperabilityCharts() {
+  const slice = tsSlice();
+  const mob = window.innerWidth < 600;
+  const xt = mob ? (tsWindowDays <= 7 ? 5 : 8) : (tsWindowDays <= 7 ? 14 : 32);
+  charts['ts-hvdc']?.destroy();
+  charts['ts-hvdc'] = new Chart(document.getElementById('ts-hvdc'), {
+    type:'line',
+    data:{ labels:tsXLabels(), datasets:[
+      { label:'North Island → South Island', data:slice.map(p=>+p.hvdcNiSi.toFixed(1)),
+        borderColor:C.HvdcNiSi, backgroundColor:C.HvdcNiSi+'33', fill:true, borderWidth:1.5, pointRadius:0, tension:.1 },
+      { label:'South Island → North Island', data:slice.map(p=>+p.hvdcSiNi.toFixed(1)),
+        borderColor:C.HvdcSiNi, backgroundColor:C.HvdcSiNi+'33', fill:true, borderWidth:1.5, pointRadius:0, tension:.1 },
+    ]},
+    options:{ responsive:true, animation:false,
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false }},
+      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ title:{ display:true, text:'MW' } } } },
+  });
+  function mkFirChart(id, firKey, sirKey, contingencyKey, contingencyColor) {
+    charts[id]?.destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+      type:'line',
+      data:{ labels:tsXLabels(), datasets:[
+        { label:'Fast reserve (0–6 s)',
+          data: slice.map(p=>+(p[firKey]??0)),
+          borderColor:'#059669', backgroundColor:'#05966950',
+          fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'r' },
+        { label:'Sustained reserve (6–60 s)',
+          data: slice.map(p=>+(p[sirKey]??0)),
+          borderColor:'#2563eb', backgroundColor:'#2563eb40',
+          fill:'stack', borderWidth:0.5, pointRadius:0, tension:.1, stack:'r' },
+        { label:'Largest risk to cover',
+          data: slice.map(p=>+(p[contingencyKey]??0)),
+          borderColor:contingencyColor, borderDash:[5,3],
+          fill:false, borderWidth:1.8, pointRadius:0, tension:.0 },
+      ]},
+      options:{ responsive:true, animation:false,
+        plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+          tooltip:{ mode:'index', intersect:false,
+            callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW` }}},
+        scales:{ x:{ stacked:true, ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+          y:{ stacked:true, title:{ display:true, text:'MW' }, min:0 } } },
+    });
+  }
+  mkFirChart('ts-reserves-ni', 'niFIR', 'niSIR', 'niContingency', '#dc2626');
+  mkFirChart('ts-reserves-si', 'siFIR', 'siSIR', 'siContingency', '#f97316');
+  charts['ts-inertia']?.destroy();
+  charts['ts-inertia'] = new Chart(document.getElementById('ts-inertia'), {
+    type:'line',
+    data:{ labels:tsXLabels(), datasets:[
+      { label:'North Island inertia',
+        data: slice.map(p=>+(p.niInertiaMWs??0)),
+        borderColor:C.Hydro,
+        fill:false, borderWidth:2, pointRadius:0, tension:.2 },
+      { label:'South Island inertia',
+        data: slice.map(p=>+(p.siInertiaMWs??0)),
+        borderColor:'#7dd3fc', borderDash:[4,3],
+        fill:false, borderWidth:2, pointRadius:0, tension:.2 },
+    ]},
+    options:{ responsive:true, animation:false,
+      plugins:{ legend:{ position:'top', labels:{ boxWidth:8, font:{size:10} } },
+        tooltip:{ mode:'index', intersect:false,
+          callbacks:{ label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y||0).toFixed(0)} MW·s` }}},
+      scales:{ x:{ ticks:{ maxTicksLimit:xt, maxRotation:0, autoSkipPadding:6 } },
+        y:{ title:{ display:true, text:'GVA·s' }, min:0 } } },
+  });
+}
+
+function reRenderSections() {
+  [['base-dispatch-section', renderBaseDispatch],
+   ['dom-energy-section',    renderDomEnergyCharts],
+   ['battery-section',       renderBatteryCharts],
+   ['flex-section',          renderFlexCharts],
+   ['reservoirs-section',    renderCurtailCharts],
+   ['operability-section',   renderOperabilityCharts],
+   ['costs-section',         renderCostCharts],
+  ].forEach(([id, fn]) => {
+    const el = document.getElementById(id);
+    if (el) withNav(el._tsNav || {days:7, offset:0}, fn);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3960,8 +4126,8 @@ async function runSim(dry) {
     if (document.getElementById('sankey-section').open) renderSankeys();
     renderTables(moUser, pk);
     renderAnnualCharts(moUser);
-    renderCostCharts();
     renderTsCharts();
+    reRenderSections();
     renderHeatmaps();   // no-op while the section is collapsed; redraws on open
     const yrTxt = years.length > 1 ? `${years.length} years averaged` : `weather year ${gYear}`;
     status.textContent = (dry ? `Dry-year run (−${gDryCut}% hydro, ${gDrySmart ? 'smart' : 'greedy'} dispatch) · ` : '') + `Done — ${yrTxt}.`;
