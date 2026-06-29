@@ -841,7 +841,7 @@
     <script>
       document.getElementById('base-dispatch-section').addEventListener('toggle', function() {
         document.getElementById('base-dispatch-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) withNav(makeTsNavWidget('base-dispatch-section', renderBaseDispatch), renderBaseDispatch);
+        if (this.open) withNav(makeTsNavWidget('base-dispatch-section', renderBaseDispatch, null, true), renderBaseDispatch);
       });
     </script>
     </div><!-- /tab-dispatch -->
@@ -873,7 +873,7 @@
     <script>
       document.getElementById('dom-energy-section').addEventListener('toggle', function() {
         document.getElementById('dom-energy-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) withNav(makeTsNavWidget('dom-energy-section', renderDomEnergyCharts), renderDomEnergyCharts);
+        if (this.open) withNav(makeTsNavWidget('dom-energy-section', renderDomEnergyCharts, null, true), renderDomEnergyCharts);
       });
     </script>
 
@@ -1093,7 +1093,7 @@
     <script>
       document.getElementById('operability-section').addEventListener('toggle', function() {
         document.getElementById('operability-arrow').textContent = this.open ? '▼' : '▶';
-        if (this.open) withNav(makeTsNavWidget('operability-section', renderOperabilityCharts), renderOperabilityCharts);
+        if (this.open) withNav(makeTsNavWidget('operability-section', renderOperabilityCharts, null, true), renderOperabilityCharts);
       });
     </script>
     </div><!-- /tab-resilience -->
@@ -3490,7 +3490,7 @@ function withNav(nav, fn) {
   try { fn(); } finally { tsWindowDays = pd; tsOffset = po; }
 }
 
-function makeTsNavWidget(sectionId, renderFn, targetId) {
+function makeTsNavWidget(sectionId, renderFn, targetId, noYear) {
   const section = document.getElementById(sectionId);
   if (!section) return { days:7, offset:0 };
   if (section._tsNav) return section._tsNav;
@@ -3501,7 +3501,7 @@ function makeTsNavWidget(sectionId, renderFn, targetId) {
   el.innerHTML =
     '<button class="btn-nav btn-nav--on" data-d="7">7 days</button>' +
     '<button class="btn-nav" data-d="30">Month</button>' +
-    '<button class="btn-nav" data-d="0">Full year</button>' +
+    (noYear ? '' : '<button class="btn-nav" data-d="0">Full year</button>') +
     '<span class="ts-mini-arrows" style="display:flex;align-items:center;gap:4px;">' +
     '<button class="btn-nav" data-dir="-1">◄</button>' +
     '<span class="ts-mini-lbl"></span>' +
