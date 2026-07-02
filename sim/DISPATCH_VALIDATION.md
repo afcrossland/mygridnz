@@ -126,9 +126,11 @@ Result: solar −53% → **+0.0%**, wind −3% → **+0.0%** (see table above).
 Searched the inputs for minimum gas + cost. Firm **geothermal** is the only lever that moves the
 overnight national-wind-calm peak; capacity-market home batteries (50% reserve) shave evening gas
 and *raise* home self-sufficiency. Final preset: **3 GW wind, 2.5 GW utility solar (1,700 kWh/kWp),
-500 MW geothermal, 1 GW/8 GWh grid battery, 55% homes w/ 20 kWh batteries + rooftop export.**
-Result (2025): 0 everyday gas, **71 GWh dry-year gas** (~99% below today), ~590 MW firm reserve,
-100% renewable, $72/MWh. `SCENARIO_METRICS` tile figures regenerated to match.
+250 MW geothermal, 1 GW/8 GWh grid battery, 55% homes w/ 20 kWh batteries + rooftop export.**
+Result (2025): 0 everyday gas, **200 GWh dry-year gas** (~98% below today), 100% renewable, $71/MWh.
+(500 MW geo would cut dry-year gas to 71 GWh AND halve the firm reserve to ~590 MW for +$1/MWh;
+250 MW chosen for lower capex — it more than halves the fuel but keeps the full ~1 GW gas reserve.)
+`SCENARIO_METRICS` tile figures regenerated to match.
 
 Related wind-calm finding: [[wind-lulls-are-synoptic]] — NZ deep wind lulls are national/synoptic;
 geographic diversity across the existing onshore fleet does not shrink them.

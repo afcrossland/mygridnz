@@ -418,7 +418,7 @@
       <div class="sc-stripe" style="background:#0d9e6e;"></div>
       <div class="sc-body">
         <div class="sc-title">My Blueprint 2030</div>
-        <div class="sc-desc">NZ high-renewables future: 3 GW wind, 2.5 GW solar, 500 MW firm geothermal, a 1 GW/8 GWh grid battery plus rooftop solar and capacity-market home batteries. Coal retired; gas kept only as a rarely-run dry-year reserve.</div>
+        <div class="sc-desc">NZ high-renewables future: 3 GW wind, 2.5 GW solar, 250 MW firm geothermal, a 1 GW/8 GWh grid battery plus rooftop solar and capacity-market home batteries. Coal retired; gas kept only as a rarely-run dry-year reserve.</div>
         <div class="sc-stats" id="stats-sc-blueprint"><div class="sc-stat"><span>Investment opportunity</span><b data-k="build">—</b></div><div class="sc-stat"><span>Firm capacity (before gas)</span><b data-k="capacity">—</b></div><div class="sc-stat"><span>Household solar adoption</span><b>55%</b></div><div class="sc-stat"><span>Cost of grid electricity</span><b data-k="energy">—</b></div><div class="sc-stat"><span>Power price</span><b data-k="price">—</b></div><div class="sc-dryhd">In a dry year</div><div class="sc-stat"><span>Fuel burned</span><b data-k="dryfuel">—</b></div><div class="sc-stat"><span>Backup kept</span><b data-k="drymw">—</b></div></div>
       </div>
     </div>
@@ -1580,10 +1580,10 @@ function onYearRangeChange() {
 // BLUEPRINT PRELOAD
 // ═══════════════════════════════════════════════════════
 function preloadBlueprint() {
-  // NZ high-renewables Blueprint: 3 GW wind + 2.5 GW solar + 500 MW firm geothermal,
+  // NZ high-renewables Blueprint: 3 GW wind + 2.5 GW solar + 250 MW firm geothermal,
   // 1 GW/8 GWh grid battery plus rooftop solar and capacity-market home batteries. Coal
-  // retired; gas kept only as a rarely-run dry-year reserve. Firm geothermal covers the
-  // overnight wind-lull peak that intermittent renewables and short-duration storage cannot.
+  // retired; gas kept only as a rarely-run dry-year reserve. Firm geothermal (a modest,
+  // lower-capex 250 MW) more than halves the dry-year fuel the overnight wind-lull would burn.
   setSlider('ni-wind',        2.0);
   setSlider('si-wind',        1.0);
   setSlider('ni-wind-cf',      38);
@@ -1594,7 +1594,7 @@ function preloadBlueprint() {
   setSlider('si-solar-yield', 1700);
   setSlider('ni-ror',          70);
   setSlider('si-ror',          20);
-  setSlider('ni-newgeo',      500);
+  setSlider('ni-newgeo',      250);
   setSlider('batt-power',    1000);
   setSlider('batt-cap',      8000);
   setSlider('batt-eff',        85);
@@ -2530,7 +2530,7 @@ function fmt(n, dp) { return (+n).toLocaleString('en-NZ', { minimumFractionDigit
 // Grid-scale capacity each preset applies (null = leave at today's installed level).
 // Keep in sync with the preload* functions. Used to show new-build cost on the cards.
 const SCENARIO_CAPS = {
-  'sc-blueprint': { windGW:3.0,  solarGW:2.5,  geoMW:500, gasMW:null, battE:8400, battP:1200, coalMW:0,  woodMW:300  },
+  'sc-blueprint': { windGW:3.0,  solarGW:2.5,  geoMW:250, gasMW:null, battE:8400, battP:1200, coalMW:0,  woodMW:300  },
   'sc-domsolar':  { windGW:null, solarGW:null,  geoMW:0, gasMW:null,  battE:8800, battP:1200, coalMW:null, woodMW:null },
   'sc-utilityre': { windGW:3.0,  solarGW:2.5,  geoMW:0, gasMW:null,  battE:8800, battP:1200, coalMW:null, woodMW:null },
   'sc-lng':       { windGW:null, solarGW:null,  geoMW:0, gasMW:3000,  battE:0,    battP:0,    coalMW:null, woodMW:null },
@@ -2589,7 +2589,7 @@ function setTileMetric(scId, metric, value, pending) {
 // energy/price (NZD/MWh, normal year) + dry-year (−20% hydro, smart dispatch)
 // fuel (GWh gas+coal) and backup capacity (peak gas+coal MW). Pre-computed on 2025.
 const SCENARIO_METRICS = {
-  'sc-blueprint': { energy:72, price:96,  dryFuel:71,   dryMW:589  },
+  'sc-blueprint': { energy:71, price:96,  dryFuel:200,  dryMW:1000 },
   'sc-domsolar':  { energy:78, price:114, dryFuel:4385, dryMW:2050 },
   'sc-utilityre': { energy:71, price:101, dryFuel:2408, dryMW:2122 },
   'sc-lng':       { energy:86, price:133, dryFuel:8385, dryMW:2287 },
