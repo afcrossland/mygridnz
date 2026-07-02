@@ -365,8 +365,8 @@
       </div>
     </div>
 
-    <!-- How it works (collapsed by default) -->
-    <details class="manifesto-details" style="margin-bottom:36px;margin-top:24px;">
+    <!-- How it works (collapsed by default, auto-opens when linked via #how-it-works) -->
+    <details id="how-it-works" class="manifesto-details" style="margin-bottom:36px;margin-top:24px;">
       <summary class="manifesto-summary">
         <span class="toggle-icon">▶</span>
         How the 2030 Blueprint works
@@ -382,9 +382,12 @@
           <li><strong>No coal</strong></li>
         </ul>
         <p>Dispatch order: hydro and geothermal run baseload, then wind and solar fill available demand. When supply exceeds demand, storage charges until full — then wind and solar are curtailed. Gas is the absolute last resort, used only when all other sources are insufficient.</p>
-        <p><strong>Run-of-river hydro</strong> — approximately 25% of hydro generation is modelled as must-run (run-of-river), reflecting the constraints of South Island rivers that cannot be easily stored. This sets a floor on hydro output regardless of demand or supply conditions.</p>
-        <p>The assumptions are sufficient to show whether enough low-carbon electricity can be generated when it is needed. They are not a complete optimisation of cost or system design. Demand profiles are not changed.</p>
+        <p><strong>Run-of-river hydro</strong> — approximately 25% of hydro generation is modelled as must-run (run-of-river), reflecting the constraints of South Island rivers that cannot be stored or withheld. This sets a minimum floor on hydro output regardless of demand or supply conditions. The remaining 75% of hydro is dispatchable — it is held back during periods of high wind and solar output and deployed during dry or calm periods.</p>
+        <p><strong>Hydro water value</strong> — when lakes are low, the opportunity cost of water rises: hydro is worth more per MWh because it may be the only source available during a dry spell. The model does not fully capture this dynamic. In reality, hydro generators raise their offer prices during dry years, which pushes up wholesale prices beyond what the LCOE figures here suggest. The Blueprint's battery and wind capacity is designed specifically to reduce how often this scarcity condition arises.</p>
+        <p><strong>Investment decisions</strong> — the Blueprint assumes that when the LCOE of new renewables is cost-competitive, that capacity gets built. This is an idealised assumption. It does not model the weighted average cost of capital (WACC) of individual developers, the impact of market power, regulatory timelines, or the specific commercial decisions of real companies. The Blueprint is a what-if scenario, not a market forecast.</p>
+        <p>The assumptions are sufficient to show whether enough low-carbon electricity can be generated when it is needed. They are not a complete optimisation of cost or system design. <strong>Demand profiles are taken from historical data and are held constant</strong> — the model does not optimise demand response, EV charging schedules, or heat pump flexibility. In practice, demand-side flexibility would reduce the need for storage and curtailment, making the Blueprint even more achievable.</p>
         <p><strong>Two cost measures are shown.</strong> The <em>Levelised Cost of Energy (LCOE)</em> is the lifetime build-and-run cost per MWh — it answers "what does this mix actually cost to build and operate?" The <em>Wholesale Price</em> estimate uses marginal pricing — the way electricity markets actually work. The last (most expensive) generator dispatched sets the spot price paid to <em>all</em> generators. Because renewables have near-zero fuel costs, they are dispatched first. In the Blueprint, gas is rarely needed, so it rarely sets the price — meaning wholesale electricity prices fall even though the capital cost of the system rises. This is the mechanism by which more renewables can lead to lower electricity bills.</p>
+        <p><strong>Solar LCOE note</strong> — the $90/MWh figure for solar is <em>utility-scale</em> new build only (large ground-mounted or commercial rooftop farms). Residential rooftop solar has a higher LCOE of roughly $150–200/MWh due to smaller system sizes and higher labour costs per kW installed, but delivers value at the household level through avoided retail tariffs. The Blueprint capacity target of 3.2–3.5 GW is a mix of utility and distributed solar; the LCOE shown here is an approximation for the utility-scale portion.</p>
         <p>The 2030 Blueprint is outlined in my book <em>Decarbonising Electricity: Made Simple</em>. For the full methodology, see: Crossland et al., <em>Assessment of Electricity Decarbonization Scenarios for New Zealand and Great Britain</em>, Energies 2020, 13, 2799. <a href="https://doi.org/10.3390/en13112799" target="_blank">doi:10.3390/en13112799</a></p>
         <p>Full LCOE assumptions — including source data, the gas load-factor formula, curtailment accounting, and the nuclear exclusion rationale — are documented in the <a href="/about/index.html#lcoe-methodology">About page methodology section</a>.</p>
       </div>
@@ -392,7 +395,7 @@
 
     <!-- Side-by-side mix comparison -->
     <h2 class="section-h2">Today vs the 2030 Blueprint</h2>
-    <p class="section-p">The <span class="desktop-only">right-hand</span><span class="mobile-only">lower</span> pie shows a simulation of what the 2030 Blueprint electricity mix would have looked like last month — using actual generation data, but with the Blueprint's generating capacity in place. The <span class="desktop-only">left</span><span class="mobile-only">upper</span> shows what actually happened.</p>
+    <p class="section-p">The <span class="desktop-only">right-hand</span><span class="mobile-only">lower</span> pie shows a simulation of what the 2030 Blueprint electricity mix would have looked like over the past year — using actual annual generation data, but with the Blueprint's generating capacity in place. The <span class="desktop-only">left</span><span class="mobile-only">upper</span> shows what actually happened.</p>
     <div class="compare-mix">
       <div>
         <div class="compare-panel-title compare-panel-title--now">Today's Grid</div>
@@ -409,7 +412,7 @@
 
     <!-- Timeseries -->
     <h2 class="section-h2">The 2030 Blueprint in action</h2>
-    <p class="section-p" id="timeseries-desc">The simulation runs the 2030 Blueprint mix against real-time weather and demand data, showing how an expanded fleet of wind, solar, hydro, geothermal and storage would actually perform. Gas almost disappears; storage charges during sunny and windy periods and discharges at night and during dry spells; curtailment rises when renewables generate more than demand and storage can absorb.</p>
+    <p class="section-p" id="timeseries-desc">The simulation runs the 2030 Blueprint mix against historical weather and demand data, showing how an expanded fleet of wind, solar, hydro, geothermal and storage would actually have performed. Gas almost disappears; storage charges during sunny and windy periods and discharges at night and during dry spells; curtailment rises when renewables generate more than demand and storage can absorb.</p>
     <div class="filter-bar" id="ts-filter">
       <span class="filter-bar-label">Show:</span>
       <button class="filter-btn" data-hours="168">Last 7 days</button>
@@ -786,7 +789,11 @@
   }
 
   // ── Timeseries ────────────────────────────────────────────────────
-  if (tsResult.status === 'fulfilled') {
+  if (tsResult.status === 'rejected') {
+    document.getElementById('timeseries-chart').closest('div').innerHTML =
+      '<p style="color:var(--muted);font-size:13px;padding:12px 0;">Live data is temporarily unavailable. Check back shortly.</p>';
+    document.getElementById('ts-filter').style.visibility = 'hidden';
+  } else if (tsResult.status === 'fulfilled') {
     const allRows = tsResult.value.rows.filter(r => r.c.slice(1).some(c => c && c.v != null));
     const hasCurtail = false; // sheet has no curtailment column
 
@@ -922,11 +929,22 @@
       syncNavButtons();
     }
 
+    // Find offset to most-recent row that actually has generation data
+    // (guards against sheet having trailing empty/null rows)
+    function latestDataOffset(hours) {
+      for (let i = allRows.length - 1; i >= 0; i--) {
+        if (TIME_SOURCES.some(s => (allRows[i].c[s.col]?.v ?? 0) > 0.01)) {
+          return Math.max(0, allRows.length - i - 1);
+        }
+      }
+      return 0;
+    }
+
     // Initial render
     document.querySelectorAll('#ts-filter .filter-btn').forEach(b => {
       b.classList.toggle('active', !!b.dataset.hours && parseInt(b.dataset.hours) === currentHours);
     });
-    showHourly(currentHours, 0);
+    showHourly(currentHours, latestDataOffset(currentHours));
 
     // Period filter buttons
     document.getElementById('ts-filter').addEventListener('click', e => {
@@ -941,7 +959,8 @@
         prevBtn.style.visibility = 'hidden';
         nextBtn.style.visibility = 'hidden';
       } else {
-        showHourly(parseInt(btn.dataset.hours, 10), 0);
+        const hrs = parseInt(btn.dataset.hours, 10);
+        showHourly(hrs, latestDataOffset(hrs));
       }
     });
 
@@ -952,11 +971,14 @@
     nextBtn.addEventListener('click', () => {
       showHourly(currentHours, Math.max(0, currentOffset - currentHours));
     });
-  }
+  } // end tsResult.status === 'fulfilled'
 
   // ── Curtailment ───────────────────────────────────────────────────
-  if (curtailResult.status === 'fulfilled') {
-    const rows = curtailResult.value.rows;
+  if (curtailResult.status === 'rejected') {
+    document.getElementById('curtailment-chart').closest('div').innerHTML =
+      '<p style="color:var(--muted);font-size:13px;padding:12px 0;">Curtailment data is temporarily unavailable.</p>';
+  } else if (curtailResult.status === 'fulfilled') {
+    const rows = curtailResult.value.rows.filter(r => r.c[0]?.v != null);
     const labels = rows.map(r => r.c[0].v);
 
     new Chart(document.getElementById('curtailment-chart'), {
@@ -994,9 +1016,15 @@
         }
       }
     });
-  }
+  } // end curtailResult.status === 'fulfilled'
 } finally { document.querySelectorAll('.chart-spinner').forEach(el => el.remove()); }
 })();
+
+// Auto-open "How it works" section when linked via #how-it-works
+if (location.hash === '#how-it-works') {
+  const el = document.getElementById('how-it-works');
+  if (el) { el.open = true; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
 </script>
 
 </body>

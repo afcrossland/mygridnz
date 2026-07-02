@@ -76,6 +76,41 @@
     .stat-card--mid  .stat-num { color: #d97706; }
     .stat-card--high .stat-num { color: #dc2626; }
 
+    .stat-card { position: relative; overflow: visible; }
+    .stat-card-tip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e3a5f;
+      color: #fff;
+      border-radius: 7px;
+      padding: 10px 13px;
+      font-size: 11.5px;
+      line-height: 1.65;
+      width: 230px;
+      z-index: 40;
+      pointer-events: none;
+      text-align: left;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .stat-card:hover .stat-card-tip { display: block; }
+
+    .concepts-panel { border: 1px solid var(--border); border-radius: 10px; margin: 20px 0 28px; overflow: hidden; background: var(--surface); }
+    .concepts-panel > summary { padding: 14px 20px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text); list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
+    .concepts-panel > summary::-webkit-details-marker { display: none; }
+    .concepts-panel[open] > summary { border-bottom: 1px solid var(--border); }
+    .concepts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+    .concept-card { padding: 16px 18px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .concept-card:nth-child(3n) { border-right: none; }
+    .concept-card:nth-last-child(-n+3) { border-bottom: none; }
+    .concept-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+    .concept-body { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    @media (max-width: 600px) { .concepts-grid { grid-template-columns: 1fr; } .concept-card { border-right: none; } .concept-card:nth-last-child(-n+3) { border-bottom: 1px solid var(--border); } .concept-card:last-child { border-bottom: none; } }
+
     /* ── Section heading ── */
     .mix-title {
       font-family: 'DM Serif Display', Georgia, serif;
@@ -338,22 +373,27 @@
         <div class="stat-card" id="renewables-card">
           <div class="stat-label">Renewables</div>
           <div class="stat-num"><span id="stat-renewables">&mdash;</span><span class="stat-unit">%</span></div>
+          <div class="stat-card-tip">Share of electricity from renewable sources (hydro, wind, solar, geothermal). <b>Green &gt;60%</b> · <b>Amber 40–60%</b> · <b>Red &lt;40%</b>. NZ generates around 85% renewably — one of the highest rates in the world.</div>
         </div>
         <div class="stat-card" id="generation-card">
           <div class="stat-label">Generation</div>
           <div class="stat-num"><span id="stat-generation">&mdash;</span><span class="stat-unit">GW</span></div>
+          <div class="stat-card-tip">Total power being generated right now across all sources. The NZ grid typically runs between 3,000 and 7,000 MW depending on time of day and season.</div>
         </div>
         <div class="stat-card" id="independence-card">
           <div class="stat-label">Electricity Independence</div>
           <div class="stat-num"><span id="stat-independence">&mdash;</span><span class="stat-unit">%</span></div>
+          <div class="stat-card-tip">Share of electricity coming from fossil fuels (gas, coal, diesel). Lower is better. <b>Green &lt;5%</b> · <b>Amber 5–15%</b> · <b>Red &gt;15%</b>. Gas is mainly used to fill gaps when hydro lakes are low or wind drops.</div>
         </div>
         <div class="stat-card" id="carbon-card">
           <div class="stat-label">Carbon Intensity</div>
           <div class="stat-num"><span id="stat-carbon">&mdash;</span><span class="stat-unit">gCO₂/kWh</span></div>
+          <div class="stat-card-tip">Grams of CO₂ equivalent emitted per kilowatt-hour of electricity — a measure of how clean the grid is right now. <b>Green &lt;100 g</b> · <b>Amber 100–200 g</b> · <b>Red &gt;200 g</b>. NZ's 2030 goal implies around 50 g/kWh.</div>
         </div>
         <div class="stat-card" id="thermal-card">
           <div class="stat-label">Thermal Losses</div>
           <div class="stat-num"><span id="stat-thermal">&mdash;</span><span class="stat-unit">%</span></div>
+          <div class="stat-card-tip">Share of input fuel energy lost as waste heat from gas and coal power stations. Gas turbines convert only ~57% of fuel to electricity; the rest escapes as heat. Lower is better. <b>Green &lt;10%</b> · <b>Amber 10–25%</b> · <b>Red &gt;25%</b>.</div>
         </div>
       </div>
 
@@ -367,12 +407,42 @@
       </div>
     </section>
 
+    <details class="concepts-panel">
+      <summary>New to electricity data? Understanding the basics</summary>
+      <div class="concepts-grid">
+        <div class="concept-card">
+          <div class="concept-title">What is carbon intensity?</div>
+          <div class="concept-body">Grams of CO₂ emitted per kilowatt-hour of electricity. A coal plant produces ~820 g/kWh; wind produces ~12 g/kWh. The lower the number, the cleaner the electricity. New Zealand targets near-zero by 2030.</div>
+        </div>
+        <div class="concept-card">
+          <div class="concept-title">What is renewable electricity?</div>
+          <div class="concept-body">Power from sources that are naturally replenished — hydro (rivers and lakes), wind, solar and geothermal heat. Unlike gas or coal, they produce no carbon emissions and have near-zero fuel costs once built.</div>
+        </div>
+        <div class="concept-card">
+          <div class="concept-title">Why does New Zealand use gas?</div>
+          <div class="concept-body">In dry years, low rainfall means low hydro lakes — and less stored energy to draw on. Gas plants fill the gap. Solving this "dry year problem" without gas is the core challenge the 2030 Blueprint addresses.</div>
+        </div>
+        <div class="concept-card">
+          <div class="concept-title">What are thermal losses?</div>
+          <div class="concept-body">Gas and coal power stations burn fuel to make steam to spin a turbine. Only about 35–57% of the fuel becomes electricity — the rest escapes as waste heat. More renewables means fewer thermal losses.</div>
+        </div>
+        <div class="concept-card">
+          <div class="concept-title">How do the two islands connect?</div>
+          <div class="concept-body">The North and South Islands are linked by the HVDC Interisland Link — an undersea cable under Cook Strait. It carries up to 1,050 MW northward (South Island hydro to North Island cities) and 750 MW southward.</div>
+        </div>
+        <div class="concept-card">
+          <div class="concept-title">What is the 2030 target?</div>
+          <div class="concept-body">New Zealand has set an aspirational goal of 100% renewable electricity by 2030. MyGridNZ tracks progress against this using a carbon intensity threshold consistent with a near-fully-renewable grid (~50 g CO₂/kWh).</div>
+        </div>
+      </div>
+    </details>
+
     <!-- Blueprint feature -->
     <div style="background:#1a4d7a; color:#fff; border-radius:10px; padding:32px 36px; margin:32px 0;">
       <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; opacity:.65; margin:0 0 10px;">The 2030 Blueprint</p>
       <p style="font-family:'DM Serif Display',Georgia,serif; font-size:1.75rem; font-weight:400; line-height:1.25; margin:0 0 14px; letter-spacing:-0.01em;">Solve the dry year problem with renewables — not imported LNG.</p>
       <p style="font-size:1rem; line-height:1.7; margin:0 0 22px; opacity:0.88;">In dry years, low hydro lakes force New Zealand to burn more fossil gas and risk blackouts. The standard response is to import Liquefied Natural Gas — expensive, slow to procure and shipped from overseas. The 2030 Blueprint shows a different answer: enough wind, solar and battery storage to keep the lights on through even the driest years, with energy that is <strong>cheap to run, fast to deploy and entirely locally produced</strong>.</p>
-      <a href="2030grid/" style="display:inline-block; background:#fff; color:#1a4d7a; font-weight:700; font-size:14px; padding:11px 24px; border-radius:6px; text-decoration:none; letter-spacing:.01em;">Explore the 2030 Blueprint →</a>
+      <a href="2030grid/#how-it-works" style="display:inline-block; background:#fff; color:#1a4d7a; font-weight:700; font-size:14px; padding:11px 24px; border-radius:6px; text-decoration:none; letter-spacing:.01em;">Explore the 2030 Blueprint →</a>
     </div>
 
     <div class="explore-links">
@@ -736,33 +806,36 @@
         fuelNodeIdx[n] = addNode(FUEL_LABEL[n] || n, COL[n], 0.01, leftY[geoFuels.length + i]);
       });
 
-      // Middle column: spare heat (geothermal), thermal losses (combustion), electricity grid
-      const geoSpareHeat = geoFuels.reduce((s, n) => s + (EFF[n] ? gw[n] / EFF[n] - gw[n] : 0), 0);
-      const hasGeoSpare  = geoSpareHeat > 0.001;
-      const spareHeatNode = hasGeoSpare ? addNode('Approx. geothermal heat discharge', 'rgba(239,68,68,0.75)', 0.40, 0.05) : -1;
-
-      let thermalLossTotal = 0;
-      combustionFuels.forEach(n => { if (EFF[n]) thermalLossTotal += gw[n] / EFF[n] - gw[n]; });
-      const hasThermal    = thermalLossTotal > 0.001;
-      const thermalLossNode = hasThermal ? addNode('Thermal losses', COL.Loss, 0.40, 0.20) : -1;
-
+      // Centre column: electricity grid only
       // Left column: direct sources
       const directNodeIdx = {};
       directSources.forEach((n, i) => {
         directNodeIdx[n] = addNode(n, COL[n], 0.01, leftY[geoFuels.length + combustionFuels.length + i]);
       });
 
-      const gridNode = addNode('Electricity grid', COL.Grid,      0.40, 0.72);
-      const lossNode = addNode('Losses',            COL.Loss,      0.75, 0.10);
-      const delNode  = addNode('Delivered',         COL.Delivered, 0.99, 0.72);
+      const gridNode = addNode('Electricity grid', COL.Grid, 0.50, 0.60);
 
-      // Links: geothermal → spare heat + grid
+      // Right column: outputs — geo heat discharge, thermal losses, grid losses, delivered
+      const geoSpareHeat = geoFuels.reduce((s, n) => s + (EFF[n] ? gw[n] / EFF[n] - gw[n] : 0), 0);
+      const hasGeoSpare  = geoSpareHeat > 0.001;
+      // Geo heat sits at top-right — clearly an output, not a mid-chart intermediate
+      const spareHeatNode = hasGeoSpare ? addNode('Geothermal direct heat (not electricity)', 'rgba(239,68,68,0.75)', 0.99, 0.08) : -1;
+
+      let thermalLossTotal = 0;
+      combustionFuels.forEach(n => { if (EFF[n]) thermalLossTotal += gw[n] / EFF[n] - gw[n]; });
+      const hasThermal    = thermalLossTotal > 0.001;
+      const thermalLossNode = hasThermal ? addNode('Thermal losses', COL.Loss, 0.99, 0.28) : -1;
+
+      const lossNode = addNode('Grid transmission loss', COL.Loss,      0.99, hasThermal ? 0.43 : 0.28);
+      const delNode  = addNode('Delivered electricity',  COL.Delivered, 0.99, 0.75);
+
+      // Links: geothermal → geo heat (right side) + grid
       geoFuels.forEach(n => {
         const heat = EFF[n] ? gw[n] / EFF[n] - gw[n] : 0;
         if (hasGeoSpare) addLink(fuelNodeIdx[n], spareHeatNode, heat, 'rgba(239,68,68,0.18)');
         addLink(fuelNodeIdx[n], gridNode, gw[n], COL[n].replace('0.85','0.25'));
       });
-      // Links: combustion fuels → thermal losses + grid
+      // Links: combustion → thermal losses (right side) + grid
       combustionFuels.forEach(n => {
         const heat = EFF[n] ? gw[n] / EFF[n] - gw[n] : 0;
         if (hasThermal) addLink(fuelNodeIdx[n], thermalLossNode, heat, COL.Loss.replace('0.75','0.18'));
@@ -772,8 +845,7 @@
       directSources.forEach(n => {
         addLink(directNodeIdx[n], gridNode, gw[n], COL[n].replace('0.85','0.25'));
       });
-      // Links: thermal losses + grid losses → losses node
-      if (hasThermal) addLink(thermalLossNode, lossNode, thermalLossTotal, COL.Loss.replace('0.75','0.18'));
+      // Links: grid → grid transmission loss + delivered
       addLink(gridNode, lossNode, totalGW * GRID_LOSS,       'rgba(160,175,190,0.25)');
       addLink(gridNode, delNode,  totalGW * (1 - GRID_LOSS), 'rgba(26,77,122,0.22)');
 
