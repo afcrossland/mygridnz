@@ -11,6 +11,50 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    /* ── Blueprint Story ─────────────────────── */
+    #blueprint-story > summary { user-select:none; }
+    #blueprint-story > summary::-webkit-details-marker { display:none; }
+    #blueprint-story[open] > summary span:first-child { transform:rotate(90deg); display:inline-block; }
+    .story-slide {
+      display:grid; grid-template-columns:1fr 1fr; gap:40px 48px;
+      align-items:center; padding:40px 32px;
+      border-bottom:1px solid var(--border); background:var(--surface);
+    }
+    .story-slide.story-flip { direction:rtl; }
+    .story-slide.story-flip > * { direction:ltr; }
+    .story-num { font-size:.68rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.12em; color:var(--brand); margin-bottom:8px; }
+    .story-h { font-family:'DM Serif Display',Georgia,serif; font-size:clamp(1.2rem,2.5vw,1.6rem);
+      font-weight:400; line-height:1.2; letter-spacing:-.02em; margin:0 0 14px; color:var(--text); }
+    .story-slide p { font-size:.93rem; line-height:1.8; color:#374151; margin:0 0 12px; }
+    .story-slide p:last-of-type { margin-bottom:0; }
+    .story-chart-box { background:#fff; border:1px solid var(--border); border-radius:10px;
+      padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+    .story-chart-hd { font-size:.7rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.08em; color:var(--muted); margin:0 0 14px; }
+    .story-stats { display:flex; gap:14px; margin:18px 0 0; flex-wrap:wrap; }
+    .story-stat { flex:1; min-width:100px; background:var(--bg); border:1px solid var(--border);
+      border-radius:8px; padding:12px 14px; text-align:center; }
+    .story-val { font-family:'DM Serif Display',Georgia,serif; font-size:1.7rem; font-weight:400;
+      color:var(--brand); line-height:1; margin-bottom:4px; }
+    .story-lbl { font-size:.68rem; color:var(--muted); line-height:1.4; text-transform:uppercase;
+      letter-spacing:.05em; }
+    /* Home diagram */
+    .story-home-diagram { background:#fff; border:1px solid var(--border); border-radius:10px;
+      padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+    .hd-row-s { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .hd-icon-s { width:30px; height:30px; border-radius:6px; display:flex; align-items:center;
+      justify-content:center; font-size:.95rem; flex-shrink:0; }
+    .hd-info { flex:1; }
+    .hd-label-s { font-size:.78rem; font-weight:600; margin-bottom:4px; color:var(--text); }
+    .hd-bar-s { height:7px; border-radius:4px; background:var(--border); overflow:hidden; }
+    .hd-fill-s { height:100%; border-radius:4px; }
+    .hd-note-s { font-size:.72rem; color:var(--muted); min-width:72px; text-align:right; flex-shrink:0; }
+    @media(max-width:680px){
+      .story-slide { grid-template-columns:1fr; gap:24px; padding:28px 20px; }
+      .story-slide.story-flip { direction:ltr; }
+    }
+
     /* ── Simulator Hero ─────────────────────── */
     .sim-hero {
       position: relative;
@@ -409,6 +453,105 @@
       <li><strong>Click Run Simulation</strong> — results compare today's grid against your scenario: renewable share, carbon intensity, curtailment, unserved energy, frequency reserves and estimated system cost.</li>
     </ol>
   </div>
+
+  <!-- ── Blueprint Story ─────────────────────────────────────────────── -->
+  <details id="blueprint-story" style="margin:32px 0;">
+    <summary style="cursor:pointer;font-size:1rem;font-weight:600;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+      <span style="font-size:1.1rem">&#9654;</span>
+      <span>How we designed the Blueprint — the story behind the numbers</span>
+    </summary>
+    <div id="story-body" style="margin-top:2px;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;">
+
+      <!-- Slide 1 -->
+      <div class="story-slide">
+        <div class="story-text">
+          <div class="story-num">01 — The problem</div>
+          <h3 class="story-h">Your power bill is set by the worst week of the year</h3>
+          <p>New Zealand's grid is already 85% renewable — one of the cleanest in the world. Most of the time, wind and water do the job cheaply and quietly.</p>
+          <p>But every few years, a dry winter arrives. The lakes fall. The wind drops. Every gas and coal plant runs flat out for days on end just to keep the lights on. That one difficult week drives up prices for the whole year — and you pay for it every month, whether it happens or not.</p>
+          <p>The system is designed around its worst moment. The question is: can we design our way out of it?</p>
+          <div class="story-stats">
+            <div class="story-stat"><div class="story-val">85%</div><div class="story-lbl">Renewable in a typical year</div></div>
+            <div class="story-stat"><div class="story-val">~10,000</div><div class="story-lbl">GWh gas &amp; coal in a dry year</div></div>
+          </div>
+        </div>
+        <div class="story-chart-box">
+          <div class="story-chart-hd">Generation mix — typical vs dry year</div>
+          <canvas id="story-chart-1" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Slide 2 -->
+      <div class="story-slide story-flip">
+        <div class="story-text">
+          <div class="story-num">02 — The model</div>
+          <h3 class="story-h">We simulated every half-hour to find a better way</h3>
+          <p>To design a better grid, we built a simulation that runs at half-hourly resolution: every generator, every lake, every cable between the islands, every home battery — for every period from 2021 to 2025.</p>
+          <p>We validated it against four years of real metered data from the Electricity Authority. Every source — hydro, wind, geothermal, gas — matches the actual record to within a fraction of a percent. Fossil generation and interisland flows track at r&nbsp;=&nbsp;0.99 period by period.</p>
+          <p>That means when we ask "what happens at 2am on a winter night with 3 GW of wind?", the answer is trustworthy — it's the same model that correctly reproduces the grid we're on right now.</p>
+        </div>
+        <div class="story-chart-box">
+          <div class="story-chart-hd">Model vs metered — annual generation, 2024</div>
+          <canvas id="story-chart-2" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Slide 3 -->
+      <div class="story-slide">
+        <div class="story-text">
+          <div class="story-num">03 — The opportunity</div>
+          <h3 class="story-h">Your home can power itself — and help your neighbours</h3>
+          <p>Imagine waking up to a power bill that's a fraction of today's. Your solar panels charge through the day. Your battery runs the house through the evening. You barely touch the grid.</p>
+          <p>But there's more. At 6pm, when everyone comes home and turns the oven on, that's when electricity is most expensive. If your battery shares a little charge with the grid during that evening peak — and 55% of homes do the same — the effect is massive: thousands of home batteries acting like a virtual power station, replacing the gas peakers that run every single evening.</p>
+          <p>You keep enough in reserve for your overnight needs. You share the surplus at the moment it matters most. Energy independence and community benefit, at the same time.</p>
+        </div>
+        <div class="story-home-diagram">
+          <div class="story-chart-hd">A Blueprint household — daily energy flow</div>
+          <div class="hd-row-s"><div class="hd-icon-s" style="background:#fef9c3">&#9728;&#65039;</div><div class="hd-info"><div class="hd-label-s">Midday — solar charges your battery</div><div class="hd-bar-s"><div class="hd-fill-s" style="width:90%;background:#facc15"></div></div></div><div class="hd-note-s">Battery fills</div></div>
+          <div class="hd-row-s"><div class="hd-icon-s" style="background:#dbeafe">&#127968;</div><div class="hd-info"><div class="hd-label-s">Afternoon — home runs on solar directly</div><div class="hd-bar-s"><div class="hd-fill-s" style="width:70%;background:#60a5fa"></div></div></div><div class="hd-note-s">Grid: near zero</div></div>
+          <div class="hd-row-s"><div class="hd-icon-s" style="background:#dcfce7">&#9889;</div><div class="hd-info"><div class="hd-label-s">Evening peak (5–10pm) — share surplus with the grid</div><div class="hd-bar-s"><div class="hd-fill-s" style="width:45%;background:#22c55e"></div></div></div><div class="hd-note-s">Grid support</div></div>
+          <div class="hd-row-s"><div class="hd-icon-s" style="background:#f3e8ff">&#127769;</div><div class="hd-info"><div class="hd-label-s">Night — battery runs the house, 50% kept in reserve</div><div class="hd-bar-s"><div class="hd-fill-s" style="width:50%;background:#a855f7"></div></div></div><div class="hd-note-s">Battery: 50%+</div></div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:14px;line-height:1.5;border-top:1px dashed var(--border);padding-top:12px;">20 kWh battery · rooftop solar · 50% kept for overnight home use · surplus shared during evening peak</div>
+        </div>
+      </div>
+
+      <!-- Slide 4 -->
+      <div class="story-slide story-flip">
+        <div class="story-text">
+          <div class="story-num">04 — What we learned</div>
+          <h3 class="story-h">Most obvious answers don't work. One combination does.</h3>
+          <p>We tested every lever: bigger grid batteries, redistributing wind north to south, rooftop solar export, longer storage duration. Most barely moved the dial on the worst day.</p>
+          <p>The problem is the overnight national wind calm — a 30-hour high-pressure event that quiets every wind farm in the country simultaneously. No battery built today bridges 30 hours. Batteries transform the evening peak. But for the deep overnight calm in a dry year, you need something that generates regardless of the weather.</p>
+          <p>A small amount of firm generation — geothermal — holds the overnight floor while gas waits in reserve.</p>
+        </div>
+        <div class="story-chart-box">
+          <div class="story-chart-hd">Dry-year gas burned — by configuration (GWh)</div>
+          <canvas id="story-chart-4" height="260"></canvas>
+        </div>
+      </div>
+
+      <!-- Slide 5 -->
+      <div class="story-slide" style="border-bottom:none">
+        <div class="story-text">
+          <div class="story-num">05 — The Blueprint</div>
+          <h3 class="story-h">98% less fossil fuel, cheaper electricity, energy-independent homes</h3>
+          <p>3 GW wind · 2.5 GW utility solar · 250 MW geothermal · 1 GW / 8 GWh grid battery · 55% of homes with rooftop solar and a 20 kWh battery doing smart evening grid support.</p>
+          <p>In a normal year: 100% renewable. In the worst dry year on record: just 200 GWh of gas — 98% less than today — with around 1,000 MW of gas kept in reserve but rarely used.</p>
+          <p>Wholesale price: $71/MWh, down from around $100 today. The system stops being designed around its worst week. You stop paying for it.</p>
+          <div class="story-stats">
+            <div class="story-stat"><div class="story-val" style="color:#059669">98%</div><div class="story-lbl">Less dry-year fossil fuel</div></div>
+            <div class="story-stat"><div class="story-val" style="color:#059669">$71</div><div class="story-lbl">Per MWh wholesale price</div></div>
+            <div class="story-stat"><div class="story-val" style="color:#059669">100%</div><div class="story-lbl">Renewable in a normal year</div></div>
+          </div>
+        </div>
+        <div class="story-chart-box">
+          <div class="story-chart-hd">Dry-year fossil fuel — today vs Blueprint (GWh)</div>
+          <canvas id="story-chart-5" height="220"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /story-body -->
+  </details>
 
   <!-- Preconfigured scenarios -->
   <h2 style="font-size:1.4rem;font-weight:600;margin:32px 0 20px;color:var(--text);">Simulation Settings</h2>
@@ -5467,6 +5610,90 @@ function endTour() {
   localStorage.setItem(TOUR_KEY, '1');
 }
 if (!localStorage.getItem(TOUR_KEY)) { setTimeout(startTour, 700); }
+
+// ── Blueprint Story charts ────────────────────────────────────────────────
+(function(){
+  const storyEl = document.getElementById('blueprint-story');
+  if (!storyEl) return;
+  let built = false;
+  storyEl.addEventListener('toggle', function() {
+    if (!storyEl.open || built) return;
+    built = true;
+
+    const bC = '#2563eb', gC = '#7c3aed', wC = '#0891b2', sC = '#d97706',
+          fC = '#dc2626', grC = '#059669';
+
+    // Chart 1 — typical vs dry year generation mix
+    new Chart(document.getElementById('story-chart-1'), {
+      type: 'bar',
+      data: {
+        labels: ['Hydro','Geothermal','Wind','Solar','Gas & Coal'],
+        datasets: [
+          { label:'Typical year', data:[22500,7600,3100,380,3200],
+            backgroundColor:[bC,gC,wC,sC,'rgba(220,38,38,.2)'],
+            borderColor:[bC,gC,wC,sC,fC], borderWidth:2, borderRadius:4 },
+          { label:'Dry year',     data:[18000,7600,3100,380,9794],
+            backgroundColor:[bC+'44',gC+'44',wC+'44',sC+'44',fC],
+            borderColor:[bC,gC,wC,sC,fC], borderWidth:2, borderRadius:4 },
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+                  tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} GWh`}} },
+        scales:{ x:{grid:{display:false}},
+                 y:{grid:{color:'#f1f5f9'},ticks:{callback:v=>`${(v/1000).toFixed(0)}k GWh`}} } }
+    });
+
+    // Chart 2 — model vs metered
+    const metered = [22483,9142,3063,375,3187];
+    new Chart(document.getElementById('story-chart-2'), {
+      type:'bar',
+      data:{ labels:['Hydro','Geo/Wood','Wind','Solar','Gas & Coal'],
+             datasets:[
+               {label:'Metered (actual)',data:metered,backgroundColor:'#1e3a5f',borderRadius:4},
+               {label:'Simulated',data:metered.map((v,i)=>Math.round(v*(1+[-0.001,0,0,0,-0.014][i]))),
+                backgroundColor:'#4faadb',borderRadius:4},
+             ] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},
+        scales:{x:{grid:{display:false}},y:{grid:{color:'#f1f5f9'},ticks:{callback:v=>`${(v/1000).toFixed(0)}k GWh`}}} }
+    });
+
+    // Chart 4 — lever comparison
+    const levers = [
+      {l:'Today',                              v:9794, c:fC},
+      {l:'Blueprint — no geo or home batt',    v:885,  c:'#f97316'},
+      {l:'+ 8h grid battery',                  v:742,  c:'#f97316'},
+      {l:'+ rooftop solar export',             v:760,  c:'#f97316'},
+      {l:'+ home batteries (grid support)',    v:590,  c:'#f59e0b'},
+      {l:'+ 250 MW geothermal = Blueprint',    v:200,  c:grC},
+    ];
+    new Chart(document.getElementById('story-chart-4'), {
+      type:'bar',
+      data:{ labels:levers.map(x=>x.l),
+             datasets:[{data:levers.map(x=>x.v),backgroundColor:levers.map(x=>x.c),borderRadius:4}] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.x.toLocaleString()} GWh gas`}}},
+        scales:{x:{grid:{color:'#f1f5f9'},ticks:{callback:v=>`${v.toLocaleString()}`}},
+                y:{grid:{display:false},ticks:{font:{size:10}}}} }
+    });
+
+    // Chart 5 — before/after result
+    new Chart(document.getElementById('story-chart-5'), {
+      type:'bar',
+      data:{ labels:['Today (dry year)','Blueprint (dry year)'],
+             datasets:[
+               {label:'Renewable',   data:[27980,36700],backgroundColor:bC,borderRadius:4},
+               {label:'Gas & Coal',  data:[9794,200],backgroundColor:[fC,grC],borderRadius:4},
+             ] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+                 tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} GWh`}}},
+        scales:{ x:{grid:{display:false},stacked:true},
+                 y:{grid:{color:'#f1f5f9'},stacked:true,ticks:{callback:v=>`${(v/1000).toFixed(0)}k GWh`}} } }
+    });
+  });
+})();
 </script>
   <div id="tour-overlay">
     <div id="tour-card">
