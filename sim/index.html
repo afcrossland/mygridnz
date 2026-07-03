@@ -2081,6 +2081,40 @@ function simulate(data, caps, p) {
     }
   }
 
+  // Per-day NI battery planning for overnight discharge (SoC units, battCap-scale):
+  //  • niRefillArr  = daytime clean surplus (07–17h) that will recharge the battery before the peak.
+  //  • niPeakReserve = energy the evening peak (17–22h) needs the battery to hold (demand not covered
+  //    by must-run + this-period hydro). Overnight, the battery may discharge its EXCESS above
+  //    (peakReserve − refill), so it still arrives with enough for the peak instead of sitting full
+  //    while gas runs. Computed for every run (dry or normal).
+  const niRefillArr = new Array(data.length).fill(0);
+  const niPeakReserve = new Array(data.length).fill(0);
+  {
+    const perPeriod = data.map(r => {
+      const hr  = parseInt(r.dt.slice(11, 13), 10);
+      const dem = APPLY_LOSSES ? r.NI_Demand / (1 - (r.niLoss || 0)) : r.NI_Demand;
+      const vre = (r.NI_Geo + (p.niNewGeo||0)*0.9)
+                + _scaleVRE(r.NI_Wind,  r.NI_Wind_Cap,  niWindTgt,  p.niWindCorr,  capW_NI)
+                + _scaleVRE(r.NI_Solar, r.NI_Solar_Cap, niSolarTgt, p.niSolarCorr, capS_NI);
+      const surplus = (hr >= 7 && hr < 17) ? Math.max(0, vre + r.NI_Hydro * (p.niRoR/100) - dem) : 0;
+      // Peak deficit after all must-run + this-period hydro (RoR + flex). Charged into SoC terms via
+      // the battery's discharge efficiency, matching how discharge draws down SoC.
+      const peakDef = (hr >= 17 && hr < 22) ? Math.max(0, dem - vre - r.NI_Hydro) / p.battEff : 0;
+      return { surplus, peakDef };
+    });
+    let s = 0;
+    while (s < data.length) {
+      let e = s; const day = data[s].dt.slice(0, 10);
+      while (e < data.length && data[e].dt.slice(0, 10) === day) e++;
+      let refill = 0, reserve = 0;
+      for (let i = s; i < e; i++) { refill += perPeriod[i].surplus; reserve += perPeriod[i].peakDef; }
+      refill  = Math.min(refill,  p.battCap);
+      reserve = Math.min(reserve, p.battCap);
+      for (let i = s; i < e; i++) { niRefillArr[i] = refill; niPeakReserve[i] = reserve; }
+      s = e;
+    }
+  }
+
   let __i = -1;
   for (const row of data) {
     __i++;
@@ -2114,13 +2148,12 @@ function simulate(data, caps, p) {
     const hour = parseInt(row.dt.slice(11, 13), 10);
     const month = parseInt(row.dt.slice(5, 7), 10);
     // NZ summer (Dec/Jan/Feb): discharge any time, long days mean battery refills reliably
-    // NZ winter (Jun/Jul/Aug): reserve charge for peaks (6–9, 16–21) and daytime (9–16)
+    // NZ winter (Jun/Jul/Aug): discharge any time (24 h), like summer.
     // Shoulder months: discharge from 5am, no evening cutoff
     const isSummer = month === 12 || month <= 2;
     const isWinter = month >= 6 && month <= 8;
-    // Winter: morning peak 06–09, daytime 09–16, evening peak 16–21; overnight held in reserve
-    const canDomDischarge = isSummer ? true
-      : isWinter ? (hour >= 6 && hour < 21)
+    // Summer and winter allow discharge any time; shoulder months hold charge until 5am.
+    const canDomDischarge = (isSummer || isWinter) ? true
       : hour >= 5;
     // Evening peak window for capacity-market grid support (when gas would otherwise run).
     const eveningPeak = hour >= 17 && hour < 22;
@@ -2308,6 +2341,23 @@ function simulate(data, caps, p) {
       niFlexAvail -= sent; niFlexUsed += sent; siDef -= deliv; hvdcNiSi += sent; hvdcLossP += sent - deliv;
     }
 
+    // ── Overnight battery discharge (winter pre-charge window) ───────────
+    // A battery sitting full overnight while gas (or conserved reservoir water) covers the load is
+    // wasteful. Let it discharge to cover the deficit now, down to the charge the evening peak will
+    // actually need (niPeakReserve), less what daytime surplus will refill before then (niRefillArr).
+    // So it spends only genuine EXCESS overnight and still arrives with enough for the peak, rather
+    // than relocating the deficit to the peak. Only when it isn't pre-charging this period. Runs
+    // before the gas floor so it lowers the floor (dry) or displaces gas/reservoir directly (normal).
+    let niOvernightDisch = 0;
+    if (winterNight && niPreChg === 0 && niDef > 0 && p.battPower > 0) {
+      const floor = Math.max(BATT_RESERVE * p.battCap, niPeakReserve[__i] - niRefillArr[__i]);
+      if (niSoC > floor) {
+        niOvernightDisch = Math.min(niDef, p.battPower * p.battEff, (niSoC - floor) * p.battEff);
+        niSoC -= niOvernightDisch / p.battEff;
+        niDef -= niOvernightDisch;
+      }
+    }
+
     // ── Dry-year smart dispatch: reserve stored hydro + battery for the peak ──
     // Hide a flat "gas floor" of NI demand from the reservoir/battery phases so
     // they only shave the peak above it; the floor is restored before thermal.
@@ -2319,9 +2369,9 @@ function simulate(data, caps, p) {
     // charged from daytime wind/solar surplus empties into the evening peak and
     // saves reservoir storage for genuinely tight periods, giving daily cycling.
     // Charging from surplus stays here too (charge/discharge are mutually
-    // exclusive within a period). Reported charge includes the winter overnight
-    // pre-charge (SoC already raised above); discharge is suppressed during it.
-    let niCharge = niPreChg, niDischarge = 0;
+    // exclusive within a period). niDischarge is seeded with any overnight
+    // discharge above; the pre-charge draw is reported in niCharge.
+    let niCharge = niPreChg, niDischarge = niOvernightDisch;
     if (niSurp > 0 && p.battPower > 0) {
       const c = Math.min(niSurp, p.battPower - niPreChg, p.battCap - niSoC);
       niCharge += c; niSoC += c; niSurp -= c;
