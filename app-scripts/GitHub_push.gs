@@ -30,6 +30,11 @@ const GITHUB_BRANCH = 'main';
 // needs the latest full month; extra margin covers EMI publishing lag).
 const RECENT_WINDOW_DAYS = 100;
 
+// Sim dataset (the /sim page). Large: ~13 MB per full year, ~1 MB per month. Pushed by
+// pushSimData() on a SEPARATE, infrequent trigger (monthly, after the EMI import) — one file
+// per calendar month, so only the current month re-commits. Do NOT put these on the 30-min trigger.
+const SIM_SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
+
 // Each entry: { file, id, tab?, gid?, query? }.
 //   tab   — named sheet tab (takes precedence over gid)
 //   gid   — numeric tab id (default 0 when neither tab nor gid given)
@@ -93,10 +98,20 @@ function _cutoffDate(days) {
 
 // ── Fetch one sheet/query as raw gviz JSON text ──────────────────────────────
 function fetchSheetData(s, cutoff) {
-  let url = 'https://docs.google.com/spreadsheets/d/' + s.id + '/gviz/tq?tqx=out:json';
-  if (s.tab != null) url += '&sheet=' + encodeURIComponent(s.tab);
-  else               url += '&gid=' + (s.gid != null ? s.gid : 0);
-  if (s.query) url += '&tq=' + encodeURIComponent(s.query.replace('{{CUTOFF}}', cutoff));
+  return _gviz(s.id, {
+    tab:   s.tab,
+    gid:   s.gid,
+    query: s.query ? s.query.replace('{{CUTOFF}}', cutoff) : null
+  });
+}
+
+// ── Low-level gviz fetch → raw response text ─────────────────────────────────
+function _gviz(id, opts) {
+  let url = 'https://docs.google.com/spreadsheets/d/' + id + '/gviz/tq?tqx=out:json';
+  if (opts.tab != null)      url += '&sheet=' + encodeURIComponent(opts.tab);
+  else if (opts.gid != null) url += '&gid=' + opts.gid;
+  else                       url += '&gid=0';
+  if (opts.query) url += '&tq=' + encodeURIComponent(opts.query);
 
   const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
   if (response.getResponseCode() !== 200) {
@@ -159,4 +174,49 @@ function pushToGitHub(token, path, content, shaMap) {
                     { message: 'data: auto-update ' + path, tree: newTree.sha, parents: [parent] });
   call('patch', '/git/refs/heads/' + GITHUB_BRANCH, { sha: commit.sha });
   return 'updated';
+}
+
+// ── Sim dataset push — run on its own (monthly) trigger, NOT every 30 min ─────
+// Commits data/sim/capacity.json, data/sim/index.json (year → months present), and one
+// data/sim/perIsland-<year>-<MM>.json per calendar month. Completed months are byte-identical
+// each run, so the unchanged guard skips them and only the current (still-growing) month commits
+// (~1 MB) — 12× less churn than whole-year files. gviz month() is 0-indexed; filenames use 01–12.
+function pushSimData() {
+  const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!token) throw new Error('Missing GITHUB_TOKEN script property');
+
+  const shaMap = _existingShaMap(token, 'data/sim');
+
+  const capRaw = _gviz(SIM_SHEET_ID, { tab: 'capacity_perIsland', query: 'SELECT *' });
+  Logger.log(pushToGitHub(token, 'data/sim/capacity.json', capRaw, shaMap) + ': data/sim/capacity.json');
+
+  // Distinct (year, month) present. month() is 0-indexed (0 = Jan).
+  const mlRaw = _gviz(SIM_SHEET_ID, { tab: 'data_perIsland',
+    query: 'SELECT year(A), month(A), count(A) GROUP BY year(A), month(A) ORDER BY year(A), month(A)' });
+  const combos = JSON.parse(mlRaw.slice(mlRaw.indexOf('(') + 1, mlRaw.lastIndexOf(')')))
+    .table.rows
+    .map(function (r) { return { y: r.c[0] && r.c[0].v, m: r.c[1] && r.c[1].v }; })
+    .filter(function (c) { return c.y != null && c.m != null; });
+
+  // Build + push the index (plain JSON: year -> [calendar months present]).
+  const index = { years: {} };
+  combos.forEach(function (c) { (index.years[c.y] = index.years[c.y] || []).push(c.m + 1); });
+  Logger.log(pushToGitHub(token, 'data/sim/index.json', JSON.stringify(index), shaMap) + ': data/sim/index.json');
+
+  // Per-month files; only the latest (year, month) is still growing.
+  combos.forEach(function (c, i) {
+    const mm = ('0' + (c.m + 1)).slice(-2);
+    const file = 'data/sim/perIsland-' + c.y + '-' + mm + '.json';
+    if (i < combos.length - 1 && shaMap['perIsland-' + c.y + '-' + mm + '.json']) {
+      Logger.log('skip (immutable): ' + file);
+      return;
+    }
+    try {
+      const raw = _gviz(SIM_SHEET_ID, { tab: 'data_perIsland',
+        query: 'SELECT * WHERE year(A) = ' + c.y + ' AND month(A) = ' + c.m + ' ORDER BY A' });
+      Logger.log(pushToGitHub(token, file, raw, shaMap) + ': ' + file);
+    } catch (e) {
+      Logger.log('FAILED: ' + file + ' — ' + e.message);
+    }
+  });
 }

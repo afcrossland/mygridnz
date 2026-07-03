@@ -1551,7 +1551,6 @@ function setChartScale(mobileAR) {
   Chart.defaults.aspectRatio = m ? mobileAR : 2;
 }
 
-const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
 const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 // Brand-aligned palette
@@ -1839,21 +1838,29 @@ function preloadLNG() {
 // ═══════════════════════════════════════════════════════
 // DATA FETCHING
 // ═══════════════════════════════════════════════════════
-async function fetchGviz(sheet, query) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`
-            + `&sheet=${encodeURIComponent(sheet)}&tq=${encodeURIComponent(query)}`;
-  const txt = await (await fetch(url)).text();
+// Sim data served statically from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs,
+// function pushSimData). One file per month; parsed exactly like the raw gviz responses were.
+const SIM_DATA = 'https://nz.future-zero.com/data/sim';
+async function fetchSimData(file) {
+  const txt = await (await fetch(`${SIM_DATA}/${file}`)).text();
   return JSON.parse(txt.slice(txt.indexOf('(') + 1, txt.lastIndexOf(')')));
 }
 function gv(cell) { return (cell && cell.v != null) ? +cell.v : 0; }
 
+// index.json is plain JSON: { years: { "2025": [1,…,12], … } } — calendar months present per year.
+let _simIndex = null;
+async function loadSimIndex() {
+  if (!_simIndex) _simIndex = await (await fetch(`${SIM_DATA}/index.json`)).json();
+  return _simIndex;
+}
+
 async function loadYears() {
-  const json = await fetchGviz('data_perIsland', 'SELECT year(A), count(A) GROUP BY year(A) ORDER BY year(A)');
-  return (json.table?.rows || []).map(r => r.c[0]?.v).filter(Boolean).map(Number);
+  const idx = await loadSimIndex();
+  return Object.keys(idx.years || {}).map(Number).filter(Boolean).sort((a, b) => a - b);
 }
 
 async function loadCapacity() {
-  const json = await fetchGviz('capacity_perIsland', 'SELECT *');
+  const json = await fetchSimData('capacity.json');
   const caps = {};
   for (const row of (json.table.rows || [])) {
     const fuel = row.c[0]?.v;
@@ -1863,10 +1870,14 @@ async function loadCapacity() {
 }
 
 async function loadIslandData(year) {
-  const q = `SELECT * WHERE year(A) = ${year} ORDER BY A`;
-  const json = await fetchGviz('data_perIsland', q);
-  const tbl = json.table;
-  if (!tbl?.rows?.length) throw new Error(`No data for ${year}`);
+  const simIdx = await loadSimIndex();
+  const months = (simIdx.years && simIdx.years[year]) || [];
+  if (!months.length) throw new Error(`No data for ${year}`);
+  // One file per month; fetch in order and concatenate rows (cols are identical across months).
+  const parts = await Promise.all(months.map(m =>
+    fetchSimData(`perIsland-${year}-${String(m).padStart(2, '0')}.json`)));
+  const tbl = { cols: parts[0].table.cols, rows: parts.flatMap(p => p.table.rows || []) };
+  if (!tbl.rows.length) throw new Error(`No data for ${year}`);
   const idx = {};
   (tbl.cols || []).forEach((col, i) => { idx[col.label] = i; });
   function ci(label, fallback) { return idx[label] ?? idx[label.replace(/_MW$/, '')] ?? fallback; }
