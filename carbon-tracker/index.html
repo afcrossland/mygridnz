@@ -59,20 +59,21 @@
 
 <script>
 (async () => { try {
-  const BAR_ID  = '1w2bX1YwhPYUOkxayfJtmNIG_SvCj8UDXxzTy5pxZEqM';
-  const LINE_ID = '1ItQ1pZ2JU0itdmcFveTqAtyg0mEyTAR5q54TatkS9D0';
-  const FONT    = "'DM Sans','Segoe UI',Arial,sans-serif";
+  // Static data served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
+  const DATA     = 'https://nz.future-zero.com/data';
+  const BAR_URL  = `${DATA}/carbon-tracker-bar.json`;
+  const LINE_URL = `${DATA}/carbon-tracker-lines.json`;
+  const FONT     = "'DM Sans','Segoe UI',Arial,sans-serif";
 
-  async function fetchSheet(id) {
-    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=0`;
+  async function fetchSheet(url) {
     const r = await fetch(url);
     const t = await r.text();
     return JSON.parse(t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'))).table;
   }
 
   const [barResult, lineResult] = await Promise.allSettled([
-    fetchSheet(BAR_ID),
-    fetchSheet(LINE_ID),
+    fetchSheet(BAR_URL),
+    fetchSheet(LINE_URL),
   ]);
 
   // ── Bar chart ────────────────────────────────────────────────────

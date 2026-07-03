@@ -67,7 +67,6 @@
 
 <script>
 (async () => { try {
-  const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
 
   // annual tab: Year(0), Hydro(1), Geothermal(2), Gas(3), Wind(4), Solar(5), Wood(6), Coal(7), Diesel(8), Other(9), Total(10)
@@ -82,15 +81,15 @@
     Hydro:24, Geothermal:38, Gas:490, Wind:12, Solar:41, Wood:230, Coal:820, Diesel:650, Other:200,
   };
 
-  const ANNUAL_ID = '1EN4wI5rzmdJgzSrynqSkoduw-uATYeVkkhuY_HvFVHs';
+  // Static data served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
+  const ANNUAL_URL = 'https://nz.future-zero.com/data/annual.json';
 
-  async function fetchTable(id) {
-    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json`;
+  async function fetchTable(url) {
     const t = await (await fetch(url)).text();
     return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
   }
 
-  const { rows } = await fetchTable(ANNUAL_ID);
+  const { rows } = await fetchTable(ANNUAL_URL);
   const labels  = rows.map(r => String(Math.round(r.c[0].v)));
   const maxYear = Math.max(...rows.map(r => r.c[0].v));
 

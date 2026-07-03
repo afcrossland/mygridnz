@@ -537,9 +537,11 @@
 
 <script>
 (async () => { try {
-  const MONTHLY_ID  = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps';
-  const ANNUAL_ID   = '1EN4wI5rzmdJgzSrynqSkoduw-uATYeVkkhuY_HvFVHs';
-  const TP_SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
+  // Static data served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
+  const DATA        = 'https://nz.future-zero.com/data';
+  const MONTHLY_URL = `${DATA}/monthly.json`;
+  const ANNUAL_URL  = `${DATA}/annual.json`;
+  const LIVE_URL    = `${DATA}/live.json`;
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
   const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -557,22 +559,15 @@
   const LOW_CARBON = new Set(['Hydro','Geothermal','Wind','Solar','Wood']);
   const RENEWABLE  = new Set(['Hydro','Geothermal','Wind','Solar']);
 
-  async function fetchSheet(id) {
-    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json`;
+  async function fetchSheet(url) {
     const t = await (await fetch(url)).text();
-    return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
-  }
-  async function fetchTPData() {
-    const tq  = encodeURIComponent('SELECT * WHERE B IS NOT NULL ORDER BY A DESC LIMIT 1');
-    const url = `https://docs.google.com/spreadsheets/d/${TP_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('TP data')}&tq=${tq}`;
-    const t   = await (await fetch(url)).text();
     return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
   }
 
   const [monthlyResult, annualResult, liveResult] = await Promise.allSettled([
-    fetchSheet(MONTHLY_ID),
-    fetchSheet(ANNUAL_ID),
-    fetchTPData(),
+    fetchSheet(MONTHLY_URL),
+    fetchSheet(ANNUAL_URL),
+    fetchSheet(LIVE_URL),
   ]);
 
   // ── Process monthly data ─────────────────────────────────────
@@ -951,7 +946,6 @@
 
 // ── Recent generation — monthly stacked bar ───────────────────────
 (async () => {
-  const SHEET_ID = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
   const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
@@ -967,7 +961,7 @@
   function tail(rows, n) { return rows.slice(-Math.min(n, rows.length)); }
 
   try {
-    const url = `https://docs.google.com/spreadsheets/d/1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps/gviz/tq?tqx=out:json`;
+    const url = 'https://nz.future-zero.com/data/monthly.json';
     const t = await (await fetch(url)).text();
     const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
 

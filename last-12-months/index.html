@@ -150,9 +150,9 @@
       .map(([label, sumMW]) => ({ label, source: label, value: Math.round(sumMW / 2000) }));
   }
 
-  const MONTHLY_ID = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps';
-  const url = `https://docs.google.com/spreadsheets/d/${MONTHLY_ID}/gviz/tq?tqx=out:json`;
-  const t = await (await fetch(url)).text();
+  // Static data served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
+  const MONTHLY_URL = 'https://nz.future-zero.com/data/monthly.json';
+  const t = await (await fetch(MONTHLY_URL)).text();
   const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
 
   // ── Treemap ───────────────────────────────────────────────────────

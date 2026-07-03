@@ -66,8 +66,10 @@
 
 <script>
 (async () => { try {
-  const DATA_SHEET_ID    = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE'; // raw half-hourly data tab
-  const MONTHLY_SHEET_ID = '1plnHV6MLUJeHnyVJouxK4ve0akUt_Vbx8dkTuuMjHps'; // dedicated monthly sheet
+  // Static data served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
+  const DATA        = 'https://nz.future-zero.com/data';
+  const MONTHLY_URL = `${DATA}/monthly.json`;
+  const RECENT_URL  = `${DATA}/recent-halfhourly.json`;   // rolling ~100-day half-hourly window
 
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
   const MONTHS_LBL = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -87,15 +89,12 @@
   };
 
   async function fetchMonthly() {
-    const url = `https://docs.google.com/spreadsheets/d/${MONTHLY_SHEET_ID}/gviz/tq?tqx=out:json`;
-    const t = await (await fetch(url)).text();
+    const t = await (await fetch(MONTHLY_URL)).text();
     return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
   }
 
-  async function fetchData(tq) {
-    let url = `https://docs.google.com/spreadsheets/d/${DATA_SHEET_ID}/gviz/tq?tqx=out:json&sheet=data`;
-    if (tq) url += '&tq=' + encodeURIComponent(tq);
-    const t = await (await fetch(url)).text();
+  async function fetchRecent() {
+    const t = await (await fetch(RECENT_URL)).text();
     return JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table;
   }
 
@@ -110,12 +109,13 @@
   const latestYear  = lastRow.c[0].v;
   const latestMonth = lastRow.c[1].v; // 0-indexed from QUERY month()
 
-  // 2. Fetch half-hourly data for that month via date range
-  const dateFrom = `${latestYear}-${String(latestMonth + 1).padStart(2,'0')}-01`;
-  const [nextY, nextM] = latestMonth === 11 ? [latestYear+1, 1] : [latestYear, latestMonth + 2];
-  const dateTo = `${nextY}-${String(nextM).padStart(2,'0')}-01`;
-  const dataTable = await fetchData(`SELECT * WHERE B >= date '${dateFrom}' AND B < date '${dateTo}' ORDER BY A`);
-  const allRows = (dataTable.rows || []).filter(r => r.c[DC.Total]?.v != null);
+  // 2. Filter the rolling half-hourly window down to that latest month (client-side).
+  const dataTable = await fetchRecent();
+  const allRows = (dataTable.rows || []).filter(r => {
+    if (r.c[DC.Total]?.v == null) return false;
+    const d = parseGDate(r.c[1]?.v);   // column B = Date
+    return d && d.getFullYear() === latestYear && d.getMonth() === latestMonth;
+  });
 
   // ── Treemap from monthly averages ─────────────────────────────────
   const days = new Date(latestYear, latestMonth + 1, 0).getDate();

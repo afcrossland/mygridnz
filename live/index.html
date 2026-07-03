@@ -148,8 +148,8 @@
 
 <script>
 (async () => {
-  const SHEET_ID   = '1-Z04BrlTd4kqvANGmMPsgPb3xlPiMRj5E4kVB35HidE';
-  const SHEET_NAME = 'TP data';
+  // Static live snapshot served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
+  const LIVE_URL = 'https://nz.future-zero.com/data/live.json';
 
   const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
   const PALETTE = {
@@ -168,9 +168,7 @@
   const COL = { DateTime:0, Date:1, TP:2, Hydro:3, Geothermal:4, Gas:5, Wind:6, Solar:7, Wood:8, Coal:9, Diesel:10, Other:11, Total:12 };
 
   try {
-    const tq  = encodeURIComponent('SELECT * WHERE B IS NOT NULL ORDER BY A DESC LIMIT 1');
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&tq=${tq}`;
-    const t   = await (await fetch(url)).text();
+    const t   = await (await fetch(LIVE_URL)).text();
     const rows = JSON.parse(t.slice(t.indexOf('(')+1, t.lastIndexOf(')'))).table.rows;
 
     if (!rows || rows.length === 0) {

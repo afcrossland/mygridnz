@@ -440,9 +440,11 @@
 
 <script>
 (async () => { try {
-  const MIX_ID        = '1-_pQ39Qd7lN0r9rQWHT8_ZLOiFbvGbttYnrbowVBtS0';
-  const TIMESERIES_ID = '1ODNW-bT018Adl-PRhPkpVjVFTp9qo_0sLOSHuqGxipk';
-  const CURTAIL_ID    = '1bRqBHmH6lJQzhtewnFxauYWcLZ5hohSKDhELVC6mo2E';
+  // Static data served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
+  const DATA          = 'https://nz.future-zero.com/data';
+  const MIX_URL        = `${DATA}/2030-mix.json`;
+  const TIMESERIES_URL = `${DATA}/2030-timeseries.json`;
+  const CURTAIL_URL    = `${DATA}/2030-curtailment.json`;
 
   const FONT = "'DM Sans', 'Segoe UI', Arial, sans-serif";
 
@@ -475,8 +477,7 @@
     { label: 'Diesel',     col: 9, color: '#9ca3af' },
   ];
 
-  async function fetchTable(id, gid) {
-    const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=${gid ?? 0}`;
+  async function fetchTable(url) {
     const r = await fetch(url);
     const t = await r.text();
     return JSON.parse(t.slice(t.indexOf('(') + 1, t.lastIndexOf(')'))).table;
@@ -610,9 +611,9 @@
   }
 
   const [mixResult, tsResult, curtailResult] = await Promise.allSettled([
-    fetchTable(MIX_ID),
-    fetchTable(TIMESERIES_ID),
-    fetchTable(CURTAIL_ID),
+    fetchTable(MIX_URL),
+    fetchTable(TIMESERIES_URL),
+    fetchTable(CURTAIL_URL),
   ]);
 
   // ── Mix comparison ────────────────────────────────────────────────
