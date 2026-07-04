@@ -70,7 +70,8 @@
   const FONT = "'DM Sans','Segoe UI',Arial,sans-serif";
 
   // annual tab: Year(0), Hydro(1), Geothermal(2), Gas(3), Wind(4), Solar(5), Wood(6), Coal(7), Diesel(8), Other(9), Total(10)
-  const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
+  // Stack/legend order: geothermal, wind, solar, hydro first, then the rest.
+  const FUELS = ['Geothermal','Wind','Solar','Hydro','Gas','Wood','Coal','Diesel'];
   const FUEL_COL = { Hydro:1, Geothermal:2, Gas:3, Wind:4, Solar:5, Wood:6, Coal:7, Diesel:8, Other:9, Total:10 };
 
   const PALETTE = {
