@@ -172,8 +172,10 @@
     return FUELS.map(f => ({
       label: f,
       data: rows.map(r => +(r.c[DC[f]]?.v ?? 0).toFixed(0)),
-      backgroundColor: PALETTE[f], borderColor: PALETTE[f],
-      borderWidth: 0.5, fill: true, pointRadius: 0, tension: 0.2,
+      // Semi-transparent fill + crisp solid border (like the sim charts) so adjacent
+      // dark bands (gas/wood/coal/diesel) stay distinguishable.
+      backgroundColor: PALETTE[f] + '80', borderColor: PALETTE[f],
+      borderWidth: 1, fill: true, pointRadius: 0, tension: 0.2,
     }));
   }
 
