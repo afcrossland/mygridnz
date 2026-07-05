@@ -72,21 +72,20 @@ function setToken() {
 }
 
 // ── Main: run on a 30-minute time trigger ────────────────────────────────────
+// All changed files go into ONE commit (one Pages deploy) rather than one commit
+// per file, so a multi-file update doesn't fire a burst of overlapping deploys.
 function pushAllToGitHub() {
   const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
   if (!token) throw new Error('Missing GITHUB_TOKEN script property');
 
   const cutoff = _cutoffDate(RECENT_WINDOW_DAYS);
   const shaMap = _existingShaMap(token, 'data');   // basename -> current git blob sha
+  const files = [];
   SHEETS.forEach(function (s) {
-    try {
-      const content = fetchSheetData(s, cutoff);
-      const result  = pushToGitHub(token, s.file, content, shaMap);
-      Logger.log(result + ': ' + s.file);
-    } catch (e) {
-      Logger.log('FAILED: ' + s.file + ' — ' + e.message);
-    }
+    try { files.push({ path: s.file, content: fetchSheetData(s, cutoff) }); }
+    catch (e) { Logger.log('FETCH FAILED: ' + s.file + ' — ' + e.message); }
   });
+  Logger.log(_commitBatch(token, files, shaMap, 'data: auto-update'));
 }
 
 // ── (today − days) as an Auckland-local yyyy-MM-dd string ────────────────────
@@ -146,11 +145,12 @@ function _gitBlobSha(content) {
   return digest.map(function (b) { return ('0' + (b & 0xff).toString(16)).slice(-2); }).join('');
 }
 
-// ── Push a file via the Git Data API (any size), skipping no-op commits ──────
-function pushToGitHub(token, path, content, shaMap) {
+// ── Commit a batch of files in ONE commit via the Git Data API (any size) ────
+// files: [{ path, content }]. Only files whose git blob SHA differs from shaMap
+// are committed; if none differ, no commit is made. One commit → one Pages deploy.
+function _commitBatch(token, files, shaMap, message) {
   const api = 'https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO;
   const headers = { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' };
-
   const call = function (method, endpoint, body) {
     const opts = { method: method, headers: headers, muteHttpExceptions: true };
     if (body) { opts.contentType = 'application/json'; opts.payload = JSON.stringify(body); }
@@ -161,19 +161,24 @@ function pushToGitHub(token, path, content, shaMap) {
     return JSON.parse(r.getContentText());
   };
 
-  const base = path.split('/').pop();
-  if (shaMap[base] && shaMap[base] === _gitBlobSha(content)) return 'unchanged';
+  const changed = files.filter(function (f) {
+    return shaMap[f.path.split('/').pop()] !== _gitBlobSha(f.content);
+  });
+  if (!changed.length) return 'unchanged (' + files.length + ' files checked)';
 
-  const parent  = call('get', '/git/ref/heads/' + GITHUB_BRANCH).object.sha;
+  const parent   = call('get', '/git/ref/heads/' + GITHUB_BRANCH).object.sha;
   const baseTree = call('get', '/git/commits/' + parent).tree.sha;
-  const blob    = call('post', '/git/blobs',
-                    { content: Utilities.base64Encode(content, Utilities.Charset.UTF_8), encoding: 'base64' });
-  const newTree = call('post', '/git/trees',
-                    { base_tree: baseTree, tree: [{ path: path, mode: '100644', type: 'blob', sha: blob.sha }] });
+  const tree = changed.map(function (f) {
+    const blob = call('post', '/git/blobs',
+      { content: Utilities.base64Encode(f.content, Utilities.Charset.UTF_8), encoding: 'base64' });
+    return { path: f.path, mode: '100644', type: 'blob', sha: blob.sha };
+  });
+  const newTree = call('post', '/git/trees', { base_tree: baseTree, tree: tree });
   const commit  = call('post', '/git/commits',
-                    { message: 'data: auto-update ' + path, tree: newTree.sha, parents: [parent] });
+    { message: message + ' (' + changed.length + ' file' + (changed.length > 1 ? 's' : '') + ')',
+      tree: newTree.sha, parents: [parent] });
   call('patch', '/git/refs/heads/' + GITHUB_BRANCH, { sha: commit.sha });
-  return 'updated';
+  return 'committed ' + changed.length + ': ' + changed.map(function (f) { return f.path; }).join(', ');
 }
 
 // ── Sim dataset push — run on its own (monthly) trigger, NOT every 30 min ─────
@@ -186,9 +191,10 @@ function pushSimData() {
   if (!token) throw new Error('Missing GITHUB_TOKEN script property');
 
   const shaMap = _existingShaMap(token, 'data/sim');
+  const files = [];
 
-  const capRaw = _gviz(SIM_SHEET_ID, { tab: 'capacity_perIsland', query: 'SELECT *' });
-  Logger.log(pushToGitHub(token, 'data/sim/capacity.json', capRaw, shaMap) + ': data/sim/capacity.json');
+  files.push({ path: 'data/sim/capacity.json',
+    content: _gviz(SIM_SHEET_ID, { tab: 'capacity_perIsland', query: 'SELECT *' }) });
 
   // Distinct (year, month) present. month() is 0-indexed (0 = Jan).
   const mlRaw = _gviz(SIM_SHEET_ID, { tab: 'data_perIsland',
@@ -198,25 +204,25 @@ function pushSimData() {
     .map(function (r) { return { y: r.c[0] && r.c[0].v, m: r.c[1] && r.c[1].v }; })
     .filter(function (c) { return c.y != null && c.m != null; });
 
-  // Build + push the index (plain JSON: year -> [calendar months present]).
+  // Index (plain JSON: year -> [calendar months present]).
   const index = { years: {} };
   combos.forEach(function (c) { (index.years[c.y] = index.years[c.y] || []).push(c.m + 1); });
-  Logger.log(pushToGitHub(token, 'data/sim/index.json', JSON.stringify(index), shaMap) + ': data/sim/index.json');
+  files.push({ path: 'data/sim/index.json', content: JSON.stringify(index) });
 
-  // Per-month files; only the latest (year, month) is still growing.
+  // Per-month files; only the latest (year, month) is still growing, so skip fetching completed
+  // months already committed (immutable). On a fresh repo this backfills all months in one big
+  // commit — if that ever hits the 6-min limit, re-run; committed months are then skipped.
   combos.forEach(function (c, i) {
     const mm = ('0' + (c.m + 1)).slice(-2);
-    const file = 'data/sim/perIsland-' + c.y + '-' + mm + '.json';
-    if (i < combos.length - 1 && shaMap['perIsland-' + c.y + '-' + mm + '.json']) {
-      Logger.log('skip (immutable): ' + file);
-      return;
-    }
+    if (i < combos.length - 1 && shaMap['perIsland-' + c.y + '-' + mm + '.json']) return;
     try {
-      const raw = _gviz(SIM_SHEET_ID, { tab: 'data_perIsland',
-        query: 'SELECT * WHERE year(A) = ' + c.y + ' AND month(A) = ' + c.m + ' ORDER BY A' });
-      Logger.log(pushToGitHub(token, file, raw, shaMap) + ': ' + file);
+      files.push({ path: 'data/sim/perIsland-' + c.y + '-' + mm + '.json',
+        content: _gviz(SIM_SHEET_ID, { tab: 'data_perIsland',
+          query: 'SELECT * WHERE year(A) = ' + c.y + ' AND month(A) = ' + c.m + ' ORDER BY A' }) });
     } catch (e) {
-      Logger.log('FAILED: ' + file + ' — ' + e.message);
+      Logger.log('FETCH FAILED: perIsland-' + c.y + '-' + mm + ' — ' + e.message);
     }
   });
+
+  Logger.log(_commitBatch(token, files, shaMap, 'data: auto-update sim'));
 }
