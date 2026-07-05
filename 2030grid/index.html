@@ -452,29 +452,29 @@
 
   // Sheet 1 (mix) columns: Label(0), Hydro(1), Geothermal(2), Wind(3), Solar(4), Wood(5), Gas(6), Storage(7), Coal(8), Diesel(9)
   const MIX_SOURCES = [
-    { label: 'Hydro',      col: 1, color: '#3b82f6', carbon: 24,  lowCarbon: true,  renewable: true  },
-    { label: 'Geothermal', col: 2, color: '#ef4444', carbon: 38,  lowCarbon: true,  renewable: true  },
+    { label: 'Hydro',      col: 1, color: '#2563eb', carbon: 24,  lowCarbon: true,  renewable: true  },
+    { label: 'Geothermal', col: 2, color: '#dc2626', carbon: 38,  lowCarbon: true,  renewable: true  },
     { label: 'Wind',       col: 3, color: '#0d9e6e', carbon: 12,  lowCarbon: true,  renewable: true  },
-    { label: 'Solar',      col: 4, color: '#f59e0b', carbon: 41,  lowCarbon: true,  renewable: true  },
-    { label: 'Wood',       col: 5, color: '#824e1a', carbon: 230, lowCarbon: true,  renewable: false },
-    { label: 'Gas',        col: 6, color: '#6b7280', carbon: 490, lowCarbon: false, renewable: false },
-    { label: 'Storage',    col: 7, color: '#f96c00', carbon: 0,   lowCarbon: true,  renewable: false },
-    { label: 'Coal',       col: 8, color: '#111827', carbon: 820, lowCarbon: false, renewable: false },
-    { label: 'Diesel',     col: 9, color: '#9ca3af', carbon: 650, lowCarbon: false, renewable: false },
+    { label: 'Solar',      col: 4, color: '#facc15', carbon: 41,  lowCarbon: true,  renewable: true  },
+    { label: 'Wood',       col: 5, color: '#78350f', carbon: 230, lowCarbon: true,  renewable: false },
+    { label: 'Gas',        col: 6, color: '#475569', carbon: 490, lowCarbon: false, renewable: false },
+    { label: 'Storage',    col: 7, color: '#ea580c', carbon: 0,   lowCarbon: true,  renewable: false },
+    { label: 'Coal',       col: 8, color: '#0f172a', carbon: 820, lowCarbon: false, renewable: false },
+    { label: 'Diesel',     col: 9, color: '#94a3b8', carbon: 650, lowCarbon: false, renewable: false },
   ];
 
   // Sheet 2 (timeseries) columns: Date(0), Hour(1), Geothermal(2), Solar(3), Wind(4), Storage(5), Hydro(6), Wood(7), Gas(8), Diesel(9), Other(10)
   // Values are in MW; divided by 1000 → GW when building datasets
   // Plot order = stacking order (bottom to top)
   const TIME_SOURCES = [
-    { label: 'Geothermal', col: 2, color: '#ef4444' },
+    { label: 'Geothermal', col: 2, color: '#dc2626' },
     { label: 'Wind',       col: 4, color: '#0d9e6e' },
-    { label: 'Solar',      col: 3, color: '#f59e0b' },
-    { label: 'Hydro',      col: 6, color: '#3b82f6' },
-    { label: 'Wood',       col: 7, color: '#824e1a' },
-    { label: 'Storage',    col: 5, color: '#f96c00' },
-    { label: 'Gas',        col: 8, color: '#6b7280' },
-    { label: 'Diesel',     col: 9, color: '#9ca3af' },
+    { label: 'Solar',      col: 3, color: '#facc15' },
+    { label: 'Hydro',      col: 6, color: '#2563eb' },
+    { label: 'Wood',       col: 7, color: '#78350f' },
+    { label: 'Storage',    col: 5, color: '#ea580c' },
+    { label: 'Gas',        col: 8, color: '#475569' },
+    { label: 'Diesel',     col: 9, color: '#94a3b8' },
   ];
 
   async function fetchTable(url) {
