@@ -15,11 +15,13 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# One deployment at a time. Because the site is a data mirror where every commit supersedes the
+# previous one (the app script commits data/*.json frequently), cancel superseded in-progress/queued
+# runs instead of letting them pile up and collide on the Pages backend ("Deployment failed, try
+# again later"). The latest commit always wins, so cancelling older deploys loses nothing.
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   # Build job: uploads the site as the github-pages artifact.

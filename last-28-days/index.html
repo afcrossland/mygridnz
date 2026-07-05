@@ -76,7 +76,8 @@
 
   // data tab:    DateTime(0), Date(1), TP(2), Hydro(3), Geo(4), Gas(5), Wind(6), Solar(7), Wood(8), Coal(9), Diesel(10), Other(11), Total(12)
   // monthly tab: Year(0), Month(1), Hydro(2), Geo(3), Gas(4), Wind(5), Solar(6), Wood(7), Coal(8), Diesel(9), Other(10), Total(11)
-  const FUELS = ['Hydro','Geothermal','Gas','Wind','Solar','Wood','Coal','Diesel'];
+  // Stack order (bottom → top): geothermal, wind, solar, hydro, then the rest.
+  const FUELS = ['Geothermal','Wind','Solar','Hydro','Gas','Wood','Coal','Diesel'];
   const DC = { Hydro:3, Geothermal:4, Gas:5, Wind:6, Solar:7, Wood:8, Coal:9, Diesel:10, Other:11, Total:12 };
   const MC = { Hydro:2, Geothermal:3, Gas:4, Wind:5, Solar:6, Wood:7, Coal:8, Diesel:9, Other:10, Total:11 };
 
