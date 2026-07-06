@@ -1137,7 +1137,7 @@
         <p><strong>Hydro is rain-fed; wind and sun are not.</strong> In a dry year, when inflows to Lake Pukaki and the Waitaki catchment are low, South Island storage delivers far less, and today's grid fills the gap by burning gas and coal. (North Island hydro is largely run-of-river; the Waikato chain has limited storage.) Use <strong>"Run vs Dry Year"</strong> at the top to re-run everything with reduced hydro, this section then compares how much fossil backup <strong>today's grid</strong> needs versus <strong>your plan</strong> to keep the lights on.</p>
       </div>
       <div id="dryyear-summary" class="dry-summary"></div>
-      <div class="chart-box ts-full"><h3>Fossil backup needed (GWh of gas + coal), today's grid vs your plan</h3><canvas id="dryyear-chart"></canvas></div>
+      <div class="chart-box ts-full"><h3>Fossil backup needed (% of total electricity, gas + coal), today's grid vs your plan</h3><canvas id="dryyear-chart"></canvas></div>
       <p class="sl-sub" id="dryyear-narr" style="margin-top:12px;"></p>
     </details>
     <script>
@@ -3017,12 +3017,16 @@ function renderDryYear() {
   const todayPeak   = peakFossil(gPpBase), planPeak = peakFossil(tsData);
   const avoided = Math.max(0, todayFossil - planFossil);
   const pct = todayFossil>0 ? Math.round(avoided/todayFossil*100) : 0;
+  const demB = demand(gMoBase), demU = demand(gMo);
+  const fossilPct = (v, d) => d>0 ? v/d*100 : 0;          // gas+coal as % of total electricity
+  const todayFP = fossilPct(todayFossil, demB), planFP = fossilPct(planFossil, demU);
+  const fp = v => v.toFixed(v < 10 ? 1 : 0);
   const planUns = unsP(gMo), planResMin = resMin(tsData, gParams);
   const u = t => `<span style="font-size:.6rem;color:var(--muted);">${t}</span>`;
   const card = (title, big, sub, cls) => `<div class="peakcap-card ${cls||''}"><h4>${title}</h4>` +
     `<div class="peakcap-firm">${big}</div><div class="peakcap-margin ${cls==='bad'?'bad':'ok'}">${sub}</div></div>`;
   wrap.innerHTML =
-    card('Fuel burned (gas + coal)', `${f0(planFossil)}${u(' GWh')}`, `vs ${f0(todayFossil)} GWh today, ${pct}% less`) +
+    card('Gas &amp; coal share', `${fp(planFP)}${u('%')}`, `of total electricity, vs ${fp(todayFP)}% today (${pct}% less fuel)`) +
     card('Backup capacity needed', `${f0(planPeak)}${u(' MW')}`, `firm gas/coal kept for the worst hour (today ${f0(todayPeak)} MW)`) +
     card('Lakes, lowest level', `${Math.round(planResMin)}${u('%')}`, planResMin>10?'reservoir buffer kept in reserve':'lakes run dangerously low', planResMin>10?'':'bad') +
     card('Hydro dependence', `${Math.round(hydroP(gMoBase))}→${Math.round(hydroP(gMo))}${u('%')}`, 'today → your plan');
@@ -3032,18 +3036,18 @@ function renderDryYear() {
   charts['dryyear-chart'] = new Chart(document.getElementById('dryyear-chart'), {
     type:'bar',
     data:{ labels:["Today's grid","Your plan"], datasets:[
-      { label:'Gas',  data:[+sum(gMoBase,'niGas').toFixed(0),  +sum(gMo,'niGas').toFixed(0)],  backgroundColor:'#475569', stack:'f', borderWidth:0 },
-      { label:'Coal', data:[+sum(gMoBase,'niCoal').toFixed(0), +sum(gMo,'niCoal').toFixed(0)], backgroundColor:'#0f172a', stack:'f', borderWidth:0 },
+      { label:'Gas',  data:[+fossilPct(sum(gMoBase,'niGas'), demB).toFixed(1),  +fossilPct(sum(gMo,'niGas'), demU).toFixed(1)],  backgroundColor:'#475569', stack:'f', borderWidth:0 },
+      { label:'Coal', data:[+fossilPct(sum(gMoBase,'niCoal'), demB).toFixed(1), +fossilPct(sum(gMo,'niCoal'), demU).toFixed(1)], backgroundColor:'#0f172a', stack:'f', borderWidth:0 },
     ]},
     options:{ responsive:true, animation:false, aspectRatio: mob ? 1.6 : 3,
       plugins:{ legend:{ position:'top', labels:{ boxWidth:10, font:{size:11} } },
-        tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('en-NZ')} GWh` } } },
-      scales:{ x:{ stacked:true, grid:{display:false} }, y:{ stacked:true, min:0, title:{ display:true, text:'Gas + coal (GWh / year)' } } } },
+        tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%` } } },
+      scales:{ x:{ stacked:true, grid:{display:false} }, y:{ stacked:true, min:0, title:{ display:true, text:'Gas + coal (% of total electricity)' } } } },
   });
 
   const cond = gDryRun ? `a dry year (hydro inflows cut ${gDryCut}%${gDrySmart ? ', smart dispatch' : ', run-as-it-comes dispatch'})` : 'this weather year';
   document.getElementById('dryyear-narr').innerHTML =
-    `In ${cond}, today's grid burns <b>${f0(todayFossil)} GWh</b> of gas &amp; coal to cover the hydro shortfall, while your plan needs <b>${f0(planFossil)} GWh</b>, <b>${pct}% less</b>, with unmet demand of just ${planUns.toFixed(2)}% and lakes bottoming at ${Math.round(planResMin)}%. ` +
+    `In ${cond}, today's grid draws <b>${fp(todayFP)}%</b> of its electricity from gas &amp; coal to cover the hydro shortfall, while your plan needs just <b>${fp(planFP)}%</b>, <b>${pct}% less</b> fuel burned, with unmet demand of just ${planUns.toFixed(2)}% and lakes bottoming at ${Math.round(planResMin)}%. ` +
     `The crucial nuance for policy: the <b>capacity</b> you must keep barely changes, about <b>${f0(planPeak)} MW</b> of firm gas is still needed for the worst windless evening, but the <b>fuel</b> you actually burn collapses. ` +
     `Renewables turn gas from an everyday workhorse into a rarely-run insurance reserve: you keep the plants, but stop burning them.` +
     (gDryRun ? '' : ` <i>Click <b>“Run vs Dry Year”</b> to stress-test this plan against a drought.</i>`);
@@ -5343,6 +5347,10 @@ async function generateReport() {
         const todayPeak   = dryPeakFossil(gPpBase), planPeak = dryPeakFossil(tsData);
         const avoided = Math.max(0, todayFossil - planFossil);
         const avoidPct = todayFossil > 0 ? Math.round(avoided/todayFossil*100) : 0;
+        const dryDem = mo => sum(mo,'niDemand') + sum(mo,'siDemand');
+        const dryFP = mo => { const d = dryDem(mo); return d>0 ? dryFossil(mo)/d*100 : 0; };
+        const todayFP = dryFP(gMoBase), planFP = dryFP(gMo);
+        const fp = v => v.toFixed(v < 10 ? 1 : 0);
         const statBox = (label, val, sub, accent) =>
           `<div style="border:1px solid #e2e8f0;border-left:3px solid ${accent};border-radius:4px;padding:10px 12px;background:#f8fafc;">
              <div style="font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:3px;">${label}</div>
@@ -5354,8 +5362,8 @@ async function generateReport() {
             This section compares gas and coal use under today's grid versus your chosen pathway in that drought scenario.
             The dry-year simulation uses 2024 actual hydro data, already a below-average year, then applies a further 20% reduction.</p>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
-            ${statBox('Fuel burned, your plan', `${Math.round(planFossil).toLocaleString()} GWh`, `${avoidPct}% less than today's grid`, avoidPct>0?'#0d9e6e':'#dc2626')}
-            ${statBox('Fuel burned, today', `${Math.round(todayFossil).toLocaleString()} GWh`, 'gas + coal in a dry year', '#475569')}
+            ${statBox('Gas &amp; coal share, your plan', `${fp(planFP)}%`, `${avoidPct}% less fuel than today's grid`, avoidPct>0?'#0d9e6e':'#dc2626')}
+            ${statBox('Gas &amp; coal share, today', `${fp(todayFP)}%`, 'of total electricity in a dry year', '#475569')}
             ${statBox('Backup capacity needed', `${Math.round(planPeak).toLocaleString()} MW`, `peak thermal kept (today: ${Math.round(todayPeak).toLocaleString()} MW)`, '#d97706')}
           </div>
           <div id="dry-rpt-chart"></div>
