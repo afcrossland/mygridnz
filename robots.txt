@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nz.future-zero.com/sitemap.xml

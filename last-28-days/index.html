@@ -6,64 +6,20 @@
   <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Last Month — MyGridNZ</title>
-  <meta name="description" content="Aotearoa New Zealand electricity generation last month — half-hourly data, generation mix and carbon intensity.">
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://www.mygrid.nz/last-28-days/">
-  <meta property="og:title"       content="Last Month — MyGridNZ">
-  <meta property="og:description" content="Aotearoa New Zealand electricity generation last month — half-hourly data, generation mix and carbon intensity.">
-  <meta property="og:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
-  <!-- Twitter Card -->
-  <meta name="twitter:card"        content="summary">
-  <meta name="twitter:site"        content="@mygridnz">
-  <meta name="twitter:title"       content="Last Month — MyGridNZ">
-  <meta name="twitter:description" content="Aotearoa New Zealand electricity generation last month — half-hourly data, generation mix and carbon intensity.">
-  <meta name="twitter:image"       content="https://www.mygrid.nz/images/mygridnz-logo.png">
-  <link rel="stylesheet" href="../assets/style.css">
-  <script src="../assets/nav.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3.0.0/dist/chartjs-chart-treemap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-</head>
-<body>
-<div class="page-wrap">
-  <main>
-    <h1 class="page-title">Last Month</h1>
-    <p class="page-intro">Aotearoa New Zealand electricity generation for the most recently published month. Data source: Electricity Market Information (EMI).</p>
-
-    <!-- Treemap -->
-    <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:24px 0 8px;">Generation mix share</h2>
-    <p style="color:var(--muted); margin-bottom:16px;">Each tile shows the average contribution of a fuel type to Aotearoa New Zealand electricity last month, sized by its share of the mix. In windy and wet periods, renewables dominate; gas fills the gaps when weather-dependent generation is low.</p>
-    <div style="position:relative; height:420px;">
-      <div class="chart-spinner"></div>
-      <canvas id="treemap-chart"></canvas>
-    </div>
-
-    <!-- Stacked area -->
-    <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:32px 0 12px;">Hourly electricity generation</h2>
-    <p style="color:var(--muted); margin-bottom:20px;">Half-hourly generation last month, showing how the electricity mix shifts through the day and across weather patterns. Solar peaks sharply around midday in bright weather. Wind can supply the majority of demand for sustained periods, then drop to near zero as weather fronts pass — these fluctuations drive the need for flexible backup from gas and hydro.</p>
-    <div class="filter-bar" id="gen-filter">
-      <span class="filter-bar-label">Show:</span>
-      <button class="filter-btn active" data-periods="0">All data</button>
-      <button class="filter-btn" data-periods="336">Last 7 days</button>
-      <button class="filter-btn" data-periods="96">Last 48 hrs</button>
-    </div>
-    <div style="position:relative; height:400px;">
-      <div class="chart-spinner"></div>
-      <canvas id="gen-chart"></canvas>
-    </div>
-
-    <!-- Carbon intensity -->
-    <h2 style="font-size:1.4rem; font-weight:400; font-family:'DM Serif Display',Georgia,serif; color:#1a4d7a; margin:40px 0 12px;">Carbon intensity</h2>
-    <p style="color:var(--muted); margin-bottom:20px;">Half-hourly carbon intensity of Aotearoa New Zealand electricity last month (gCO₂eq/kWh). The red line marks a 50 gCO₂eq/kWh target consistent with a near-fully-renewable grid. Intensity falls when renewables are generating strongly and rises when gas fills a larger share of demand.</p>
-    <div style="position:relative; height:320px;">
-      <div class="chart-spinner"></div>
-      <canvas id="carbon-intensity-chart"></canvas>
-    </div>
-  </main>
-  <div id="sidebar-placeholder"></div>
-</div>
-
+<meta name="description" content="Aotearoa New Zealand electricity generation last month: half-hourly data by fuel type, carbon intensity and renewable share.">
+<!-- Open Graph / social -->
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="https://nz.future-zero.com/last-28-days/">
+<meta property="og:title"       content="Last Month — MyGridNZ">
+<meta property="og:description" content="Aotearoa New Zealand electricity generation last month: half-hourly data by fuel type, carbon intensity and renewable share.">
+<meta property="og:image"       content="https://nz.future-zero.com/images/social-preview.png">
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="Last Month — MyGridNZ">
+<meta name="twitter:description" content="Aotearoa New Zealand electricity generation last month: half-hourly data by fuel type, carbon intensity and renewable share.">
+<meta name="twitter:image"       content="https://nz.future-zero.com/images/social-preview.png">
+<link rel="canonical"            href="https://nz.future-zero.com/last-28-days/">
+  
+  
 <script>
 (async () => { try {
   // Static data served from the repo (pushed from Google Sheets by app-scripts/GitHub_push.gs).
